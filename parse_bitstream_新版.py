@@ -88,6 +88,9 @@ class ConfigurationPacket:
                 "word_count":word_count
             }
     
+    def __init__(self) -> None:
+        pass
+    
 class BitstreamReader:
     def __init__(self, byte_content: bytes):
         """
@@ -112,6 +115,7 @@ class BitstreamReader:
         # 存储后续配置信息
         self.bit_cfg_content_after = []
         
+        self.cfg_obj = ConfigurationPacket()
         # 文件读取路径
         # self.file_path = file_path
         # # 文件类型
@@ -202,7 +206,6 @@ class BitstreamReader:
             
     # 解析位流，读取cfg内容
     def parse_cfg_content(self) -> None: 
-        
         while True:
             word = self.read_bytes(4)
             if not word:
@@ -213,31 +216,27 @@ class BitstreamReader:
             
             # 存入cfg中
             self.bit_cfg_content_pre.append(word)
+            word_content = struct.unpack('>I', word)[0] # 转无符号整型
             
-            content = ConfigurationPacket.get_type_1_packet_content(word)
+            
+            if($line =~ /^1{32,}/ or $line =~ /^00111/){
+                $comment="DUMMY";
+            }elsif($line =~ /^10101010100110010101010101100110/){
+                $comment = "SYNC WORD";
+            }elsif($line =~ /^00000000000000000000000010111011/ or $line =~ /^00010001001000100000000001000100/){
+                $comment = "BUS WIDTH AUTO DETECT";
+            }elsif($line =~ /^00100/){
+                $comment="NOP";
+        
+        
+            
+            
+            content = self.cfg_obj.get_type_1_packet_content(word_content)
+            # 读取到FDRI后结束
             if content.get("header_type", -1) == 1 \
-                and content.get("opcode", ConfigurationPacket.OpCode.UNKNOWN) == ConfigurationPacket.OpCode.WRITE \
-                and content.get("address", ConfigurationPacket.Address.UNKNOWN) == ConfigurationPacket.Address.FDRI:
-        
-        
-        
-                    
-        # self.type = word >> 29 
-        # self.opcode = self.OpCode((word >> 27) & 0x3)
-        # if self.type == 1:
-        #     # address拿到的参与crc的内容
-        #     self.address = self.Address((word >> 13) & 0x1F)
-        #     word_count = word & 0x7FF
-        # elif self.type == 2:
-        #     if packet is None:
-        #         raise Exception(f'Type 2 packet require previous packet')
-        #     if packet.type != 1:
-        #         raise Exception(f'Type 2 packet require previous Type 1 packet')
-        #     self.address = packet.address
-        #     word_count = word & 0x07FFFFFF
-            
-        # header
-        pass
+                and content.get("opcode", self.cfg_obj.OpCode.UNKNOWN) == self.cfg_obj.OpCode.WRITE \
+                and content.get("address", self.cfg_obj.Address.UNKNOWN) == self.cfg_obj.Address.FDRI:
+                    break
         
     def read_bit_or_bin_file_and_parse(self, file_type: str) -> None:
         # ============================================ bit header ============================================
@@ -299,3 +298,4 @@ with open(INPUT_FILE_PATH, 'rb') as file:
     byte_content = file.read()
 reader = BitstreamReader(byte_content)
 reader.read_bit_or_bin_file_and_parse("bit")
+print(123)

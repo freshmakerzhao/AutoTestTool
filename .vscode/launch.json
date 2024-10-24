@@ -5,10 +5,10 @@
     "version": "0.2.0",
     "configurations": [
         {
-            "name": "parse_bitstream_临时",
+            "name": "parse_bitstream_新版",
             "type": "debugpy",
             "request": "launch",
-            "program": "E:/workspace/parse_bitstream/parse_bitstream/parse_bitstream_临时.py",
+            "program": "E:/workspace/parse_bitstream/parse_bitstream/parse_bitstream_新版.py",
             "console": "integratedTerminal"
         }
     ]
