@@ -329,6 +329,15 @@ class BitstreamReader:
         log_debug_with_description(len(self.bit_cfg_content_after)*4, 'X', '数据帧之后的寄存器字节数')
         log_debug_with_description(len(self.bit_cfg_content_after)*4 + len(self.bit_data_content)*4 + len(self.bit_cfg_content_pre)*4 + len(self.bit_head_byte_content), 'X', '总字节数')
     
+    def get_data_frame(self, region, row, col, frame):
+        pass
+    
+    def get_data_word(self, region, row, col, frame, word):
+        pass
+    
+    def get_data_bit(self, region, row, col, frame, word, bit):
+        pass
+    
     def read_bytes(self, read_length: int) -> bytes:
         """
         从当前位置读取指定长度的字节。
