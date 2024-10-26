@@ -3,11 +3,19 @@ import struct
 import logging
 import argparse
 import enum
-
-# logging.basicConfig(level=logging.WARNING)  # 正常模式
-logging.basicConfig(level=logging.DEBUG)  # 调试模式
+# 配置日志级别和格式
+# logging.basicConfig(level=logging.DEBUG, format='%(asctime)s - %(levelname)s - %(message)s')
+# logging.basicConfig(level=logging.WARNING,  format='%(asctime)s - %(levelname)s - %(message)s')
+logging.basicConfig(level=logging.INFO,  format='%(asctime)s - %(levelname)s - %(message)s')
 
 file_path = r"E:\CodeSpace_vscode\P_筛片脚本\xilinx_pcie_2_1_rport_7x_xilinx.bit"
+
+def log_debug_with_description(value: int, format_spec: str = '', description: str = ''):
+    if format_spec:
+        formatted_value = f"{value:{format_spec}}"
+    else:
+        formatted_value = f"{value}"
+    logging.debug(f"{description}: {formatted_value}")
 
 def bytes_to_binary(byte_data):
     if len(byte_data) < 4:
@@ -227,7 +235,7 @@ class BitstreamReader:
     def parse_cfg_content_pre(self) -> None: 
         while True:
             word = self.read_bytes(4)
-            print(bytes_to_binary(word))
+            log_debug_with_description(bytes_to_binary(word))
             if not word:
                 break  # 到达文件末尾，停止读取
             if len(word) < 4:
@@ -309,18 +317,17 @@ class BitstreamReader:
         # 到 码流末尾 结束
         # ============================================ cfg content after ============================================
         
-        # len(self.bit_cfg_content_pre) + len(self.bit_data_content) + len(self.bit_cfg_content_after) == 总word数量
-        
         # len(self.bit_head_byte_content)) 头部信息字节数
         # len(self.bit_cfg_content_pre)) 数据帧之前的寄存器所占word数，*4为字节数
         # len(self.bit_data_content)) 数据帧所占word数，*4为字节数
         # len(self.bit_cfg_content_after)) 数据帧之后的寄存器所占word数，*4为字节数
+        
         # 四个字节数相加为整段位流长度
-        print(format(len(self.bit_head_byte_content), 'X'))
-        print(format(len(self.bit_cfg_content_pre)*4, 'X'))
-        print(format(len(self.bit_data_content)*4, 'X'))
-        print(format(len(self.bit_cfg_content_after)*4, 'X'))
-        print(len(self.bit_cfg_content_after)*4 + len(self.bit_data_content)*4 + len(self.bit_cfg_content_pre)*4 + len(self.bit_head_byte_content))
+        log_debug_with_description(len(self.bit_head_byte_content), 'X', '头部信息字节数')
+        log_debug_with_description(len(self.bit_cfg_content_pre)*4, 'X', '数据帧之前的寄存器字节数')
+        log_debug_with_description(len(self.bit_data_content)*4, 'X', '数据帧字节数')
+        log_debug_with_description(len(self.bit_cfg_content_after)*4, 'X', '数据帧之后的寄存器字节数')
+        log_debug_with_description(len(self.bit_cfg_content_after)*4 + len(self.bit_data_content)*4 + len(self.bit_cfg_content_pre)*4 + len(self.bit_head_byte_content), 'X', '总字节数')
     
     def read_bytes(self, read_length: int) -> bytes:
         """
