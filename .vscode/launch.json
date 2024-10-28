@@ -8,6 +8,12 @@
             "name": "parse_bitstream_新版",
             "type": "debugpy",
             "request": "launch",
+            "args": [
+                "--rbt_file",
+                "E:\\workspace\\parse_bitstream\\parse_bitstream\\data\\system_wrapper_1_原版.bin",
+                "--GTP",
+                "--PCIE",
+            ],
             "program": "E:/workspace/parse_bitstream/parse_bitstream/parse_bitstream_新版.py",
             "console": "integratedTerminal"
         }
