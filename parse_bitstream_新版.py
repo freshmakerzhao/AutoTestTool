@@ -8,8 +8,6 @@ logging.basicConfig(level=logging.DEBUG, format='%(asctime)s - %(levelname)s - %
 # logging.basicConfig(level=logging.WARNING,  format='%(asctime)s - %(levelname)s - %(message)s')
 # logging.basicConfig(level=logging.INFO,  format='%(asctime)s - %(levelname)s - %(message)s')
 
-file_path = r"E:\CodeSpace_vscode\P_筛片脚本\xilinx_pcie_2_1_rport_7x_xilinx.bit"
-
 FILE_ENDWITH = "_replace"
 
 DUMMY_STR = "11111111111111111111111111111111"
@@ -29,6 +27,102 @@ NOOP_BIN = 0b00100000000000000000000000000000
 
 FDRI_STR = "00110000000000000100000000000000"
 FDRI_BIN = 0b00110000000000000100000000000000
+
+BITS_CMD = 'Bits:'
+
+
+CRC = '00110000000000000000000000000001'
+
+CMD_RCRC_01_RBT = '00110000000000001000000000000001'
+CMD_RCRC_02_RBT = '00000000000000000000000000000111'
+
+
+CMD_RCRC_01_BIT = b'\x30\x00\x80\x01'
+CMD_RCRC_02_BIT = b'\x00\x00\x00\x07'
+
+NOOP_RBT = '00100000000000000000000000000000'
+NOOP_BIT = b'\x20\x00\x00\x00'
+
+CMD_GROUP_RBT = {
+    "00110000000000000000000000000001": "CRC"
+}
+CMD_GROUP_BIT = {
+    b'\x30\x00\x00\x01': "CRC"
+}
+# GTP 修改位置和数据
+
+GTP_CONFIG = [
+    {"frame": 3829, "word":  0, "bit": 2, "data": "1"},
+    {"frame": 3829, "word": 22, "bit": 2, "data": "1"},
+    {"frame": 3829, "word": 57, "bit": 2, "data": "1"},
+    {"frame": 3829, "word": 79, "bit": 2, "data": "1"}
+]
+
+# PCIE 校验位
+PCIE_CHECK = {
+    0:[
+        {"frame": 3454, "word":  20, "bit": 26, "data": "1"},
+        {"frame": 3455, "word":  20, "bit": 24, "data": "1"},
+        {"frame": 3455, "word":  20, "bit": 21, "data": "1"},
+        {"frame": 3475, "word":  21, "bit":  8, "data": "1"},
+        {"frame": 3479, "word":  21, "bit":  8, "data": "1"},
+        
+    ],
+    1:[ 
+        {"frame": 3454, "word":  22, "bit": 12, "data": "1"},   
+        {"frame": 3462, "word":  22, "bit": 15, "data": "1"},    
+        {"frame": 3475, "word":  22, "bit":  8, "data": "1"},   
+        {"frame": 3479, "word":  22, "bit":  8, "data": "1"}
+    ],
+    2:[
+        {"frame": 3455, "word":  22, "bit":  7, "data": "1"},
+        {"frame": 3462, "word":  22, "bit": 14, "data": "1"},    
+        {"frame": 3475, "word":  22, "bit":  0, "data": "1"},
+        {"frame": 3479, "word":  22, "bit":  0, "data": "1"}
+    ]
+}
+
+# PCIE 修改位置
+PCIE_CONFIG = {
+    0:[
+        {"frame": 3454, "word":  20, "bit": 26, "data": "1"},
+        {"frame": 3454, "word":  20, "bit": 25, "data": "1"},
+        {"frame": 3455, "word":  20, "bit": 24, "data": "1"},
+        {"frame": 3455, "word":  20, "bit": 21, "data": "1"},
+        {"frame": 3475, "word":  21, "bit":  8, "data": "1"},
+        {"frame": 3479, "word":  21, "bit":  8, "data": "1"},
+        {"frame": 3829, "word":   0, "bit":  2, "data": "1"},
+        {"frame": 3829, "word":  22, "bit":  2, "data": "1"},
+        {"frame": 3829, "word":  57, "bit":  2, "data": "1"},
+        {"frame": 3829, "word":  79, "bit":  2, "data": "1"}
+    ],
+    1:[
+        {"frame": 3454, "word":  20, "bit": 25, "data": "1"},   
+        {"frame": 3454, "word":  20, "bit": 22, "data": "1"},   
+        {"frame": 3454, "word":  22, "bit": 12, "data": "1"},   
+        {"frame": 3462, "word":  22, "bit": 15, "data": "1"},   
+        {"frame": 3468, "word":  22, "bit": 15, "data": "1"},   
+        {"frame": 3475, "word":  22, "bit":  8, "data": "1"},   
+        {"frame": 3479, "word":  22, "bit":  8, "data": "1"},
+        {"frame": 3829, "word":   0, "bit":  2, "data": "1"},
+        {"frame": 3829, "word":  22, "bit":  2, "data": "1"},
+        {"frame": 3829, "word":  57, "bit":  2, "data": "1"},
+        {"frame": 3829, "word":  79, "bit":  2, "data": "1"}  
+    ],
+    2:[
+        {"frame": 3454, "word":  20, "bit": 25, "data": "1"},
+        {"frame": 3454, "word":  20, "bit": 22, "data": "1"},
+        {"frame": 3455, "word":  22, "bit":  7, "data": "1"},
+        {"frame": 3462, "word":  22, "bit": 14, "data": "1"},
+        {"frame": 3468, "word":  22, "bit": 15, "data": "1"},
+        {"frame": 3475, "word":  22, "bit":  0, "data": "1"},
+        {"frame": 3479, "word":  22, "bit":  0, "data": "1"}, 
+        {"frame": 3829, "word":   0, "bit":  2, "data": "1"},
+        {"frame": 3829, "word":  22, "bit":  2, "data": "1"},
+        {"frame": 3829, "word":  57, "bit":  2, "data": "1"},
+        {"frame": 3829, "word":  79, "bit":  2, "data": "1"}  
+    ]
+}
 
 def log_debug_with_description(value: int, format_spec: str = '', description: str = ''):
     if format_spec:
@@ -75,9 +169,35 @@ def parse_bin_str_to_dec(bin_str):
     # 将二进制字符串转为十进制
     return int(bin_str, 2)
 
+def reverse_bits(data, num_bits):
+    reflected = 0
+    for i in range(num_bits):
+        if data & (1 << i):
+            reflected |= 1 << (num_bits - 1 - i)
+    reflected = bin(reflected)[2:]
+    while len(reflected) != num_bits:
+        reflected = '0' + reflected	
+    return reflected
+
+class DataItem:
+    def __init__(self, cmd_name) -> None:
+        self.cmd_name = cmd_name
+        self.data = []
+        self.data_len = 0
+    def append_data(self, data):
+        self.data.append(data)
+        self.data_len += 1
+    def get_data_from_index(self, index):
+        return self.data[index]
+    def get_all_data(self):
+        return self.data
+    def get_data_len(self):
+        return self.data_len
+    def set_data_to_index(self, index, data):
+        self.data[index] = data
+
 # 配置包格式
 class ConfigurationPacket:
-    
     @enum.unique
     class Address(enum.Enum):
         UNKNOWN = -1
@@ -151,10 +271,10 @@ class ConfigurationPacket:
     def __init__(self) -> None:
         pass
     
-class BitstreamReader:
-    def __init__(self, input_file_path: str):
+class BitstreamParser:
+    def __init__(self, input_file_path: str, enable_crc: bool):
         """
-        初始化 BitstreamReader
+        初始化 BitstreamParser
 
         参数:
             input_file_path (str): 文件路径
@@ -181,7 +301,6 @@ class BitstreamReader:
         # 存储后续配置信息
         self.bit_cfg_content_after = []
         # ======================= bit =====================     
-        
         
         # ======================= rbt =====================      
         # rbt文件全部内容
@@ -222,6 +341,64 @@ class BitstreamReader:
             self.parse_bit_or_bin(self.file_type)
         else:
             raise ValueError("文件格式错误")
+    
+    def parse_rbt(self) -> None:
+        # ============================================ rbt header ============================================
+        self.parse_rbt_head_content()
+        # ============================================ rbt header ============================================
+
+        # ============================================ cfg content pre ============================================
+        # 从 11111111111111111111111111111111 开始
+        self.parse_rbt_cfg_content_pre()
+        # 到 30004000 XXXXXXXX 结束，其中 XXXXXXXX 的低27位标识接下来 data frame 的长度
+        # self.word_count 为 接下来有多少个 word
+        # 1个word为4字节，1字节为8位
+        # ============================================ cfg content pre ============================================
+          
+        # ============================================ data frame ============================================
+        # 从 FDRI data word 1 开始
+        self.parse_rbt_data_content()
+        # 到 FDRI data word XXXX 结束，其中 XXXX 指的是 parse_rbt_cfg_content_pre 解析出来的 self.word_count
+        # ============================================ data frame ============================================
+        
+        # ============================================ cfg content after ============================================
+        # 对于没有关闭CRC的位流，此处从 30000001 开始
+        self.parse_rbt_cfg_content_aft()
+        # 到 码流末尾 结束
+        # 这里构造完成后，以如下形式存在：
+        # [
+        #     "CRC":{
+        #         "data":[
+        #             "00110000000000000000000000000001",
+        #             "..",
+        #             "..",
+        #         ]
+        #     },
+        #     "UNKNOWN":{
+        #         "data":[
+        #             "..",
+        #         ]
+        #     },
+        #     "..",
+        # ]
+        # ============================================ cfg content after ============================================
+        
+        
+        # ============================================ debug ============================================
+        log_debug_with_description(len(self.rbt_annotation_content), description="头部注释信息行数")
+        log_debug_with_description(len(self.rbt_cfg_content_pre), description="数据帧之前的寄存器行数")
+        log_debug_with_description(len(self.rbt_data_content), description="数据行数")
+        cur_group_len = 0
+        for item in self.rbt_cfg_content_after:
+            cur_group_len += item.get_data_len()
+        log_debug_with_description(cur_group_len, description="数据帧之后的寄存器行数")
+        log_debug_with_description(len(self.rbt_annotation_content) + len(self.rbt_cfg_content_pre) + len(self.rbt_data_content) + cur_group_len, description="总行数")
+        # ============================================ debug ============================================
+          
+    # 解析cfg，读取数据帧
+    def parse_rbt_data_content(self) -> None: 
+        self.rbt_data_content.extend(self.rbt_content[self.rbt_content_cur_loc:self.rbt_content_cur_loc+self.word_count])
+        self.rbt_content_cur_loc = self.rbt_content_cur_loc + self.word_count
         
     def parse_rbt_head_content(self):
         # Xilinx ASCII Bitstream
@@ -238,7 +415,60 @@ class BitstreamReader:
                 return
             self.rbt_annotation_content.append(line) # 仅存储注释信息
         raise ValueError("文件格式错误")
+               
+    # 解析rbt，读取cfg内容
+    def parse_rbt_cfg_content_pre(self) -> None: 
+        for index in range(self.rbt_content_cur_loc, self.rbt_content_len):
+            # 存入cfg中
+            self.rbt_cfg_content_pre.append(self.rbt_content[index])
+                        
+            if self.rbt_content[index] == DUMMY_STR:
+                # DUMMY
+                continue
+            elif self.rbt_content[index] == SYNC_WORD_STR:
+                # SYNC WORD
+                continue
+            elif self.rbt_content[index] == BUS_WIDTH_AUTO_DETECT_01_STR or  self.rbt_content[index] == BUS_WIDTH_AUTO_DETECT_02_STR:
+                # BUS WIDTH AUTO DETECT
+                continue
+            elif self.rbt_content[index] == NOOP_STR:
+                # NOP
+                continue
+            if self.rbt_content[index] == FDRI_STR:
+                word_content = self.rbt_content[index+1]
+                self.rbt_cfg_content_pre.append(word_content)
+                self.word_count = self.cfg_obj.get_type_2_packet_content(word_content,"str").get("word_count",0)
+                self.rbt_content_cur_loc = index+2
+                break
+        else:
+            raise ValueError("文件格式错误")
         
+    # 解析位流，数据帧后面的cfg
+    def parse_rbt_cfg_content_aft(self) -> None:
+        while self.rbt_content_cur_loc < self.rbt_content_len:
+            line = self.rbt_content[self.rbt_content_cur_loc]
+            if line in CMD_GROUP_RBT:
+                # 如果指令是CRC，需要判断其是否真的是CRC模块
+                if CMD_GROUP_RBT[line] == "CRC":
+                    if (self.rbt_content_cur_loc + 2) < self.rbt_content_len \
+                        and (self.rbt_content_cur_loc + 3) < self.rbt_content_len \
+                        and (NOOP_RBT == self.rbt_content[self.rbt_content_cur_loc + 2]) \
+                        and (NOOP_RBT == self.rbt_content[self.rbt_content_cur_loc + 3]):
+                            # 判断连续4行
+                            crc_item = DataItem("CRC")
+                            crc_item.append_data(self.rbt_content[self.rbt_content_cur_loc])
+                            crc_item.append_data(self.rbt_content[self.rbt_content_cur_loc+1])
+                            crc_item.append_data(self.rbt_content[self.rbt_content_cur_loc+2])
+                            crc_item.append_data(self.rbt_content[self.rbt_content_cur_loc+3])
+                            self.rbt_cfg_content_after.append(crc_item)
+                            self.rbt_content_cur_loc += 4
+                            continue
+            # 不识别的
+            item = DataItem("UNKNOWN")
+            item.append_data(self.rbt_content[self.rbt_content_cur_loc])
+            self.rbt_cfg_content_after.append(item)
+            self.rbt_content_cur_loc += 1
+             
     # 解析位流，读取头部信息    
     def parse_bit_head_content(self) -> None:
         # 标识位
@@ -318,7 +548,7 @@ class BitstreamReader:
         show_number_content(self.bit_head_byte_content[start_index:end_index])
         start_index = end_index
         # ========== 标识符E ============
-            
+    
     # 解析位流，读取cfg内容
     def parse_bit_cfg_content_pre(self) -> None: 
         while True:
@@ -359,41 +589,10 @@ class BitstreamReader:
                     self.word_count = self.cfg_obj.get_type_2_packet_content(word_content, "int").get("word_count",0)
                     self.bit_data_content_byte_count = self.word_count * 4
                     break
-                       
-    # 解析rbt，读取cfg内容
-    def parse_rbt_cfg_content_pre(self) -> None: 
-        for index in range(self.rbt_content_cur_loc, self.rbt_content_len):
-            # 存入cfg中
-            self.rbt_cfg_content_pre.append(self.rbt_content[index])
-                        
-            if self.rbt_content[index] == DUMMY_STR:
-                # DUMMY
-                continue
-            elif self.rbt_content[index] == SYNC_WORD_STR:
-                # SYNC WORD
-                continue
-            elif self.rbt_content[index] == BUS_WIDTH_AUTO_DETECT_01_STR or  self.rbt_content[index] == BUS_WIDTH_AUTO_DETECT_02_STR:
-                # BUS WIDTH AUTO DETECT
-                continue
-            elif self.rbt_content[index] == NOOP_STR:
-                # NOP
-                continue
-            if self.rbt_content[index] == FDRI_STR:
-                word_content = self.rbt_content[index+1]
-                self.rbt_cfg_content_pre.append(word_content)
-                self.word_count = self.cfg_obj.get_type_2_packet_content(word_content,"str").get("word_count",0)
-                self.rbt_content_cur_loc = index+2
-                break
-        else:
-            raise ValueError("文件格式错误")
-        
-    # 解析位流，数据帧后面的cfg
-    def parse_rbt_cfg_content_aft(self) -> None:
-        self.rbt_cfg_content_after.extend(self.rbt_content[self.rbt_content_cur_loc:])
-        self.rbt_content_cur_loc = self.rbt_content_len - 1
         
     # 解析位流，读取cfg内容
     def parse_bit_cfg_content_aft(self) -> None: 
+        bit_cfg_content_after_temp = []
         while True:
             word = self.read_bit_bytes(4)
             if not word:
@@ -401,51 +600,41 @@ class BitstreamReader:
             if len(word) < 4:
                 # 如果最后的 chunk 不足 4 个字节，输出提示
                 logging.warning(f"Warning: Last chunk is less than 4 bytes: {word.hex()}")
-            
             # 存入cfg中
-            self.bit_cfg_content_after.append(word)
+            bit_cfg_content_after_temp.append(word)
+            
+        cfg_after_len = len(bit_cfg_content_after_temp)
+        cur_index = 0
+        while cur_index < cfg_after_len:
+            line = bit_cfg_content_after_temp[cur_index]
+            if line in CMD_GROUP_BIT:
+                # 如果指令是CRC，需要判断其是否真的是CRC模块
+                if CMD_GROUP_BIT[line] == "CRC":
+                    if (cur_index + 2) < cfg_after_len \
+                        and (cur_index + 3) < cfg_after_len \
+                        and (NOOP_BIT == bit_cfg_content_after_temp[cur_index + 2]) \
+                        and (NOOP_BIT == bit_cfg_content_after_temp[cur_index + 3]):
+                            # 判断连续4行
+                            crc_item = DataItem("CRC")
+                            crc_item.append_data(bit_cfg_content_after_temp[cur_index])
+                            crc_item.append_data(bit_cfg_content_after_temp[cur_index+1])
+                            crc_item.append_data(bit_cfg_content_after_temp[cur_index+2])
+                            crc_item.append_data(bit_cfg_content_after_temp[cur_index+3])
+                            self.bit_cfg_content_after.append(crc_item)
+                            cur_index += 4
+                            continue
+            # 不识别的
+            item = DataItem("UNKNOWN")
+            item.append_data(bit_cfg_content_after_temp[cur_index])
+            self.bit_cfg_content_after.append(item)
+            cur_index += 1
         
+    # 解析位流，读取数据帧    
     def parse_bit_data_content(self) -> None: 
         data_content = self.read_bit_bytes(self.bit_data_content_byte_count)
         for i in range(0,self.bit_data_content_byte_count,4):
             self.bit_data_content.append(data_content[i:i+4])
-    
-    # 解析cfg，读取数据帧
-    def parse_rbt_data_content(self) -> None: 
-        self.rbt_data_content.extend(self.rbt_content[self.rbt_content_cur_loc:self.rbt_content_cur_loc+self.word_count+1])
-        self.rbt_content_cur_loc = self.rbt_content_cur_loc + self.word_count + 1
-            
-    def parse_rbt(self) -> None:
-        # ============================================ rbt header ============================================
-        self.parse_rbt_head_content()
-        # ============================================ rbt header ============================================
 
-        # ============================================ cfg content pre ============================================
-        # 从 11111111111111111111111111111111 开始
-        self.parse_rbt_cfg_content_pre()
-        # 到 30004000 XXXXXXXX 结束，其中 XXXXXXXX 的低27位标识接下来 data frame 的长度
-        # self.word_count 为 接下来有多少个 word
-        # 1个word为4字节，1字节为8位
-        # ============================================ cfg content pre ============================================
-          
-        # ============================================ data frame ============================================
-        # 从 FDRI data word 1 开始
-        self.parse_rbt_data_content()
-        # 到 FDRI data word XXXX 结束，其中 XXXX 指的是 parse_rbt_cfg_content_pre 解析出来的 self.word_count
-        # ============================================ data frame ============================================
-        
-        # ============================================ cfg content after ============================================
-        # 对于没有关闭CRC的位流，此处从 30000001 开始
-        self.parse_rbt_cfg_content_aft()
-        # 到 码流末尾 结束
-        # ============================================ cfg content after ============================================
-        
-        log_debug_with_description(len(self.rbt_annotation_content), description="头部注释信息行数")
-        log_debug_with_description(len(self.rbt_cfg_content_pre), description="数据帧之前的寄存器行数")
-        log_debug_with_description(len(self.rbt_data_content), description="数据行数")
-        log_debug_with_description(len(self.rbt_cfg_content_after), description="数据帧之后的寄存器行数")
-        log_debug_with_description(len(self.rbt_annotation_content) + len(self.rbt_cfg_content_pre) + len(self.rbt_data_content) + len(self.rbt_cfg_content_after), description="总行数")
-        
     def parse_bit_or_bin(self, file_type: str) -> None:
         # ============================================ bit header ============================================
         if file_type == ".bit":
@@ -473,6 +662,7 @@ class BitstreamReader:
         # 到 码流末尾 结束
         # ============================================ cfg content after ============================================
         
+        # ============================================ debug ============================================
         # len(self.bit_head_byte_content)) 头部信息字节数
         # len(self.bit_cfg_content_pre)) 数据帧之前的寄存器所占word数，*4为字节数
         # len(self.bit_data_content)) 数据帧所占word数，*4为字节数
@@ -482,19 +672,38 @@ class BitstreamReader:
         log_debug_with_description(len(self.bit_head_byte_content), 'X', '头部信息字节数')
         log_debug_with_description(len(self.bit_cfg_content_pre)*4, 'X', '数据帧之前的寄存器字节数')
         log_debug_with_description(len(self.bit_data_content)*4, 'X', '数据帧字节数')
-        log_debug_with_description(len(self.bit_cfg_content_after)*4, 'X', '数据帧之后的寄存器字节数')
-        log_debug_with_description(len(self.bit_cfg_content_after)*4 + len(self.bit_data_content)*4 + len(self.bit_cfg_content_pre)*4 + len(self.bit_head_byte_content), 'X', '总字节数')
         
-        with open(r"E:\workspace\parse_bitstream\parse_bitstream\data\system_wrapper_1_原版_2.bin", 'wb') as file:
-            file.write(self.bit_head_byte_content)
-            for byte_elem in self.bit_cfg_content_pre:
-                file.write(byte_elem)
-            for byte_elem in self.bit_data_content:
-                file.write(byte_elem)
-            for byte_elem in self.bit_cfg_content_after:
-                file.write(byte_elem)
+        cur_group_len = 0
+        for item in self.bit_cfg_content_after:
+            cur_group_len += item.get_data_len()
+        log_debug_with_description(cur_group_len*4, 'X', '数据帧之后的寄存器字节数')
+        log_debug_with_description(cur_group_len*4 + len(self.bit_data_content)*4 + len(self.bit_cfg_content_pre)*4 + len(self.bit_head_byte_content), 'X', '总字节数')
+        # ============================================ debug ============================================
     
-    def get_data_frame(self, region, row, col, frame):
+    def set_data_with_frame_word_bit(self, data, frame, word, bit):
+        line_index = frame*101 + word
+        bit_index = 31 - bit # 这里是因为bit从右往左算，而index从左往右算
+        if self.file_type == ".bit" or self.file_type == ".bin":
+            word = bytes_to_binary(self.bit_data_content[line_index])
+            
+            pass
+        elif self.file_type == ".rbt":
+            # rbt_data_content中的内容是左高右低的
+            self.rbt_data_content[line_index] = self.rbt_data_content[line_index][:bit_index] + data + ( self.rbt_data_content[line_index][bit_index+1:] if bit_index<31 else "")
+        else:
+            raise ValueError("文件格式错误")
+          
+    def get_data_with_frame_word_bit(self, frame, word, bit):
+        if self.file_type == ".bit" or self.file_type == ".bin":
+            pass
+        elif self.file_type == ".rbt":
+            line_index = frame*101 + word
+            bit_index = 31 - bit # 这里是因为bit从右往左算，而index从左往右算
+            return self.rbt_data_content[line_index][bit_index]
+        else:
+            raise ValueError("文件格式错误")      
+
+    def get_data_frame(self, frame):
         pass
     
     def get_data_word(self, region, row, col, frame, word):
@@ -528,16 +737,122 @@ class BitstreamReader:
         self.bit_byte_content_cur_loc += read_length
         return data
     
+    def save_file(self, file_suffix = ""):
+        if self.file_type == ".rbt":
+            new_file_path = self.file_path_except_type + file_suffix + ".rbt"
+            byte_nums = len(self.rbt_cfg_content_pre) + len(self.rbt_data_content)
+            for item in self.rbt_cfg_content_after:
+                byte_nums += item.get_data_len()
+            byte_nums = byte_nums * 32
+            with open(new_file_path, 'w') as f:
+                bits_flag = True
+                # 计算长度
+                file_content = self.rbt_annotation_content + self.rbt_cfg_content_pre + self.rbt_data_content
+                for line in file_content:
+                    if bits_flag and BITS_CMD in line:
+                        bits_flag = False
+                        line = f"Bits:        	{byte_nums}"
+                    f.write(line + '\n')
+                for item in self.rbt_cfg_content_after:
+                    values = item.get_all_data()
+                    for line in values:
+                        f.write(line + '\n')
+        elif self.file_type == ".bit":
+            new_file_path = self.file_path_except_type + file_suffix + ".bit"
+            with open(self.file_path_except_type + file_suffix + ".bit", 'wb') as file:
+                # 重新计算长度
+                bit_len = len(self.bit_cfg_content_pre) + len(self.bit_data_content)
+                for item in self.bit_cfg_content_after:
+                    bit_len += item.get_data_len()
+                bit_len = bit_len * 4
+                length_bytes_struct = struct.pack('>I', bit_len)
+                self.bit_head_byte_content = self.bit_head_byte_content[:-4] + length_bytes_struct
+                file.write(self.bit_head_byte_content)
+                for byte_elem in self.bit_cfg_content_pre:
+                    file.write(byte_elem)
+                for byte_elem in self.bit_data_content:
+                    file.write(byte_elem)
+                for item in self.bit_cfg_content_after:
+                    values = item.get_all_data()
+                    for word in values:
+                        file.write(word)
+        else:
+            raise ValueError("文件格式错误")
+        print(f"writing file : {new_file_path}")
+
+    # 关闭CRC    
+    def disable_crc(self):
+        # 拿到数据帧之后的寄存器
+        if self.file_type == ".rbt":
+            for i in range(len(self.rbt_cfg_content_after)):
+                if self.rbt_cfg_content_after[i].cmd_name == "CRC":
+                    self.rbt_cfg_content_after[i].set_data_to_index(0, CMD_RCRC_01_RBT)
+                    self.rbt_cfg_content_after[i].set_data_to_index(1, CMD_RCRC_02_RBT)
+        elif self.file_type == ".bit":
+            for i in range(len(self.bit_cfg_content_after)):
+                if self.bit_cfg_content_after[i].cmd_name == "CRC":
+                    self.bit_cfg_content_after[i].set_data_to_index(0, CMD_RCRC_01_BIT)
+                    self.bit_cfg_content_after[i].set_data_to_index(1, CMD_RCRC_02_BIT)
+        
+    # 计算crc
+    def icap_crc(self, addr, data, crc):
+        # addr 寄存器地址，整型
+        # data 32位数据，整型
+        # crc  32位字符串
+        crc_data_new = [0] * 32  # 初始化长度为 32 的列表
+        crc_data_in = (addr << 32) | data
+        # 将传入的数据完全反转，并转成整形列表
+        crc_data_in = [int(bit) for bit in crc_data_in]
+        # 初始化长度为 32 的列表，用来存储crc的当前值
+        # 将整数 crc 转换为 32 位的二进制字符串
+        crc_int = int(crc, 2)  # 将二进制字符串转换为整数
+        crc_bin_string = f'{crc_int:032b}'  # 将整数转换为 32 位二进制字符串
+        crc_data_now = [int(bit) for bit in crc_bin_string]  
+        crc_data_new[0] =   (crc_data_in[0]^crc_data_in[10]^crc_data_in[11]^crc_data_in[13]^crc_data_in[15]^crc_data_in[18]^crc_data_in[19]^crc_data_in[1]^crc_data_in[20]^crc_data_in[24]^crc_data_in[27]^crc_data_in[28]^crc_data_in[29]^crc_data_in[30]^crc_data_in[31]^crc_data_in[32]^crc_data_in[36]^crc_data_in[5]^crc_data_in[6]^crc_data_in[8]^crc_data_in[9]^crc_data_now[0]^crc_data_now[11]^crc_data_now[12]^crc_data_now[13]^crc_data_now[16]^crc_data_now[18]^crc_data_now[1]^crc_data_now[20]^crc_data_now[21]^crc_data_now[22]^crc_data_now[23]^crc_data_now[25]^crc_data_now[26]^crc_data_now[2]^crc_data_now[30]^crc_data_now[31]^crc_data_now[3]^crc_data_now[4]^crc_data_now[7]);
+        crc_data_new[1] =   (crc_data_in[0]^crc_data_in[10]^crc_data_in[12]^crc_data_in[14]^crc_data_in[17]^crc_data_in[18]^crc_data_in[19]^crc_data_in[23]^crc_data_in[26]^crc_data_in[27]^crc_data_in[28]^crc_data_in[29]^crc_data_in[30]^crc_data_in[31]^crc_data_in[35]^crc_data_in[4]^crc_data_in[5]^crc_data_in[7]^crc_data_in[8]^crc_data_in[9]^crc_data_now[0]^crc_data_now[12]^crc_data_now[13]^crc_data_now[14]^crc_data_now[17]^crc_data_now[19]^crc_data_now[1]^crc_data_now[21]^crc_data_now[22]^crc_data_now[23]^crc_data_now[24]^crc_data_now[26]^crc_data_now[27]^crc_data_now[2]^crc_data_now[31]^crc_data_now[3]^crc_data_now[4]^crc_data_now[5]^crc_data_now[8]);
+        crc_data_new[2] =   (crc_data_in[11]^crc_data_in[13]^crc_data_in[16]^crc_data_in[17]^crc_data_in[18]^crc_data_in[22]^crc_data_in[25]^crc_data_in[26]^crc_data_in[27]^crc_data_in[28]^crc_data_in[29]^crc_data_in[30]^crc_data_in[34]^crc_data_in[3]^crc_data_in[4]^crc_data_in[6]^crc_data_in[7]^crc_data_in[8]^crc_data_in[9]^crc_data_now[13]^crc_data_now[14]^crc_data_now[15]^crc_data_now[18]^crc_data_now[1]^crc_data_now[20]^crc_data_now[22]^crc_data_now[23]^crc_data_now[24]^crc_data_now[25]^crc_data_now[27]^crc_data_now[28]^crc_data_now[2]^crc_data_now[3]^crc_data_now[4]^crc_data_now[5]^crc_data_now[6]^crc_data_now[9]);
+        crc_data_new[3] =   (crc_data_in[10]^crc_data_in[12]^crc_data_in[15]^crc_data_in[16]^crc_data_in[17]^crc_data_in[21]^crc_data_in[24]^crc_data_in[25]^crc_data_in[26]^crc_data_in[27]^crc_data_in[28]^crc_data_in[29]^crc_data_in[2]^crc_data_in[33]^crc_data_in[3]^crc_data_in[5]^crc_data_in[6]^crc_data_in[7]^crc_data_in[8]^crc_data_now[10]^crc_data_now[14]^crc_data_now[15]^crc_data_now[16]^crc_data_now[19]^crc_data_now[21]^crc_data_now[23]^crc_data_now[24]^crc_data_now[25]^crc_data_now[26]^crc_data_now[28]^crc_data_now[29]^crc_data_now[2]^crc_data_now[3]^crc_data_now[4]^crc_data_now[5]^crc_data_now[6]^crc_data_now[7]);
+        crc_data_new[4] =   (crc_data_in[11]^crc_data_in[14]^crc_data_in[15]^crc_data_in[16]^crc_data_in[1]^crc_data_in[20]^crc_data_in[23]^crc_data_in[24]^crc_data_in[25]^crc_data_in[26]^crc_data_in[27]^crc_data_in[28]^crc_data_in[2]^crc_data_in[32]^crc_data_in[4]^crc_data_in[5]^crc_data_in[6]^crc_data_in[7]^crc_data_in[9]^crc_data_now[11]^crc_data_now[15]^crc_data_now[16]^crc_data_now[17]^crc_data_now[20]^crc_data_now[22]^crc_data_now[24]^crc_data_now[25]^crc_data_now[26]^crc_data_now[27]^crc_data_now[29]^crc_data_now[30]^crc_data_now[3]^crc_data_now[4]^crc_data_now[5]^crc_data_now[6]^crc_data_now[7]^crc_data_now[8]);
+        crc_data_new[5] =   (crc_data_in[0]^crc_data_in[10]^crc_data_in[13]^crc_data_in[14]^crc_data_in[15]^crc_data_in[19]^crc_data_in[1]^crc_data_in[22]^crc_data_in[23]^crc_data_in[24]^crc_data_in[25]^crc_data_in[26]^crc_data_in[27]^crc_data_in[31]^crc_data_in[3]^crc_data_in[4]^crc_data_in[5]^crc_data_in[6]^crc_data_in[8]^crc_data_now[0]^crc_data_now[12]^crc_data_now[16]^crc_data_now[17]^crc_data_now[18]^crc_data_now[21]^crc_data_now[23]^crc_data_now[25]^crc_data_now[26]^crc_data_now[27]^crc_data_now[28]^crc_data_now[30]^crc_data_now[31]^crc_data_now[4]^crc_data_now[5]^crc_data_now[6]^crc_data_now[7]^crc_data_now[8]^crc_data_now[9]);
+        crc_data_new[6] =   (crc_data_in[10]^crc_data_in[11]^crc_data_in[12]^crc_data_in[14]^crc_data_in[15]^crc_data_in[19]^crc_data_in[1]^crc_data_in[20]^crc_data_in[21]^crc_data_in[22]^crc_data_in[23]^crc_data_in[25]^crc_data_in[26]^crc_data_in[27]^crc_data_in[28]^crc_data_in[29]^crc_data_in[2]^crc_data_in[31]^crc_data_in[32]^crc_data_in[36]^crc_data_in[3]^crc_data_in[4]^crc_data_in[6]^crc_data_in[7]^crc_data_in[8]^crc_data_now[0]^crc_data_now[10]^crc_data_now[11]^crc_data_now[12]^crc_data_now[16]^crc_data_now[17]^crc_data_now[19]^crc_data_now[20]^crc_data_now[21]^crc_data_now[23]^crc_data_now[24]^crc_data_now[25]^crc_data_now[27]^crc_data_now[28]^crc_data_now[29]^crc_data_now[2]^crc_data_now[30]^crc_data_now[3]^crc_data_now[4]^crc_data_now[5]^crc_data_now[6]^crc_data_now[8]^crc_data_now[9]);
+        crc_data_new[7] =   (crc_data_in[0]^crc_data_in[10]^crc_data_in[11]^crc_data_in[13]^crc_data_in[14]^crc_data_in[18]^crc_data_in[19]^crc_data_in[1]^crc_data_in[20]^crc_data_in[21]^crc_data_in[22]^crc_data_in[24]^crc_data_in[25]^crc_data_in[26]^crc_data_in[27]^crc_data_in[28]^crc_data_in[2]^crc_data_in[30]^crc_data_in[31]^crc_data_in[35]^crc_data_in[3]^crc_data_in[5]^crc_data_in[6]^crc_data_in[7]^crc_data_in[9]^crc_data_now[0]^crc_data_now[10]^crc_data_now[11]^crc_data_now[12]^crc_data_now[13]^crc_data_now[17]^crc_data_now[18]^crc_data_now[1]^crc_data_now[20]^crc_data_now[21]^crc_data_now[22]^crc_data_now[24]^crc_data_now[25]^crc_data_now[26]^crc_data_now[28]^crc_data_now[29]^crc_data_now[30]^crc_data_now[31]^crc_data_now[3]^crc_data_now[4]^crc_data_now[5]^crc_data_now[6]^crc_data_now[7]^crc_data_now[9]);
+        crc_data_new[8] =   (crc_data_in[11]^crc_data_in[12]^crc_data_in[15]^crc_data_in[17]^crc_data_in[21]^crc_data_in[23]^crc_data_in[25]^crc_data_in[26]^crc_data_in[28]^crc_data_in[2]^crc_data_in[31]^crc_data_in[32]^crc_data_in[34]^crc_data_in[36]^crc_data_in[4]^crc_data_now[0]^crc_data_now[10]^crc_data_now[14]^crc_data_now[16]^crc_data_now[19]^crc_data_now[20]^crc_data_now[27]^crc_data_now[29]^crc_data_now[3]^crc_data_now[5]^crc_data_now[6]^crc_data_now[8]);
+        crc_data_new[9] =   (crc_data_in[0]^crc_data_in[13]^crc_data_in[14]^crc_data_in[15]^crc_data_in[16]^crc_data_in[18]^crc_data_in[19]^crc_data_in[22]^crc_data_in[25]^crc_data_in[28]^crc_data_in[29]^crc_data_in[32]^crc_data_in[33]^crc_data_in[35]^crc_data_in[36]^crc_data_in[3]^crc_data_in[5]^crc_data_in[6]^crc_data_in[8]^crc_data_in[9]^crc_data_now[12]^crc_data_now[13]^crc_data_now[15]^crc_data_now[16]^crc_data_now[17]^crc_data_now[18]^crc_data_now[22]^crc_data_now[23]^crc_data_now[25]^crc_data_now[26]^crc_data_now[28]^crc_data_now[2]^crc_data_now[31]^crc_data_now[3]^crc_data_now[6]^crc_data_now[9]);
+        crc_data_new[10] =  (crc_data_in[0]^crc_data_in[10]^crc_data_in[11]^crc_data_in[12]^crc_data_in[14]^crc_data_in[17]^crc_data_in[19]^crc_data_in[1]^crc_data_in[20]^crc_data_in[21]^crc_data_in[29]^crc_data_in[2]^crc_data_in[30]^crc_data_in[34]^crc_data_in[35]^crc_data_in[36]^crc_data_in[4]^crc_data_in[6]^crc_data_in[7]^crc_data_in[9]^crc_data_now[10]^crc_data_now[11]^crc_data_now[12]^crc_data_now[14]^crc_data_now[17]^crc_data_now[19]^crc_data_now[1]^crc_data_now[20]^crc_data_now[21]^crc_data_now[22]^crc_data_now[24]^crc_data_now[25]^crc_data_now[27]^crc_data_now[29]^crc_data_now[2]^crc_data_now[30]^crc_data_now[31]);
+        crc_data_new[11] =  (crc_data_in[15]^crc_data_in[16]^crc_data_in[24]^crc_data_in[27]^crc_data_in[30]^crc_data_in[31]^crc_data_in[32]^crc_data_in[33]^crc_data_in[34]^crc_data_in[35]^crc_data_in[36]^crc_data_in[3]^crc_data_now[0]^crc_data_now[15]^crc_data_now[16]^crc_data_now[1]^crc_data_now[28]^crc_data_now[4]^crc_data_now[7]);
+        crc_data_new[12] =  (crc_data_in[14]^crc_data_in[15]^crc_data_in[23]^crc_data_in[26]^crc_data_in[29]^crc_data_in[2]^crc_data_in[30]^crc_data_in[31]^crc_data_in[32]^crc_data_in[33]^crc_data_in[34]^crc_data_in[35]^crc_data_now[0]^crc_data_now[16]^crc_data_now[17]^crc_data_now[1]^crc_data_now[29]^crc_data_now[2]^crc_data_now[5]^crc_data_now[8]);
+        crc_data_new[13] =  (crc_data_in[0]^crc_data_in[10]^crc_data_in[11]^crc_data_in[14]^crc_data_in[15]^crc_data_in[18]^crc_data_in[19]^crc_data_in[20]^crc_data_in[22]^crc_data_in[24]^crc_data_in[25]^crc_data_in[27]^crc_data_in[33]^crc_data_in[34]^crc_data_in[36]^crc_data_in[5]^crc_data_in[6]^crc_data_in[8]^crc_data_in[9]^crc_data_now[11]^crc_data_now[12]^crc_data_now[13]^crc_data_now[16]^crc_data_now[17]^crc_data_now[20]^crc_data_now[21]^crc_data_now[22]^crc_data_now[23]^crc_data_now[25]^crc_data_now[26]^crc_data_now[31]^crc_data_now[4]^crc_data_now[6]^crc_data_now[7]^crc_data_now[9]);
+        crc_data_new[14] =  (crc_data_in[0]^crc_data_in[11]^crc_data_in[14]^crc_data_in[15]^crc_data_in[17]^crc_data_in[1]^crc_data_in[20]^crc_data_in[21]^crc_data_in[23]^crc_data_in[26]^crc_data_in[27]^crc_data_in[28]^crc_data_in[29]^crc_data_in[30]^crc_data_in[31]^crc_data_in[33]^crc_data_in[35]^crc_data_in[36]^crc_data_in[4]^crc_data_in[6]^crc_data_in[7]^crc_data_now[0]^crc_data_now[10]^crc_data_now[11]^crc_data_now[14]^crc_data_now[16]^crc_data_now[17]^crc_data_now[1]^crc_data_now[20]^crc_data_now[24]^crc_data_now[25]^crc_data_now[27]^crc_data_now[2]^crc_data_now[30]^crc_data_now[31]^crc_data_now[3]^crc_data_now[4]^crc_data_now[5]^crc_data_now[8]);
+        crc_data_new[15] =  (crc_data_in[0]^crc_data_in[10]^crc_data_in[13]^crc_data_in[14]^crc_data_in[16]^crc_data_in[19]^crc_data_in[20]^crc_data_in[22]^crc_data_in[25]^crc_data_in[26]^crc_data_in[27]^crc_data_in[28]^crc_data_in[29]^crc_data_in[30]^crc_data_in[32]^crc_data_in[34]^crc_data_in[35]^crc_data_in[3]^crc_data_in[5]^crc_data_in[6]^crc_data_now[11]^crc_data_now[12]^crc_data_now[15]^crc_data_now[17]^crc_data_now[18]^crc_data_now[1]^crc_data_now[21]^crc_data_now[25]^crc_data_now[26]^crc_data_now[28]^crc_data_now[2]^crc_data_now[31]^crc_data_now[3]^crc_data_now[4]^crc_data_now[5]^crc_data_now[6]^crc_data_now[9]);
+        crc_data_new[16] =  (crc_data_in[12]^crc_data_in[13]^crc_data_in[15]^crc_data_in[18]^crc_data_in[19]^crc_data_in[21]^crc_data_in[24]^crc_data_in[25]^crc_data_in[26]^crc_data_in[27]^crc_data_in[28]^crc_data_in[29]^crc_data_in[2]^crc_data_in[31]^crc_data_in[33]^crc_data_in[34]^crc_data_in[4]^crc_data_in[5]^crc_data_in[9]^crc_data_now[0]^crc_data_now[10]^crc_data_now[12]^crc_data_now[13]^crc_data_now[16]^crc_data_now[18]^crc_data_now[19]^crc_data_now[22]^crc_data_now[26]^crc_data_now[27]^crc_data_now[29]^crc_data_now[2]^crc_data_now[3]^crc_data_now[4]^crc_data_now[5]^crc_data_now[6]^crc_data_now[7]);
+        crc_data_new[17] =  (crc_data_in[11]^crc_data_in[12]^crc_data_in[14]^crc_data_in[17]^crc_data_in[18]^crc_data_in[1]^crc_data_in[20]^crc_data_in[23]^crc_data_in[24]^crc_data_in[25]^crc_data_in[26]^crc_data_in[27]^crc_data_in[28]^crc_data_in[30]^crc_data_in[32]^crc_data_in[33]^crc_data_in[3]^crc_data_in[4]^crc_data_in[8]^crc_data_now[11]^crc_data_now[13]^crc_data_now[14]^crc_data_now[17]^crc_data_now[19]^crc_data_now[1]^crc_data_now[20]^crc_data_now[23]^crc_data_now[27]^crc_data_now[28]^crc_data_now[30]^crc_data_now[3]^crc_data_now[4]^crc_data_now[5]^crc_data_now[6]^crc_data_now[7]^crc_data_now[8]);
+        crc_data_new[18] =  (crc_data_in[15]^crc_data_in[16]^crc_data_in[17]^crc_data_in[18]^crc_data_in[1]^crc_data_in[20]^crc_data_in[22]^crc_data_in[23]^crc_data_in[25]^crc_data_in[26]^crc_data_in[28]^crc_data_in[2]^crc_data_in[30]^crc_data_in[36]^crc_data_in[3]^crc_data_in[5]^crc_data_in[6]^crc_data_in[7]^crc_data_in[8]^crc_data_in[9]^crc_data_now[11]^crc_data_now[13]^crc_data_now[14]^crc_data_now[15]^crc_data_now[16]^crc_data_now[1]^crc_data_now[22]^crc_data_now[23]^crc_data_now[24]^crc_data_now[25]^crc_data_now[26]^crc_data_now[28]^crc_data_now[29]^crc_data_now[30]^crc_data_now[3]^crc_data_now[5]^crc_data_now[6]^crc_data_now[8]^crc_data_now[9]);
+        crc_data_new[19] =  (crc_data_in[10]^crc_data_in[11]^crc_data_in[13]^crc_data_in[14]^crc_data_in[16]^crc_data_in[17]^crc_data_in[18]^crc_data_in[20]^crc_data_in[21]^crc_data_in[22]^crc_data_in[25]^crc_data_in[28]^crc_data_in[2]^crc_data_in[30]^crc_data_in[31]^crc_data_in[32]^crc_data_in[35]^crc_data_in[36]^crc_data_in[4]^crc_data_in[7]^crc_data_in[9]^crc_data_now[0]^crc_data_now[10]^crc_data_now[11]^crc_data_now[13]^crc_data_now[14]^crc_data_now[15]^crc_data_now[17]^crc_data_now[18]^crc_data_now[1]^crc_data_now[20]^crc_data_now[21]^crc_data_now[22]^crc_data_now[24]^crc_data_now[27]^crc_data_now[29]^crc_data_now[3]^crc_data_now[6]^crc_data_now[9]);
+        crc_data_new[20] =  (crc_data_in[0]^crc_data_in[11]^crc_data_in[12]^crc_data_in[16]^crc_data_in[17]^crc_data_in[18]^crc_data_in[21]^crc_data_in[28]^crc_data_in[32]^crc_data_in[34]^crc_data_in[35]^crc_data_in[36]^crc_data_in[3]^crc_data_in[5]^crc_data_now[10]^crc_data_now[13]^crc_data_now[14]^crc_data_now[15]^crc_data_now[19]^crc_data_now[20]^crc_data_now[26]^crc_data_now[28]^crc_data_now[31]^crc_data_now[3]);
+        crc_data_new[21] =  (crc_data_in[10]^crc_data_in[11]^crc_data_in[15]^crc_data_in[16]^crc_data_in[17]^crc_data_in[20]^crc_data_in[27]^crc_data_in[2]^crc_data_in[31]^crc_data_in[33]^crc_data_in[34]^crc_data_in[35]^crc_data_in[4]^crc_data_now[0]^crc_data_now[11]^crc_data_now[14]^crc_data_now[15]^crc_data_now[16]^crc_data_now[20]^crc_data_now[21]^crc_data_now[27]^crc_data_now[29]^crc_data_now[4]);
+        crc_data_new[22] =  (crc_data_in[0]^crc_data_in[11]^crc_data_in[13]^crc_data_in[14]^crc_data_in[16]^crc_data_in[18]^crc_data_in[20]^crc_data_in[24]^crc_data_in[26]^crc_data_in[27]^crc_data_in[28]^crc_data_in[29]^crc_data_in[31]^crc_data_in[33]^crc_data_in[34]^crc_data_in[36]^crc_data_in[3]^crc_data_in[5]^crc_data_in[6]^crc_data_in[8]^crc_data_now[0]^crc_data_now[11]^crc_data_now[13]^crc_data_now[15]^crc_data_now[17]^crc_data_now[18]^crc_data_now[20]^crc_data_now[23]^crc_data_now[25]^crc_data_now[26]^crc_data_now[28]^crc_data_now[2]^crc_data_now[31]^crc_data_now[3]^crc_data_now[4]^crc_data_now[5]^crc_data_now[7]);
+        crc_data_new[23] =  (crc_data_in[0]^crc_data_in[11]^crc_data_in[12]^crc_data_in[17]^crc_data_in[18]^crc_data_in[1]^crc_data_in[20]^crc_data_in[23]^crc_data_in[24]^crc_data_in[25]^crc_data_in[26]^crc_data_in[29]^crc_data_in[2]^crc_data_in[31]^crc_data_in[33]^crc_data_in[35]^crc_data_in[36]^crc_data_in[4]^crc_data_in[6]^crc_data_in[7]^crc_data_in[8]^crc_data_in[9]^crc_data_now[0]^crc_data_now[11]^crc_data_now[13]^crc_data_now[14]^crc_data_now[19]^crc_data_now[20]^crc_data_now[22]^crc_data_now[23]^crc_data_now[24]^crc_data_now[25]^crc_data_now[27]^crc_data_now[29]^crc_data_now[2]^crc_data_now[30]^crc_data_now[31]^crc_data_now[5]^crc_data_now[6]^crc_data_now[7]^crc_data_now[8]);
+        crc_data_new[24] =  (crc_data_in[0]^crc_data_in[10]^crc_data_in[11]^crc_data_in[16]^crc_data_in[17]^crc_data_in[19]^crc_data_in[1]^crc_data_in[22]^crc_data_in[23]^crc_data_in[24]^crc_data_in[25]^crc_data_in[28]^crc_data_in[30]^crc_data_in[32]^crc_data_in[34]^crc_data_in[35]^crc_data_in[3]^crc_data_in[5]^crc_data_in[6]^crc_data_in[7]^crc_data_in[8]^crc_data_now[12]^crc_data_now[14]^crc_data_now[15]^crc_data_now[1]^crc_data_now[20]^crc_data_now[21]^crc_data_now[23]^crc_data_now[24]^crc_data_now[25]^crc_data_now[26]^crc_data_now[28]^crc_data_now[30]^crc_data_now[31]^crc_data_now[3]^crc_data_now[6]^crc_data_now[7]^crc_data_now[8]^crc_data_now[9]);
+        crc_data_new[25] =  (crc_data_in[11]^crc_data_in[13]^crc_data_in[16]^crc_data_in[19]^crc_data_in[1]^crc_data_in[20]^crc_data_in[21]^crc_data_in[22]^crc_data_in[23]^crc_data_in[28]^crc_data_in[2]^crc_data_in[30]^crc_data_in[32]^crc_data_in[33]^crc_data_in[34]^crc_data_in[36]^crc_data_in[4]^crc_data_in[7]^crc_data_in[8]^crc_data_now[10]^crc_data_now[11]^crc_data_now[12]^crc_data_now[15]^crc_data_now[18]^crc_data_now[1]^crc_data_now[20]^crc_data_now[23]^crc_data_now[24]^crc_data_now[27]^crc_data_now[29]^crc_data_now[30]^crc_data_now[3]^crc_data_now[8]^crc_data_now[9]);
+        crc_data_new[26] =  (crc_data_in[11]^crc_data_in[12]^crc_data_in[13]^crc_data_in[21]^crc_data_in[22]^crc_data_in[24]^crc_data_in[28]^crc_data_in[30]^crc_data_in[33]^crc_data_in[35]^crc_data_in[36]^crc_data_in[3]^crc_data_in[5]^crc_data_in[7]^crc_data_in[8]^crc_data_in[9]^crc_data_now[10]^crc_data_now[18]^crc_data_now[19]^crc_data_now[1]^crc_data_now[20]^crc_data_now[22]^crc_data_now[23]^crc_data_now[24]^crc_data_now[26]^crc_data_now[28]^crc_data_now[3]^crc_data_now[7]^crc_data_now[9]);
+        crc_data_new[27] =  (crc_data_in[0]^crc_data_in[12]^crc_data_in[13]^crc_data_in[15]^crc_data_in[18]^crc_data_in[19]^crc_data_in[1]^crc_data_in[21]^crc_data_in[23]^crc_data_in[24]^crc_data_in[28]^crc_data_in[2]^crc_data_in[30]^crc_data_in[31]^crc_data_in[34]^crc_data_in[35]^crc_data_in[36]^crc_data_in[4]^crc_data_in[5]^crc_data_in[7]^crc_data_in[9]^crc_data_now[0]^crc_data_now[10]^crc_data_now[12]^crc_data_now[13]^crc_data_now[16]^crc_data_now[18]^crc_data_now[19]^crc_data_now[1]^crc_data_now[22]^crc_data_now[24]^crc_data_now[26]^crc_data_now[27]^crc_data_now[29]^crc_data_now[30]^crc_data_now[31]^crc_data_now[3]^crc_data_now[7]^crc_data_now[8]);
+        crc_data_new[28] =  (crc_data_in[10]^crc_data_in[12]^crc_data_in[13]^crc_data_in[14]^crc_data_in[15]^crc_data_in[17]^crc_data_in[19]^crc_data_in[22]^crc_data_in[23]^crc_data_in[24]^crc_data_in[28]^crc_data_in[31]^crc_data_in[32]^crc_data_in[33]^crc_data_in[34]^crc_data_in[35]^crc_data_in[36]^crc_data_in[3]^crc_data_in[4]^crc_data_in[5]^crc_data_in[9]^crc_data_now[0]^crc_data_now[12]^crc_data_now[14]^crc_data_now[16]^crc_data_now[17]^crc_data_now[18]^crc_data_now[19]^crc_data_now[21]^crc_data_now[22]^crc_data_now[26]^crc_data_now[27]^crc_data_now[28]^crc_data_now[3]^crc_data_now[7]^crc_data_now[8]^crc_data_now[9]);
+        crc_data_new[29] =  (crc_data_in[11]^crc_data_in[12]^crc_data_in[13]^crc_data_in[14]^crc_data_in[16]^crc_data_in[18]^crc_data_in[21]^crc_data_in[22]^crc_data_in[23]^crc_data_in[27]^crc_data_in[2]^crc_data_in[30]^crc_data_in[31]^crc_data_in[32]^crc_data_in[33]^crc_data_in[34]^crc_data_in[35]^crc_data_in[3]^crc_data_in[4]^crc_data_in[8]^crc_data_in[9]^crc_data_now[0]^crc_data_now[10]^crc_data_now[13]^crc_data_now[15]^crc_data_now[17]^crc_data_now[18]^crc_data_now[19]^crc_data_now[1]^crc_data_now[20]^crc_data_now[22]^crc_data_now[23]^crc_data_now[27]^crc_data_now[28]^crc_data_now[29]^crc_data_now[4]^crc_data_now[8]^crc_data_now[9]);
+        crc_data_new[30] =  (crc_data_in[10]^crc_data_in[11]^crc_data_in[12]^crc_data_in[13]^crc_data_in[15]^crc_data_in[17]^crc_data_in[1]^crc_data_in[20]^crc_data_in[21]^crc_data_in[22]^crc_data_in[26]^crc_data_in[29]^crc_data_in[2]^crc_data_in[30]^crc_data_in[31]^crc_data_in[32]^crc_data_in[33]^crc_data_in[34]^crc_data_in[3]^crc_data_in[7]^crc_data_in[8]^crc_data_now[0]^crc_data_now[10]^crc_data_now[11]^crc_data_now[14]^crc_data_now[16]^crc_data_now[18]^crc_data_now[19]^crc_data_now[1]^crc_data_now[20]^crc_data_now[21]^crc_data_now[23]^crc_data_now[24]^crc_data_now[28]^crc_data_now[29]^crc_data_now[2]^crc_data_now[30]^crc_data_now[5]^crc_data_now[9]);
+        crc_data_new[31] =  (crc_data_in[0]^crc_data_in[10]^crc_data_in[11]^crc_data_in[12]^crc_data_in[14]^crc_data_in[16]^crc_data_in[19]^crc_data_in[1]^crc_data_in[20]^crc_data_in[21]^crc_data_in[25]^crc_data_in[28]^crc_data_in[29]^crc_data_in[2]^crc_data_in[30]^crc_data_in[31]^crc_data_in[32]^crc_data_in[33]^crc_data_in[6]^crc_data_in[7]^crc_data_in[9]^crc_data_now[0]^crc_data_now[10]^crc_data_now[11]^crc_data_now[12]^crc_data_now[15]^crc_data_now[17]^crc_data_now[19]^crc_data_now[1]^crc_data_now[20]^crc_data_now[21]^crc_data_now[22]^crc_data_now[24]^crc_data_now[25]^crc_data_now[29]^crc_data_now[2]^crc_data_now[30]^crc_data_now[31]^crc_data_now[3]^crc_data_now[6]);
+        crc = ''.join(str(num) for num in crc_data_new)
+        return crc
+    
 def main():
     parser = argparse.ArgumentParser(description="Auto Process")
 
     # Add optional arguments
     parser.add_argument('--rbt_folder', type=str, help="Input .rbt folder path")
-    parser.add_argument('--rbt_file', type=str, help="Only process this specific rbt file")
-    parser.add_argument('--bit_file', type=str, help="Only process this specific bit file")
+    parser.add_argument('--file', type=str, help="Only process this specific file")
     parser.add_argument('--file_suffix', type=str, default=FILE_ENDWITH, help="Suffix to add to the new .rbt file (default: _HybrdChip)")
     parser.add_argument('--PCIE', action='store_true', help="Enable PCIE processing (Default: False)")
     parser.add_argument('--GTP', action='store_true', help="Enable GTP processing (Default: False)")
+    parser.add_argument('--CRC', action='store_true', help="Enable CRC (Default: False)")
     parser.add_argument('--TRIM', action='store_true', help="Enable TRIM processing (Default: False)")
 
     # 解析参数
@@ -550,23 +865,46 @@ def main():
 
     logging.info(f"Parameters:")
     logging.info(f"\trbt_folder: {args.rbt_folder}")
-    logging.info(f"\trbt_file: {args.rbt_file}")
-    logging.info(f"\tbit_file: {args.bit_file}")
+    logging.info(f"\trbt_file: {args.file}")
     logging.info(f"\tfile_suffix: {args.file_suffix}")
     logging.info(f"\tPCIE: {args.PCIE}")
     logging.info(f"\tGTP: {args.GTP}")
+    logging.info(f"\tCRC: {args.CRC}")
     logging.info(f"\tTRIM: {args.TRIM}\n")
     
-    reader = BitstreamReader(args.rbt_file)
+    bit_parser = BitstreamParser(args.file, args.CRC)
+    
+    if args.GTP:
+        # 处理GTP
+        for item in GTP_CONFIG:
+            bit_parser.set_data_with_frame_word_bit(item["data"], item["frame"],  item["word"], item["bit"])
 
+    if args.PCIE:
+        for index in PCIE_CHECK:
+            check_group = PCIE_CHECK[index]
+            cur_group_have_value = False
+            for item in check_group:
+                bit = bit_parser.get_data_with_frame_word_bit(item["frame"],  item["word"], item["bit"])
+                if bit == "1":
+                    # 有任意一个为1，这组就无法修改
+                    cur_group_have_value = True
+                    break
+            if cur_group_have_value:
+                # 下一组
+                continue
+            else:
+                # 如果这一组全为0，则这组可修改
+                config_group = PCIE_CONFIG[index]
+                for item in config_group:
+                    bit_parser.set_data_with_frame_word_bit(item["data"], item["frame"],  item["word"], item["bit"])
+                break
+        else:
+            # 执行到此表示无法修改
+            raise ValueError("规则无法适配")
+    
+    if not args.CRC:
+        bit_parser.disable_crc()
+            
+    bit_parser.save_file(args.file_suffix)
 if __name__ == "__main__":
     main()
-    
-# INPUT_FILE_PATH = r"E:\workspace\parse_bitstream\parse_bitstream\data\system_wrapper_1_原版.bit"
-# # 打开文件，以二进制模式('rb')读取
-# with open(INPUT_FILE_PATH, 'rb') as file:
-#     # 读取整个文件内容
-#     bit_byte_content = file.read()
-# reader = BitstreamReader(bit_byte_content)
-# reader.read_bit_or_bin_file_and_parse("bit")
-# print(123)
