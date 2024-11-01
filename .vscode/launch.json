@@ -9,8 +9,8 @@
             "type": "debugpy",
             "request": "launch",
             "args": [
-                "--rbt_file",
-                "E:\\workspace\\parse_bitstream\\parse_bitstream\\data\\system_wrapper_1_原版.bin",
+                "--file",
+                "E:\\workspace\\parse_bitstream\\parse_bitstream\\data\\system_wrapper_1_原版.rbt",
                 "--GTP",
                 "--PCIE",
             ],
