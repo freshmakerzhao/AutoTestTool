@@ -4,9 +4,9 @@ import logging
 import argparse
 import enum
 # 配置日志级别和格式
-logging.basicConfig(level=logging.DEBUG, format='%(asctime)s - %(levelname)s - %(message)s')
+# logging.basicConfig(level=logging.DEBUG, format='%(asctime)s - %(levelname)s - %(message)s')
 # logging.basicConfig(level=logging.WARNING,  format='%(asctime)s - %(levelname)s - %(message)s')
-# logging.basicConfig(level=logging.INFO,  format='%(asctime)s - %(levelname)s - %(message)s')
+logging.basicConfig(level=logging.INFO,  format='%(asctime)s - %(levelname)s - %(message)s')
 
 FILE_ENDWITH = "_replace"
 
@@ -210,7 +210,7 @@ def binary_str_to_bytes(binary_str):
     # 使用struct将整数转换为4字节的字节对象
     return struct.pack('>I', num)  # '>I'表示大端4字节无符号整数
 
-class DataItem:
+class PacketItem:
     def __init__(self, cmd_name) -> None:
         self.cmd_name = cmd_name
         self.data = []
@@ -521,23 +521,23 @@ class BitstreamParser:
             word_count = packet_content.get('word_count', 0)
             
             if line == NOOP_STR:
-                item = DataItem("NOOP")
+                item = PacketItem("NOOP")
                 item.set_opcode(-1)
                 word_count = 0
             elif line == DUMMY_STR:
-                item = DataItem("DUMMY")
+                item = PacketItem("DUMMY")
                 item.set_opcode(-1)
                 word_count = 0
             elif line == SYNC_WORD_STR:
-                item = DataItem("SYNC_WORD")
+                item = PacketItem("SYNC_WORD")
                 item.set_opcode(-1)
                 word_count = 0
             elif line == BUS_WIDTH_AUTO_DETECT_01_STR or line == BUS_WIDTH_AUTO_DETECT_02_STR:
-                item = DataItem("BUS_WIDTH")
+                item = PacketItem("BUS_WIDTH")
                 item.set_opcode(-1)
                 word_count = 0
             else:
-                item = DataItem(self.cfg_obj.get_cmd_name(packet_content.get("address")))
+                item = PacketItem(self.cfg_obj.get_cmd_name(packet_content.get("address")))
                 item.set_opcode(packet_content.get("opcode", -1))
             
             item.append_data(self.rbt_content[index]) # 插入cmd
@@ -551,7 +551,7 @@ class BitstreamParser:
             
             if line == FDRI_STR:
                 word_content = self.rbt_content[index]
-                item = DataItem("WORD_COUNT")
+                item = PacketItem("WORD_COUNT")
                 item.set_opcode(-1)
                 item.append_data(word_content)
                 self.rbt_cfg_content_pre.append(item)
@@ -578,23 +578,23 @@ class BitstreamParser:
             word_count = packet_content.get('word_count', 0)
             
             if line == NOOP_STR:
-                item = DataItem("NOOP")
+                item = PacketItem("NOOP")
                 item.set_opcode(-1)
                 word_count = 0
             elif line == DUMMY_STR:
-                item = DataItem("DUMMY")
+                item = PacketItem("DUMMY")
                 item.set_opcode(-1)
                 word_count = 0
             elif line == SYNC_WORD_STR:
-                item = DataItem("SYNC_WORD")
+                item = PacketItem("SYNC_WORD")
                 item.set_opcode(-1)
                 word_count = 0
             elif line == BUS_WIDTH_AUTO_DETECT_01_STR or line == BUS_WIDTH_AUTO_DETECT_02_STR:
-                item = DataItem("BUS_WIDTH")
+                item = PacketItem("BUS_WIDTH")
                 item.set_opcode(-1)
                 word_count = 0
             else:
-                item = DataItem(self.cfg_obj.get_cmd_name(packet_content.get("address")))
+                item = PacketItem(self.cfg_obj.get_cmd_name(packet_content.get("address")))
                 item.set_opcode(packet_content.get("opcode", -1))
             
                 
@@ -718,23 +718,23 @@ class BitstreamParser:
             word_count = packet_content.get('word_count', 0)
             
             if word == NOOP_BIT:
-                item = DataItem("NOOP")
+                item = PacketItem("NOOP")
                 item.set_opcode(-1)
                 word_count = 0
             elif word == DUMMY_BIT:
-                item = DataItem("DUMMY")
+                item = PacketItem("DUMMY")
                 item.set_opcode(-1)
                 word_count = 0
             elif word == SYNC_WORD_BIT:
-                item = DataItem("SYNC_WORD")
+                item = PacketItem("SYNC_WORD")
                 item.set_opcode(-1)
                 word_count = 0
             elif word == BUS_WIDTH_AUTO_DETECT_01_BIT or word == BUS_WIDTH_AUTO_DETECT_02_BIT:
-                item = DataItem("BUS_WIDTH")
+                item = PacketItem("BUS_WIDTH")
                 item.set_opcode(-1)
                 word_count = 0
             else:
-                item = DataItem(self.cfg_obj.get_cmd_name(packet_content.get("address")))
+                item = PacketItem(self.cfg_obj.get_cmd_name(packet_content.get("address")))
                 item.set_opcode(packet_content.get("opcode", -1))
             
             item.append_data(word) # 插入cmd
@@ -749,7 +749,7 @@ class BitstreamParser:
                 and packet_content.get("opcode", self.cfg_obj.OpCode.UNKNOWN) == self.cfg_obj.OpCode.WRITE \
                 and packet_content.get("address", self.cfg_obj.Address.UNKNOWN) == self.cfg_obj.Address.FDRI:
                     word = self.read_bit_bytes(4)
-                    item = DataItem("WORD_COUNT")
+                    item = PacketItem("WORD_COUNT")
                     item.set_opcode(-1)
                     item.append_data(word)
                     self.bit_cfg_content_pre.append(item)
@@ -782,23 +782,23 @@ class BitstreamParser:
             word_count = packet_content.get('word_count', 0)
             
             if word == NOOP_BIT:
-                item = DataItem("NOOP")
+                item = PacketItem("NOOP")
                 item.set_opcode(-1)
                 word_count = 0
             elif word == DUMMY_BIT:
-                item = DataItem("DUMMY")
+                item = PacketItem("DUMMY")
                 item.set_opcode(-1)
                 word_count = 0
             elif word == SYNC_WORD_BIT:
-                item = DataItem("SYNC_WORD")
+                item = PacketItem("SYNC_WORD")
                 item.set_opcode(-1)
                 word_count = 0
             elif word == BUS_WIDTH_AUTO_DETECT_01_BIT or word == BUS_WIDTH_AUTO_DETECT_02_BIT:
-                item = DataItem("BUS_WIDTH")
+                item = PacketItem("BUS_WIDTH")
                 item.set_opcode(-1)
                 word_count = 0
             else:
-                item = DataItem(self.cfg_obj.get_cmd_name(packet_content.get("address")))
+                item = PacketItem(self.cfg_obj.get_cmd_name(packet_content.get("address")))
                 item.set_opcode(packet_content.get("opcode", -1))
                 
             item.append_data(word) # 插入cmd
