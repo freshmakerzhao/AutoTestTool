@@ -1,9 +1,10 @@
-import os 
+
 import struct
 import logging
 import argparse
-import enum
-import config_command
+import config
+import utils
+from collections import defaultdict
 
 # 配置日志级别和格式
 # logging.basicConfig(level=logging.DEBUG, format='%(asctime)s - %(levelname)s - %(message)s')
@@ -91,67 +92,6 @@ PCIE_CONFIG = {
 }
 # ====================== PCIE 修改位置 ====================== 
 
-def log_debug_with_description(value: int, format_spec: str = '', description: str = ''):
-    if format_spec:
-        formatted_value = f"{value:{format_spec}}"
-    else:
-        formatted_value = f"{value}"
-    logging.debug(f"{description}: {formatted_value}")
-
-def bytes_to_binary(byte_data):
-    if len(byte_data) < 4:
-        # 不足 4 个字节
-        logging.warning(f"Warning: Received less than 4 bytes. Padding with zeros to right.")
-        byte_data = byte_data.rjust(4, b'\x00')  # 用 0 补齐到 4 字节
-    return ''.join(f'{byte:08b}' for byte in byte_data)
-
-def show_ascii_content(content):
-    print_content = ""
-    for byte in content:
-        try:
-            # 尝试将字节转换为 ASCII 字符
-            print_content += chr(byte)
-        except ValueError as e:
-            # 输出错误信息
-            logging.error(f"Error converting byte {byte} to ASCII: {e}")
-            print_content += '?'  # 使用占位符替代无法转换的字符
-    logging.debug(f"\t{print_content}")
-
-def show_number_content(content):
-    try:
-        # 高位在前,转换为十进制整数
-        number = int.from_bytes(content, byteorder='big')
-    except ValueError as e:
-        # 输出错误信息
-        logging.error(f"Error converting bytes to number: {e}")
-    logging.debug(f"\t{str(number)}")
-
-def get_file_type(file_path): 
-    # 获取传入path文件的类型
-    if file_path:
-        return os.path.splitext(file_path)
-    return ("","")
-
-def parse_bin_str_to_dec(bin_str):
-    # 将二进制字符串转为十进制
-    return int(bin_str, 2)
-
-def reverse_bits(data, num_bits):
-    reflected = 0
-    for i in range(num_bits):
-        if data & (1 << i):
-            reflected |= 1 << (num_bits - 1 - i)
-    reflected = bin(reflected)[2:]
-    while len(reflected) != num_bits:
-        reflected = '0' + reflected	
-    return reflected
-
-def binary_str_to_bytes(binary_str):
-    # 将32位二进制字符串转换为整数
-    num = int(binary_str, 2)
-    # 使用struct将整数转换为4字节的字节对象
-    return struct.pack('>I', num)  # '>I'表示大端4字节无符号整数
-
 class PacketItem:
     def __init__(self, cmd_name) -> None:
         self.cmd_name = cmd_name
@@ -171,163 +111,6 @@ class PacketItem:
         self.data[index] = data
     def set_opcode(self, data):
         self.opcode = data
-
-class DataFrameItem:
-    def __init__(self, 
-                 frame_type, 
-                 region_type, 
-                 row_num, 
-                 col_num, 
-                 frame_num, 
-                 block_type = ""
-        ) -> None:
-        self.frame_type = frame_type
-        self.region_type = region_type
-        self.row_num = row_num
-        self.col_num = col_num
-        self.frame_num = frame_num
-        self.block_type = block_type
-    
-    def get_frame_type(self):
-        return self.frame_type
-    
-    def get_region_type(self):
-        return self.region_type
-    
-    def get_row_num(self):
-        return self.row_num
-    
-    def get_col_num(self):
-        return self.col_num
-    
-    def get_frame_num(self):
-        return self.frame_num
-    
-    def get_block_type(self):
-        return self.block_type
-
-# 配置包格式
-class ConfigurationPacket:
-    @enum.unique
-    class Address(enum.Enum):
-        UNKNOWN = -1
-        CRC = 0
-        FAR = 1
-        FDRI = 2
-        FDRO = 3
-        CMD = 4
-        CTL0 = 5
-        MASK = 6
-        STAT = 7
-        LOUT = 8
-        COR0 = 9
-        MFWR = 10
-        CBC = 11
-        IDCODE = 12 
-        AXSS = 13
-        COR1 = 14
-        UNKNOWN_15 = 15 #if write, csob_reg(ib) <= packet, csbo_cnt(ib) <= word count, csbo_flag(ib) < '1'
-        WBSTAR = 16
-        TIMER = 17
-        UNKNOWN_18 = 18
-        POST_CRC = 19 #Undocumented in UG470
-        UNKNOWN_20 = 20
-        UNKNOWN_21 = 21
-        BOOTSTS = 22
-        CTL1 = 24
-        UNKNOWN_30 = 30 #if next packet is Type2 and bcout_cnt(ib) = 0, set bocut_flag(ib) <= '1' and bout_cnt(ib) <= word count
-        BSPI = 31
-        
-    @enum.unique
-    class OpCode(enum.Enum):
-        UNKNOWN = -1
-        NOOP = 0
-        READ = 1
-        WRITE = 2
-    
-    def get_cmd_name(self, key):
-        return self.cmd_name_map.get(key, self.Address.UNKNOWN)
-    
-    # 传入整型，返回其type
-    def get_packet_type(self, word, content_type = "int"):
-        if content_type != "int":
-            word = int(word, 2)
-        return word >> 29 
-    
-    # 传入整型，返回其opcode
-    def get_opcode(self, word, content_type = "int"):
-        if content_type != "int":
-            word = int(word, 2)
-        return self.OpCode((word >> 27) & 0x3) 
-
-    # 根据传入word获取其type1格式的数据，content_type为int时，直接读，str时转换后再读
-    def get_type_1_packet_content(self, word, content_type = "int"):
-        if content_type != "int":
-            word = int(word, 2)
-        header_type = self.get_packet_type(word) # [31:29]
-        opcode = self.OpCode((word >> 27) & 0x3) # [28:27]
-        address = self.Address((word >> 13) & 0x1F) # [26:13] 取低5位
-        reserved = (word >> 11) & 0x3 # [12:11]
-        word_count = word & 0x7FF # [10:0]
-        return {
-                "header_type":header_type,
-                "opcode":opcode,
-                "address":address,
-                "reserved":reserved,
-                "word_count":word_count
-            }
-        
-    # 根据传入word获取其type2格式的数据，content_type为int时，直接读，str时转换后再读
-    def get_type_2_packet_content(self, word, content_type = "int"):
-        if content_type != "int":
-            word = int(word, 2)
-        header_type = self.get_packet_type(word) # [31:29]
-        opcode = self.OpCode((word >> 27) & 0x3) # [28:27]
-        word_count = word & 0x7FFFFFF # [26:0]
-        return {
-                "header_type":header_type,
-                "opcode":opcode,
-                "word_count":word_count
-            }
-        
-    def make_len_37_crc_data_in(self, word, cmd_word, content_type = "byte"):
-        if content_type == "byte":
-            word = bytes_to_binary(word)
-            cmd_word = bytes_to_binary(cmd_word)
-        address = cmd_word[14:19]
-        crc_data_in = address + word
-        return ([int(i) for i in crc_data_in[::-1]])
-    
-    def __init__(self) -> None:
-        self.cmd_name_map = {    
-            self.Address.UNKNOWN : "UNKNOWN",
-            self.Address.CRC : "CRC",
-            self.Address.FAR : "FAR",
-            self.Address.FDRI : "FDRI",
-            self.Address.FDRO : "FDRO",
-            self.Address.CMD : "CMD",
-            self.Address.CTL0 : "CTL0",
-            self.Address.MASK : "MASK",
-            self.Address.STAT : "STAT",
-            self.Address.LOUT : "LOUT",
-            self.Address.COR0 : "COR0",
-            self.Address.MFWR : "MFWR",
-            self.Address.CBC : "CBC",
-            self.Address.IDCODE : "IDCODE",
-            self.Address.AXSS : "AXSS",
-            self.Address.COR1 : "COR1",
-            self.Address.UNKNOWN_15 : "UNKNOWN_15",
-            self.Address.WBSTAR : "WBSTAR",
-            self.Address.TIMER : "TIMER",
-            self.Address.UNKNOWN_18 : "UNKNOWN_18",
-            self.Address.POST_CRC : "POST_CRC",
-            self.Address.UNKNOWN_20 : "UNKNOWN_20",
-            self.Address.UNKNOWN_21 : "UNKNOWN_21",
-            self.Address.BOOTSTS : "BOOTSTS",
-            self.Address.CTL1 : "CTL1",
-            self.Address.UNKNOWN_30 : "UNKNOWN_30",
-            self.Address.BSPI : "BSPI"
-        }
     
 class BitstreamParser:
     def __init__(self, input_file_path: str, enable_crc: bool):
@@ -386,13 +169,13 @@ class BitstreamParser:
         self.rbt_cfg_content_after = []
         # ======================= rbt =====================     
         
-        self.cfg_obj = ConfigurationPacket()
+        self.cfg_obj = config.ConfigurationPacket()
         
         self.load_file()
     
     def load_file(self) -> None:
         # 根据类型读取文件内容
-        self.file_path_except_type, self.file_type = get_file_type(self.input_file_path)
+        self.file_path_except_type, self.file_type = utils.get_file_type(self.input_file_path)
         if self.file_type == ".rbt":
             with open(self.input_file_path, "r") as f:
                 self.rbt_content = f.readlines()
@@ -449,14 +232,14 @@ class BitstreamParser:
         # ============================================ cfg content after ============================================
         
         # ============================================ debug ============================================
-        log_debug_with_description(len(self.rbt_annotation_content), description="头部注释信息行数")
-        log_debug_with_description(len(self.rbt_cfg_content_pre), description="数据帧之前的寄存器行数")
-        log_debug_with_description(len(self.rbt_data_content), description="数据行数")
+        utils.log_debug_with_description(len(self.rbt_annotation_content), description="头部注释信息行数")
+        utils.log_debug_with_description(len(self.rbt_cfg_content_pre), description="数据帧之前的寄存器行数")
+        utils.log_debug_with_description(len(self.rbt_data_content), description="数据行数")
         cur_group_len = 0
         for item in self.rbt_cfg_content_after:
             cur_group_len += item.get_data_len()
-        log_debug_with_description(cur_group_len, description="数据帧之后的寄存器行数")
-        log_debug_with_description(len(self.rbt_annotation_content) + len(self.rbt_cfg_content_pre) + len(self.rbt_data_content) + cur_group_len, description="总行数")
+        utils.log_debug_with_description(cur_group_len, description="数据帧之后的寄存器行数")
+        utils.log_debug_with_description(len(self.rbt_annotation_content) + len(self.rbt_cfg_content_pre) + len(self.rbt_data_content) + cur_group_len, description="总行数")
         # ============================================ debug ============================================
           
     # 解析cfg，读取数据帧
@@ -496,19 +279,19 @@ class BitstreamParser:
             # 拿到word count
             word_count = packet_content.get('word_count', 0)
             
-            if line == config_command.NOOP_STR:
+            if line == config.NOOP_STR:
                 item = PacketItem("NOOP")
                 item.set_opcode(-1)
                 word_count = 0
-            elif line == config_command.DUMMY_STR:
+            elif line == config.DUMMY_STR:
                 item = PacketItem("DUMMY")
                 item.set_opcode(-1)
                 word_count = 0
-            elif line == config_command.SYNC_WORD_STR:
+            elif line == config.SYNC_WORD_STR:
                 item = PacketItem("SYNC_WORD")
                 item.set_opcode(-1)
                 word_count = 0
-            elif line == config_command.BUS_WIDTH_AUTO_DETECT_01_STR or line == config_command.BUS_WIDTH_AUTO_DETECT_02_STR:
+            elif line == config.BUS_WIDTH_AUTO_DETECT_01_STR or line == config.BUS_WIDTH_AUTO_DETECT_02_STR:
                 item = PacketItem("BUS_WIDTH")
                 item.set_opcode(-1)
                 word_count = 0
@@ -525,7 +308,7 @@ class BitstreamParser:
             index += 1
             self.rbt_cfg_content_pre.append(item)
             
-            if line == config_command.FDRI_STR:
+            if line == config.FDRI_STR:
                 word_content = self.rbt_content[index]
                 item = PacketItem("WORD_COUNT")
                 item.set_opcode(-1)
@@ -553,19 +336,19 @@ class BitstreamParser:
             # 拿到word count
             word_count = packet_content.get('word_count', 0)
             
-            if line == config_command.NOOP_STR:
+            if line == config.NOOP_STR:
                 item = PacketItem("NOOP")
                 item.set_opcode(-1)
                 word_count = 0
-            elif line == config_command.DUMMY_STR:
+            elif line == config.DUMMY_STR:
                 item = PacketItem("DUMMY")
                 item.set_opcode(-1)
                 word_count = 0
-            elif line == config_command.SYNC_WORD_STR:
+            elif line == config.SYNC_WORD_STR:
                 item = PacketItem("SYNC_WORD")
                 item.set_opcode(-1)
                 word_count = 0
-            elif line == config_command.BUS_WIDTH_AUTO_DETECT_01_STR or line == config_command.BUS_WIDTH_AUTO_DETECT_02_STR:
+            elif line == config.BUS_WIDTH_AUTO_DETECT_01_STR or line == config.BUS_WIDTH_AUTO_DETECT_02_STR:
                 item = PacketItem("BUS_WIDTH")
                 item.set_opcode(-1)
                 word_count = 0
@@ -617,7 +400,7 @@ class BitstreamParser:
         start_index += 3
         end_index = start_index + group_length
         logging.debug(f"\tA content: {self.bit_head_byte_content[start_index:end_index].hex()}")
-        show_ascii_content(self.bit_head_byte_content[start_index:end_index])
+        utils.show_ascii_content(self.bit_head_byte_content[start_index:end_index])
         start_index = end_index
         # ========== 标识符A ============
         
@@ -630,7 +413,7 @@ class BitstreamParser:
         start_index += 3
         end_index = start_index + group_length
         logging.debug(f"\tB content: {self.bit_head_byte_content[start_index:end_index].hex()}")
-        show_ascii_content(self.bit_head_byte_content[start_index:end_index])
+        utils.show_ascii_content(self.bit_head_byte_content[start_index:end_index])
         start_index = end_index
         # ========== 标识符B ============
         
@@ -643,7 +426,7 @@ class BitstreamParser:
         start_index += 3
         end_index = start_index + group_length
         logging.debug(f"\tC content: {self.bit_head_byte_content[start_index:end_index].hex()}")
-        show_ascii_content(self.bit_head_byte_content[start_index:end_index])
+        utils.show_ascii_content(self.bit_head_byte_content[start_index:end_index])
         start_index = end_index
         # ========== 标识符C ============
 
@@ -656,7 +439,7 @@ class BitstreamParser:
         start_index += 3
         end_index = start_index + group_length
         logging.debug(f"\tD content: {self.bit_head_byte_content[start_index:end_index].hex()}")
-        show_ascii_content(self.bit_head_byte_content[start_index:end_index])
+        utils.show_ascii_content(self.bit_head_byte_content[start_index:end_index])
         start_index = end_index
         # ========== 标识符D ============
 
@@ -666,7 +449,7 @@ class BitstreamParser:
         start_index += 1
         end_index = start_index + 4
         logging.debug(f"\tE content: {self.bit_head_byte_content[start_index:end_index].hex()}")
-        show_number_content(self.bit_head_byte_content[start_index:end_index])
+        utils.show_number_content(self.bit_head_byte_content[start_index:end_index])
         start_index = end_index
         # ========== 标识符E ============
     
@@ -674,7 +457,7 @@ class BitstreamParser:
     def parse_bit_cfg_content_pre(self) -> None: 
         while True:
             word = self.read_bit_bytes(4)
-            log_debug_with_description(bytes_to_binary(word))
+            utils.log_debug_with_description(utils.bytes_to_binary(word))
             if not word:
                 break  # 到达文件末尾，停止读取
             if len(word) < 4:
@@ -693,19 +476,19 @@ class BitstreamParser:
             # 拿到word count
             word_count = packet_content.get('word_count', 0)
             
-            if word == config_command.NOOP_BYTE:
+            if word == config.NOOP_BYTE:
                 item = PacketItem("NOOP")
                 item.set_opcode(-1)
                 word_count = 0
-            elif word == config_command.DUMMY_BYTE:
+            elif word == config.DUMMY_BYTE:
                 item = PacketItem("DUMMY")
                 item.set_opcode(-1)
                 word_count = 0
-            elif word == config_command.SYNC_WORD_BYTE:
+            elif word == config.SYNC_WORD_BYTE:
                 item = PacketItem("SYNC_WORD")
                 item.set_opcode(-1)
                 word_count = 0
-            elif word == config_command.BUS_WIDTH_AUTO_DETECT_01_BYTE or word == config_command.BUS_WIDTH_AUTO_DETECT_02_BYTE:
+            elif word == config.BUS_WIDTH_AUTO_DETECT_01_BYTE or word == config.BUS_WIDTH_AUTO_DETECT_02_BYTE:
                 item = PacketItem("BUS_WIDTH")
                 item.set_opcode(-1)
                 word_count = 0
@@ -757,19 +540,19 @@ class BitstreamParser:
             # 拿到word count
             word_count = packet_content.get('word_count', 0)
             
-            if word == config_command.NOOP_BYTE:
+            if word == config.NOOP_BYTE:
                 item = PacketItem("NOOP")
                 item.set_opcode(-1)
                 word_count = 0
-            elif word == config_command.DUMMY_BYTE:
+            elif word == config.DUMMY_BYTE:
                 item = PacketItem("DUMMY")
                 item.set_opcode(-1)
                 word_count = 0
-            elif word == config_command.SYNC_WORD_BYTE:
+            elif word == config.SYNC_WORD_BYTE:
                 item = PacketItem("SYNC_WORD")
                 item.set_opcode(-1)
                 word_count = 0
-            elif word == config_command.BUS_WIDTH_AUTO_DETECT_01_BYTE or word == config_command.BUS_WIDTH_AUTO_DETECT_02_BYTE:
+            elif word == config.BUS_WIDTH_AUTO_DETECT_01_BYTE or word == config.BUS_WIDTH_AUTO_DETECT_02_BYTE:
                 item = PacketItem("BUS_WIDTH")
                 item.set_opcode(-1)
                 word_count = 0
@@ -830,28 +613,28 @@ class BitstreamParser:
         # len(self.bit_cfg_content_after)) 数据帧之后的寄存器所占word数，*4为字节数
         
         # 四个字节数相加为整段位流长度
-        log_debug_with_description(len(self.bit_head_byte_content), 'X', '头部信息字节数')
+        utils.log_debug_with_description(len(self.bit_head_byte_content), 'X', '头部信息字节数')
         
         bit_cfg_content_pre_len = 0
         for item in self.bit_cfg_content_pre:
             bit_cfg_content_pre_len += item.get_data_len()
-        log_debug_with_description(bit_cfg_content_pre_len*4, 'X', '数据帧之前的寄存器字节数')
-        log_debug_with_description(len(self.bit_data_content)*4, 'X', '数据帧字节数')
+        utils.log_debug_with_description(bit_cfg_content_pre_len*4, 'X', '数据帧之前的寄存器字节数')
+        utils.log_debug_with_description(len(self.bit_data_content)*4, 'X', '数据帧字节数')
         
         bit_cfg_content_after_len = 0
         for item in self.bit_cfg_content_after:
             bit_cfg_content_after_len += item.get_data_len()
-        log_debug_with_description(bit_cfg_content_after_len*4, 'X', '数据帧之后的寄存器字节数')
-        log_debug_with_description(bit_cfg_content_after_len*4 + len(self.bit_data_content)*4 + bit_cfg_content_pre_len*4 + len(self.bit_head_byte_content), 'X', '总字节数')
+        utils.log_debug_with_description(bit_cfg_content_after_len*4, 'X', '数据帧之后的寄存器字节数')
+        utils.log_debug_with_description(bit_cfg_content_after_len*4 + len(self.bit_data_content)*4 + bit_cfg_content_pre_len*4 + len(self.bit_head_byte_content), 'X', '总字节数')
         # ============================================ debug ============================================
     
     def set_data_with_frame_word_bit(self, data, frame, word, bit):
         line_index = frame*101 + word
         bit_index = 31 - bit # 这里是因为bit从右往左算，而index从左往右算
         if self.file_type == ".bit" or self.file_type == ".bin":
-            word = bytes_to_binary(self.bit_data_content[line_index])
+            word = utils.bytes_to_binary(self.bit_data_content[line_index])
             word = word[:bit_index] + data + ( word[bit_index+1:] if bit_index<31 else "")
-            self.bit_data_content[line_index] = binary_str_to_bytes(word)
+            self.bit_data_content[line_index] = utils.binary_str_to_bytes(word)
         elif self.file_type == ".rbt":
             # rbt_data_content中的内容是左高右低的
             self.rbt_data_content[line_index] = self.rbt_data_content[line_index][:bit_index] + data + ( self.rbt_data_content[line_index][bit_index+1:] if bit_index<31 else "")
@@ -862,7 +645,7 @@ class BitstreamParser:
         line_index = frame*101 + word
         bit_index = 31 - bit # 这里是因为bit从右往左算，而index从左往右算
         if self.file_type == ".bit" or self.file_type == ".bin":
-            word = bytes_to_binary(self.bit_data_content[line_index])
+            word = utils.bytes_to_binary(self.bit_data_content[line_index])
             return word[bit_index]
         elif self.file_type == ".rbt":
             return self.rbt_data_content[line_index][bit_index]
@@ -963,13 +746,13 @@ class BitstreamParser:
         if self.file_type == ".rbt":
             for i in range(len(self.rbt_cfg_content_after)):
                 if self.rbt_cfg_content_after[i].cmd_name == "CRC":
-                    self.rbt_cfg_content_after[i].set_data_to_index(0, config_command.CMD_RCRC_01_STR)
-                    self.rbt_cfg_content_after[i].set_data_to_index(1, config_command.CMD_RCRC_02_STR)
+                    self.rbt_cfg_content_after[i].set_data_to_index(0, config.CMD_RCRC_01_STR)
+                    self.rbt_cfg_content_after[i].set_data_to_index(1, config.CMD_RCRC_02_STR)
         elif self.file_type == ".bit" or self.file_type == ".bin":
             for i in range(len(self.bit_cfg_content_after)):
                 if self.bit_cfg_content_after[i].cmd_name == "CRC":
-                    self.bit_cfg_content_after[i].set_data_to_index(0, config_command.CMD_RCRC_01_BYTE)
-                    self.bit_cfg_content_after[i].set_data_to_index(1, config_command.CMD_RCRC_02_BYTE)
+                    self.bit_cfg_content_after[i].set_data_to_index(0, config.CMD_RCRC_01_BYTE)
+                    self.bit_cfg_content_after[i].set_data_to_index(1, config.CMD_RCRC_02_BYTE)
         
     # 修改trim0寄存器，从0置1  
     def set_trim(self):
@@ -979,20 +762,161 @@ class BitstreamParser:
                 if self.rbt_cfg_content_pre[i].cmd_name == "COR1":
                     new_line = self.rbt_cfg_content_pre[i].get_data_from_index(1)[:-13] + "1" + self.rbt_cfg_content_pre[i].get_data_from_index(1)[-12:]
                     self.rbt_cfg_content_pre[i].set_data_to_index(1, new_line)
-                    self.rbt_cfg_content_pre[i].append_data(config_command.CMD_MASK_01_STR)
-                    self.rbt_cfg_content_pre[i].append_data(config_command.CMD_MASK_02_STR)
-                    self.rbt_cfg_content_pre[i].append_data(config_command.CMD_TRIM_01_STR)
-                    self.rbt_cfg_content_pre[i].append_data(config_command.CMD_TRIM_02_STR)
+                    self.rbt_cfg_content_pre[i].append_data(config.CMD_MASK_01_STR)
+                    self.rbt_cfg_content_pre[i].append_data(config.CMD_MASK_02_STR)
+                    self.rbt_cfg_content_pre[i].append_data(config.CMD_TRIM_01_STR)
+                    self.rbt_cfg_content_pre[i].append_data(config.CMD_TRIM_02_STR)
         elif self.file_type == ".bit" or self.file_type == ".bin":
             for i in range(len(self.bit_cfg_content_pre)):
                 if self.bit_cfg_content_pre[i].cmd_name == "COR1":
-                    word = bytes_to_binary(self.bit_cfg_content_pre[i].get_data_from_index(1))
+                    word = utils.bytes_to_binary(self.bit_cfg_content_pre[i].get_data_from_index(1))
                     word = word[:-13] + "1" + word[-12:]
-                    self.bit_cfg_content_pre[i].set_data_to_index(1, binary_str_to_bytes(word))
-                    self.bit_cfg_content_pre[i].append_data(config_command.CMD_MASK_01_BYTE)
-                    self.bit_cfg_content_pre[i].append_data(config_command.CMD_MASK_02_BYTE)
-                    self.bit_cfg_content_pre[i].append_data(config_command.CMD_TRIM_01_BYTE)
-                    self.bit_cfg_content_pre[i].append_data(config_command.CMD_TRIM_02_BYTE)
+                    self.bit_cfg_content_pre[i].set_data_to_index(1, utils.binary_str_to_bytes(word))
+                    self.bit_cfg_content_pre[i].append_data(config.CMD_MASK_01_BYTE)
+                    self.bit_cfg_content_pre[i].append_data(config.CMD_MASK_02_BYTE)
+                    self.bit_cfg_content_pre[i].append_data(config.CMD_TRIM_01_BYTE)
+                    self.bit_cfg_content_pre[i].append_data(config.CMD_TRIM_02_BYTE)
+       
+    def process_compress(self):
+        # 数据帧特征值作为key
+        # value : 
+        # {   
+        #     "FAR": {
+        #         "frame_type": 0,
+        #         "region_type": 0,
+        #         "row_num": 0,
+        #         "col_num": 0,
+        #         "frame_index": 0
+        #     },
+        #     "index":{
+        #         "start_index":0,
+        #         "end_index":101
+        #     },
+        #     "feature": "123"
+        # }
+        
+        # 每个row相互独立
+        data_frame_features_index = defaultdict(list)
+        start_index = 0
+        end_index = 101 # 这里是开区间，不包括101
+        cur_row = 0
+        frame_count = 0
+        all_frame_count = 0
+        
+        # ================================= 解析位流 开始 =========================================
+        for frame_type_key, frame_type_value in config.MC1P110_FRAME_STRUCT.items():
+            
+            # type 0 type 1
+            data_frame_features_index[frame_type_key] = {}
+            
+            # 遍历 frame_type 层
+            for region_type_key, region_type_value in frame_type_value.items():
+                
+                # top bottom
+                data_frame_features_index[frame_type_key][region_type_key] = {}
+                
+                # 遍历 region_type 层
+                for row_num_key, row_num_value in region_type_value.items():
+                    
+                    # row 0 1
+                    data_frame_features_index[frame_type_key][region_type_key][row_num_key] = defaultdict(list)
+                    frame_count = 0
+                    # 遍历 row_num 层
+                    for col_num_key, group_data_item in row_num_value.items():
+                        # group_data_item 包含 FAR 和 frame_count
+                        frame_count += group_data_item["frame_count"]
+                        word_count = group_data_item["frame_count"] * 101 # 这里拿到word数
+                        end_index = start_index + word_count
+                        
+                        # 每次拿一帧的数据计算
+                        frame_index = 0
+                        for index in range(start_index, end_index, 101):
+                            if self.file_type == "rbt":
+                                feature = utils.get_feature(self.rbt_data_content[index:index+101], "str")
+                            
+                            # 添加到字典
+                            data_frame_features_index[frame_type_key][region_type_key][row_num_key][feature].append(
+                                {
+                                    "FAR": {
+                                        "frame_type": group_data_item["FAR"]["frame_type"],
+                                        "region_type": group_data_item["FAR"]["region_type"],
+                                        "row_num": group_data_item["FAR"]["row_num"],
+                                        "col_num": group_data_item["FAR"]["col_num"],
+                                        "frame_index": frame_index
+                                    },
+                                    "index": {
+                                        "start_index": index,
+                                        "end_index": index + 101
+                                    },
+                                    "feature": feature
+                                }
+                            )
+                            frame_index += 1
+                        
+                        # 更新 start_index
+                        start_index = end_index
+                        
+                    # 完成一个row后，start_index需要向后跳两帧，这里有两帧的pad
+                    start_index += 101*2
+                    
+                    all_frame_count += frame_count
+        # ================================= 解析位流 结束 =========================================
+        
+        
+        # ================================= 构造压缩位流 开始 =========================================
+        for frame_type_key, frame_type_value in data_frame_features_index.items():
+            # 遍历 frame_type 层
+            for region_type_key, region_type_value in frame_type_value.items():
+                # 遍历 region_type 层
+                for row_num_key, row_num_value in region_type_value.items():
+                    # 遍历 row_num 层,每个元素
+                    # feature : 
+                    # [{   
+                    #     "FAR": {
+                    #         "frame_type": 0,
+                    #         "region_type": 0,
+                    #         "row_num": 0,
+                    #         "col_num": 0,
+                    #         "frame_index": 0
+                    #     },
+                    #     "index":{
+                    #         "start_index":0,
+                    #         "end_index":101
+                    #     },
+                    #     "feature": "123"
+                    # },
+                    # ...]
+                    for feature,group_data_item in row_num_value.items():
+                        # group_data_item 为 每个row不同特征值的数据
+                        # 当前特征值下帧数目
+                        group_len = len(group_data_item)
+                        if group_len > 1:
+                            # 多帧数据
+                            # 头帧格式：
+                            # 00110000000000000010000000000001	Write Reg:FAR, word:1
+                            # 00000000000000000000000000000000	type:0 tb:0 row:0 col:0 min:0 真实地址，来自于FAR
+                            # 00110000000000001000000000000001	Write Reg:CMD, word:1
+                            # 00000000000000000000000000000001	command:WCFG
+                            # 00100000000000000000000000000000	NOP*1
+                            # 00110000000000000100000001100101	Write Reg:FDRI, word:101
+                            # ........... 101 WORD ...........
+                            # 00110000000000001000000000000001	Write Reg:CMD, word:1
+                            # 00000000000000000000000000000010	command:MFW 
+                            # 00100000000000000000000000000000	NOP*12
+                            # 00110000000000010100000000001000	Write Reg:MFWR, word:8
+                            # 00000000000000000000000000000000  ZERO_FRAME*8
+                            
+                            pass
+                        elif group_len == 1:
+                            # 单帧时
+                            
+                            pass
+                        else:
+                            # 异常情况
+                            
+                            pass
+     
+        # ================================= 构造压缩位流 结束 =========================================
         
     # 计算crc
     def calculate_crc(self):
@@ -1009,7 +933,7 @@ class BitstreamParser:
                     # 参与运算
                     words_len = item.get_data_len()
                     for index in range(1, words_len):
-                        if item.get_data_from_index(0) == config_command.CMD_RCRC_01_STR and item.get_data_from_index(1) == config_command.CMD_RCRC_02_STR:
+                        if item.get_data_from_index(0) == config.CMD_RCRC_01_STR and item.get_data_from_index(1) == config.CMD_RCRC_02_STR:
                             # 从这里开始，后面的寄存器参与运算
                             crc_start_flag = True
                             continue
@@ -1025,7 +949,7 @@ class BitstreamParser:
             # 00010010000111000110100110000001                
             for word in self.rbt_data_content:
                 # 计算crc
-                crc_data_in = self.cfg_obj.make_len_37_crc_data_in(word, config_command.FDRI_STR, "str")
+                crc_data_in = self.cfg_obj.make_len_37_crc_data_in(word, config.FDRI_STR, "str")
                 self.crc_01 = self.icap_crc(crc_data_in, self.crc_01)
             
             print(self.crc_01) # 01111100100101011110011001111001 7C95E679
@@ -1044,7 +968,7 @@ class BitstreamParser:
                     # 参与运算
                     words_len = item.get_data_len()
                     for index in range(1, words_len):
-                        if item.get_data_from_index(0) == config_command.CRC_STR:
+                        if item.get_data_from_index(0) == config.CRC_STR:
                             crc_end_flag = True
                             break
                         # 计算crc
@@ -1085,7 +1009,7 @@ class BitstreamParser:
                     # 参与运算
                     words_len = item.get_data_len()
                     for index in range(1, words_len):
-                        if item.get_data_from_index(0) == config_command.CMD_RCRC_01_BYTE and item.get_data_from_index(1) == config_command.CMD_RCRC_02_BYTE:
+                        if item.get_data_from_index(0) == config.CMD_RCRC_01_BYTE and item.get_data_from_index(1) == config.CMD_RCRC_02_BYTE:
                             # 从这里开始，后面的寄存器参与运算
                             crc_start_flag = True
                             continue
@@ -1101,7 +1025,7 @@ class BitstreamParser:
             # 00010010000111000110100110000001                
             for word in self.bit_data_content:
                 # 计算crc
-                crc_data_in = self.cfg_obj.make_len_37_crc_data_in(word, config_command.FDRI_BYTE, "byte")
+                crc_data_in = self.cfg_obj.make_len_37_crc_data_in(word, config.FDRI_BYTE, "byte")
                 self.crc_01 = self.icap_crc(crc_data_in, self.crc_01)
                             
             print(self.crc_01) # 01111100100101011110011001111001 7C95E679
@@ -1122,7 +1046,7 @@ class BitstreamParser:
                     # 参与运算
                     words_len = item.get_data_len()
                     for index in range(1, words_len):
-                        if item.get_data_from_index(0) == config_command.CRC_BIT:
+                        if item.get_data_from_index(0) == config.CRC_BIT:
                             crc_end_flag = True
                             break
                         # 计算crc
@@ -1198,7 +1122,6 @@ class BitstreamParser:
         crc = ''.join(str(num) for num in crc_data_new)
         return crc
     
-    
 def main():
     parser = argparse.ArgumentParser(description="Auto Process")
 
@@ -1260,6 +1183,9 @@ def main():
             # 执行到此表示无法修改
             raise ValueError("规则无法适配")
     
+    if args.COMPRESS:
+        bit_parser.process_compress()
+        
     if args.CRC:
         # 计算CRC
         bit_parser.calculate_crc()
