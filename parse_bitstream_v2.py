@@ -230,7 +230,7 @@ class PacketItem:
     def set_opcode(self, data):
         self.opcode = data
 
-class DataItem:
+class DataFrameItem:
     def __init__(self, 
                  frame_type, 
                  region_type, 
@@ -519,7 +519,6 @@ class BitstreamParser:
           
     # 解析cfg，读取数据帧
     def parse_rbt_data_content(self) -> None: 
-        
         self.rbt_data_content.extend(self.rbt_content[self.rbt_content_cur_loc:self.rbt_content_cur_loc+self.word_count])
         self.rbt_content_cur_loc = self.rbt_content_cur_loc + self.word_count
         

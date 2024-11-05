@@ -5,7 +5,7 @@
     "version": "0.2.0",
     "configurations": [
         {
-            "name": "parse_bitstream_新版",
+            "name": "parse_bitstream",
             "type": "debugpy",
             "request": "launch",
             "args": [
@@ -14,7 +14,20 @@
                 "--GTP",
                 "--PCIE",
             ],
-            "program": "E:/workspace/parse_bitstream/parse_bitstream/parse_bitstream_新版.py",
+            "program": "E:\\workspace\\parse_bitstream\\parse_bitstream\\parse_bitstream.py",
+            "console": "integratedTerminal"
+        },
+        {
+            "name": "parse_bitstream_v2",
+            "type": "debugpy",
+            "request": "launch",
+            "args": [
+                "--file",
+                "E:\\workspace\\parse_bitstream\\parse_bitstream\\data\\system_wrapper_1_原版.rbt",
+                "--GTP",
+                "--PCIE",
+            ],
+            "program": "E:\\workspace\\parse_bitstream\\parse_bitstream\\parse_bitstream_v2.py",
             "console": "integratedTerminal"
         }
     ]
