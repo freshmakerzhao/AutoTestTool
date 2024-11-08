@@ -35,7 +35,7 @@
             "request": "launch",
             "args": [
                 "--file",
-                "E:\\workspace\\parse_bitstream\\parse_bitstream\\test\\system_wrapper.rbt",
+                "E:\\workspace\\parse_bitstream\\parse_bitstream\\test\\system_wrapper.bit",
                 "--COMPRESS"
             ],
             "program": "E:\\workspace\\parse_bitstream\\parse_bitstream\\parse_bitstream_v2.py",

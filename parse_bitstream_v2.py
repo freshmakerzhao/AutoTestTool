@@ -831,7 +831,11 @@ class BitstreamParser:
                         # 每次拿一帧的数据计算
                         frame_index = 0
                         for index in range(start_index, end_index, 101):
-                            feature = utils.get_feature(self.rbt_data_content[index:index+101], "str" if self.file_type == ".rbt" else "int")
+                            if self.file_type == ".rbt":
+                                feature = utils.get_feature(self.rbt_data_content[index:index+101] , "str")
+                            elif self.file_type == ".bit" or self.file_type == ".bin":
+                                feature = utils.get_feature(self.bit_data_content[index:index+101] , "int")
+                                
                             
                             # 添加到字典
                             data_frame_features_index[frame_type_key][region_type_key][row_num_key][feature].append(
@@ -883,7 +887,10 @@ class BitstreamParser:
             word_count_binary = f'{word_count:028b}'[-28:]
             fixed_part = "0101"
             total_word = fixed_part + word_count_binary
-            return total_word
+            if self.file_type == ".rbt":
+                return total_word
+            elif self.file_type == ".bit" or self.file_type == ".bin":
+                return utils.binary_str_to_bytes(total_word)
               
         # 构造可变的cmd
         def get_cmd_from_word_count(word_count,cmd):
@@ -903,25 +910,12 @@ class BitstreamParser:
                 return frame_data_register_input
             elif self.file_type == ".bit" or self.file_type == ".bin":
                 return utils.binary_str_to_bytes(frame_data_register_input)
-        
-        def write_file_for_test(data_to_append):
-            pass
-            # if data_to_append == '00000000000000100000101000011100':
-            #     print(123)
-            # with open(r"E:\workspace\parse_bitstream\parse_bitstream\压缩位流相关知识\compress\test\zy\output.rbt", 'a', encoding='utf-8') as file:
-            #     file.write(data_to_append+'\n')
-            # with open(r"E:\workspace\parse_bitstream\parse_bitstream\压缩位流相关知识\compress\test\flow_led_fwb\output.rbt", 'a', encoding='utf-8') as file:
-            #     file.write(data_to_append+'\n')
               
         # 插入数据，方便维护
         def insert_data(content):
-            # write_file_for_test(content)
             new_data_frame.append(content)
             
         def insert_multiple_words(content):
-            for line in content:
-                write_file_for_test(line)
-                
             new_data_frame.extend(content)
         
         # ================================= 构造压缩位流 开始 =========================================
@@ -969,7 +963,12 @@ class BitstreamParser:
                                 insert_data(getattr(config, "WCFG"+config_suffix))
                                 insert_data(getattr(config, "NOOP"+config_suffix))
                                 insert_data(get_cmd_from_word_count(101, "FDRI"))
-                                insert_multiple_words(self.rbt_data_content[row_data[current_feature][0]['index']['start_index']:row_data[current_feature][0]['index']['end_index']])
+                                
+                                if self.file_type == ".rbt":
+                                    insert_multiple_words(self.rbt_data_content[row_data[current_feature][0]['index']['start_index']:row_data[current_feature][0]['index']['end_index']])
+                                elif self.file_type == ".bit" or self.file_type == ".bin":
+                                    insert_multiple_words(self.bit_data_content[row_data[current_feature][0]['index']['start_index']:row_data[current_feature][0]['index']['end_index']])
+                                
                                 is_first = False
                             else:
                                 insert_data(getattr(config, "CMD"+config_suffix))
@@ -979,8 +978,11 @@ class BitstreamParser:
                                 insert_data(get_frame_address_register(row_data[current_feature][0]["FAR"]["frame_type"], row_data[current_feature][0]["FAR"]["region_type"], row_data[current_feature][0]["FAR"]["row_num"], row_data[current_feature][0]["FAR"]["col_num"], row_data[current_feature][0]["FAR"]["frame_index"]))
                                 insert_data(getattr(config, "NOOP"+config_suffix))
                                 insert_data(get_cmd_from_word_count(101, "FDRI"))
-                                insert_multiple_words(self.rbt_data_content[row_data[current_feature][0]['index']['start_index']:row_data[current_feature][0]['index']['end_index']])
-                                
+                                if self.file_type == ".rbt":
+                                    insert_multiple_words(self.rbt_data_content[row_data[current_feature][0]['index']['start_index']:row_data[current_feature][0]['index']['end_index']])
+                                elif self.file_type == ".bit" or self.file_type == ".bin":
+                                    insert_multiple_words(self.bit_data_content[row_data[current_feature][0]['index']['start_index']:row_data[current_feature][0]['index']['end_index']])
+
                             insert_data(getattr(config, "CMD"+config_suffix))
                             insert_data(getattr(config, "MFW"+config_suffix))
                             for _ in range(12):
@@ -1053,7 +1055,10 @@ class BitstreamParser:
                                 insert_data(get_total_word(single_word_count))
                             # 插入这些单帧
                             for feature_key in single_feature_list:
-                                insert_multiple_words(self.rbt_data_content[row_data[feature_key][0]['index']['start_index']:row_data[feature_key][0]['index']['end_index']])
+                                if self.file_type == ".rbt":
+                                    insert_multiple_words(self.rbt_data_content[row_data[feature_key][0]['index']['start_index']:row_data[feature_key][0]['index']['end_index']])
+                                elif self.file_type == ".bit" or self.file_type == ".bin":
+                                    insert_multiple_words(self.bit_data_content[row_data[feature_key][0]['index']['start_index']:row_data[feature_key][0]['index']['end_index']])
                             # 最后插入 pad frame
                             for _ in range(101):
                                 insert_data(getattr(config, "ZERO"+config_suffix))
@@ -1064,7 +1069,11 @@ class BitstreamParser:
                             #     insert_data(get_cmd_from_word_count(single_word_count, "FDRI"))
                             #     # 插入这些单帧
                             #     for feature_key in single_feature_list:
-                            #         insert_multiple_words(self.rbt_data_content[row_data[feature_key][0]['index']['start_index']:row_data[feature_key][0]['index']['end_index']])
+                            #         if self.file_type == ".rbt":
+                            #             insert_multiple_words(self.rbt_data_content[row_data[feature_key][0]['index']['start_index']:row_data[feature_key][0]['index']['end_index']])
+                            #         elif self.file_type == ".bit" or self.file_type == ".bin":
+                            #             insert_multiple_words(self.bit_data_content[row_data[feature_key][0]['index']['start_index']:row_data[feature_key][0]['index']['end_index']])
+                            #         
                             #     # 最后插入 pad frame
                             #     for _ in range(101):
                             #         insert_data(getattr(config, "ZERO"+config_suffix))
@@ -1074,7 +1083,10 @@ class BitstreamParser:
                             #     insert_data(get_total_word(single_word_count))
                             #     # 插入这些单帧
                             #     for feature_key in single_feature_list:
-                            #         insert_multiple_words(self.rbt_data_content[row_data[feature_key][0]['index']['start_index']:row_data[feature_key][0]['index']['end_index']])
+                            #         if self.file_type == ".rbt":
+                            #             insert_multiple_words(self.rbt_data_content[row_data[feature_key][0]['index']['start_index']:row_data[feature_key][0]['index']['end_index']])
+                            #         elif self.file_type == ".bit" or self.file_type == ".bin":
+                            #             insert_multiple_words(self.bit_data_content[row_data[feature_key][0]['index']['start_index']:row_data[feature_key][0]['index']['end_index']])
                             #     for _ in range(101):
                             #         insert_data(getattr(config, "ZERO"+config_suffix))
                             #     insert_data(getattr(config, "CMD"+config_suffix))
@@ -1085,7 +1097,6 @@ class BitstreamParser:
                             #     for _ in range(8):
                             #         insert_data(getattr(config, "ZERO"+config_suffix))
                             # ================ 方案二 ================ 
-                                
                         else:
                             # 异常情况
                             print(456)
@@ -1093,9 +1104,8 @@ class BitstreamParser:
            
         # ================================= 构造压缩位流 结束 =========================================
         
-        self.rbt_data_content = new_data_frame
-        
         if self.file_type == ".rbt":
+            self.rbt_data_content = new_data_frame
             for i in range(len(self.rbt_cfg_content_pre)-1, 0, -1):
                 if self.rbt_cfg_content_pre[i].cmd_name == "FAR":
                     self.rbt_cfg_content_pre = self.rbt_cfg_content_pre[:i]
@@ -1103,13 +1113,13 @@ class BitstreamParser:
             else:
                 raise ValueError("配置寄存器存在问题")
         elif self.file_type == ".bit" or self.file_type == ".bin":
+            self.bit_data_content = new_data_frame
             for i in range(len(self.bit_cfg_content_pre)-1, 0, -1):
                 if self.bit_cfg_content_pre[i].cmd_name == "FAR":
                     self.bit_cfg_content_pre = self.bit_cfg_content_pre[:i]
                     break
             else:
                 raise ValueError("配置寄存器存在问题")
-            
             
     # 计算crc
     def calculate_crc(self):
