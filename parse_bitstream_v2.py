@@ -831,8 +831,7 @@ class BitstreamParser:
                         # 每次拿一帧的数据计算
                         frame_index = 0
                         for index in range(start_index, end_index, 101):
-                            if self.file_type == ".rbt":
-                                feature = utils.get_feature(self.rbt_data_content[index:index+101], "str")
+                            feature = utils.get_feature(self.rbt_data_content[index:index+101], "str" if self.file_type == ".rbt" else "int")
                             
                             # 添加到字典
                             data_frame_features_index[frame_type_key][region_type_key][row_num_key][feature].append(
@@ -863,14 +862,20 @@ class BitstreamParser:
         # ================================= 解析位流 结束 =========================================
         
         new_data_frame = [] # 存储新生成的data frame
+        is_first = True
+        config_suffix = "_STR" if self.file_type == ".rbt" else "_BYTE"
         
         # 构造FAR
         def get_frame_address_register(frame_type, region_type, row_num, col_num, frame_index):
             # 00000000000000000000000000000000	frame_type:0 region_type:0 row_num:0 col_num:0 frame_index:0
             # 构造32位二进制数
-            binary = (frame_type << 23) | (region_type << 22) | (row_num << 17) | (col_num << 7) | frame_index
-            # 转换为32位二进制字符串
-            return format(binary, '032b')
+            decimal_value = (frame_type << 23) | (region_type << 22) | (row_num << 17) | (col_num << 7) | frame_index
+            
+            if self.file_type == ".rbt":
+                # 转换为32位二进制字符串
+                return format(decimal_value, '032b')
+            elif self.file_type == ".bit" or self.file_type == ".bin":
+                return utils.decimal_to_bytes(decimal_value)
               
         # 获取Totalword
         def get_total_word(word_count):
@@ -891,22 +896,26 @@ class BitstreamParser:
             else:
                 pass
             
-            # 拼接前 22 位和后 11 位的 word_count
+            # 拼接前 22 位和后 11 位的 word_count(二进制字符串)
             frame_data_register_input = fixed_part + word_count_binary
             
-            return frame_data_register_input
+            if self.file_type == ".rbt":
+                return frame_data_register_input
+            elif self.file_type == ".bit" or self.file_type == ".bin":
+                return utils.binary_str_to_bytes(frame_data_register_input)
         
         def write_file_for_test(data_to_append):
-            if data_to_append == '00000000000000100000101000011100':
-                print(123)
-            # with open(r"E:\workspace\parse_bitstream\parse_bitstream\压缩位流相关知识\compress\test\test_out.rbt", 'a', encoding='utf-8') as file:
+            pass
+            # if data_to_append == '00000000000000100000101000011100':
+            #     print(123)
+            # with open(r"E:\workspace\parse_bitstream\parse_bitstream\压缩位流相关知识\compress\test\zy\output.rbt", 'a', encoding='utf-8') as file:
             #     file.write(data_to_append+'\n')
-            with open(r"E:\workspace\parse_bitstream\parse_bitstream\压缩位流相关知识\compress\test\test_out_flow_led_run.rbt", 'a', encoding='utf-8') as file:
-                file.write(data_to_append+'\n')
+            # with open(r"E:\workspace\parse_bitstream\parse_bitstream\压缩位流相关知识\compress\test\flow_led_fwb\output.rbt", 'a', encoding='utf-8') as file:
+            #     file.write(data_to_append+'\n')
               
         # 插入数据，方便维护
         def insert_data(content):
-            write_file_for_test(content)
+            # write_file_for_test(content)
             new_data_frame.append(content)
             
         def insert_multiple_words(content):
@@ -915,7 +924,6 @@ class BitstreamParser:
                 
             new_data_frame.extend(content)
         
-        is_first = True
         # ================================= 构造压缩位流 开始 =========================================
         for frame_type_key, frame_type_value in data_frame_features_index.items():
             # 遍历 frame_type 层
@@ -955,40 +963,49 @@ class BitstreamParser:
                             # 多帧数据
                             # ================= 首帧格式 ======================
                             if is_first:
-                                insert_data(config.FAR_STR)
+                                insert_data(getattr(config, "FAR"+config_suffix))
                                 insert_data(get_frame_address_register(row_data[current_feature][0]["FAR"]["frame_type"], row_data[current_feature][0]["FAR"]["region_type"], row_data[current_feature][0]["FAR"]["row_num"], row_data[current_feature][0]["FAR"]["col_num"], row_data[current_feature][0]["FAR"]["frame_index"]))
-                                insert_data(config.CMD_STR)
-                                insert_data(config.WCFG_STR)
-                                insert_data(config.NOOP_STR)
+                                insert_data(getattr(config, "CMD"+config_suffix))
+                                insert_data(getattr(config, "WCFG"+config_suffix))
+                                insert_data(getattr(config, "NOOP"+config_suffix))
                                 insert_data(get_cmd_from_word_count(101, "FDRI"))
                                 insert_multiple_words(self.rbt_data_content[row_data[current_feature][0]['index']['start_index']:row_data[current_feature][0]['index']['end_index']])
                                 is_first = False
                             else:
-                                insert_data(config.CMD_STR)
-                                insert_data(config.WCFG_STR)
-                                insert_data(config.NOOP_STR)
-                                insert_data(config.FAR_STR)
+                                insert_data(getattr(config, "CMD"+config_suffix))
+                                insert_data(getattr(config, "WCFG"+config_suffix))
+                                insert_data(getattr(config, "NOOP"+config_suffix))
+                                insert_data(getattr(config, "FAR"+config_suffix))
                                 insert_data(get_frame_address_register(row_data[current_feature][0]["FAR"]["frame_type"], row_data[current_feature][0]["FAR"]["region_type"], row_data[current_feature][0]["FAR"]["row_num"], row_data[current_feature][0]["FAR"]["col_num"], row_data[current_feature][0]["FAR"]["frame_index"]))
-                                insert_data(config.NOOP_STR)
+                                insert_data(getattr(config, "NOOP"+config_suffix))
                                 insert_data(get_cmd_from_word_count(101, "FDRI"))
                                 insert_multiple_words(self.rbt_data_content[row_data[current_feature][0]['index']['start_index']:row_data[current_feature][0]['index']['end_index']])
                                 
-                            insert_data(config.CMD_STR)
-                            insert_data(config.MFW_STR)
+                            insert_data(getattr(config, "CMD"+config_suffix))
+                            insert_data(getattr(config, "MFW"+config_suffix))
                             for _ in range(12):
-                                insert_data(config.NOOP_STR)
+                                insert_data(getattr(config, "NOOP"+config_suffix))
                             insert_data(get_cmd_from_word_count(8, "MFWR"))
                             for _ in range(8):
-                                insert_data(config.ZERO_STR)
+                                insert_data(getattr(config, "ZERO"+config_suffix))
+                            
+                            if frame_type_key == "frame_type_1":
+                                # type 1时，头帧要等待8个 cycle，后续数据才能继续写入
+                                for _ in range(8):
+                                    insert_data(getattr(config, "NOOP"+config_suffix))
                             # ================= 首帧格式 ======================
                                 
                             # 从第二帧开始, 压缩写入
                             for frame_index in range(1, group_len):
-                                insert_data(config.FAR_STR)
+                                insert_data(getattr(config, "FAR"+config_suffix))
                                 insert_data(get_frame_address_register(row_data[current_feature][frame_index]["FAR"]["frame_type"], row_data[current_feature][frame_index]["FAR"]["region_type"], row_data[current_feature][frame_index]["FAR"]["row_num"], row_data[current_feature][frame_index]["FAR"]["col_num"], row_data[current_feature][frame_index]["FAR"]["frame_index"]))
                                 insert_data(get_cmd_from_word_count(4, "MFWR"))
                                 for _ in range(4):
-                                    insert_data(config.ZERO_STR)
+                                    insert_data(getattr(config, "ZERO"+config_suffix))
+                                if frame_type_key == "frame_type_1":
+                                    # type 1时，数据写入后要等待8个 cycle
+                                    for _ in range(8):
+                                        insert_data(getattr(config, "NOOP"+config_suffix))
                             
                             # 到下一个
                             feature_index += 1;        
@@ -1005,7 +1022,7 @@ class BitstreamParser:
                             feature_index += 1
                             
                             while feature_index < features_list_len:
-                                if len(row_data[features_list[feature_index]]) and row_data[features_list[feature_index]][0]["index"]["start_index"] == last_frame_index:
+                                if len(row_data[features_list[feature_index]]) == 1 and row_data[features_list[feature_index]][0]["index"]["start_index"] == last_frame_index:
                                     # 单帧连续时
                                     # 更新
                                     last_frame_index = row_data[features_list[feature_index]][0]["index"]["end_index"]
@@ -1018,44 +1035,82 @@ class BitstreamParser:
                                 
                             # 此时 single_feature_list 中存放着连续单帧
                         
-                            insert_data(config.CMD_STR)
-                            insert_data(config.WCFG_STR)
-                            insert_data(config.NOOP_STR)
-                            insert_data(config.FAR_STR)
+                            insert_data(getattr(config, "CMD"+config_suffix))
+                            insert_data(getattr(config, "WCFG"+config_suffix))
+                            insert_data(getattr(config, "NOOP"+config_suffix))
+                            insert_data(getattr(config, "FAR"+config_suffix))
                             # current_feature 是 单帧列表中的第一个帧
                             insert_data(get_frame_address_register(row_data[current_feature][0]["FAR"]["frame_type"], row_data[current_feature][0]["FAR"]["region_type"], row_data[current_feature][0]["FAR"]["row_num"], row_data[current_feature][0]["FAR"]["col_num"], row_data[current_feature][0]["FAR"]["frame_index"]))
-                            insert_data(config.NOOP_STR)
+                            insert_data(getattr(config, "NOOP"+config_suffix))
                             single_word_count = (len(single_feature_list)+1)*101
+                            
+                            # ================ 方案一 ================ 
                             if single_word_count < 2048:
                                 insert_data(get_cmd_from_word_count(single_word_count, "FDRI"))
-                                # 插入这些单帧
-                                for feature_key in single_feature_list:
-                                    insert_multiple_words(self.rbt_data_content[row_data[feature_key][0]['index']['start_index']:row_data[feature_key][0]['index']['end_index']])
-                                # 最后插入 pad frame
-                                for _ in range(101):
-                                    insert_data(config.ZERO_STR)
                             else:
                                 # FDRI cmd 低11位表示 word count ，最大为2047，超过这个数目，需要额外的一行作为表示
                                 insert_data(get_cmd_from_word_count(0, "FDRI"))
-                                insert_data(get_total_word(single_word_count-101))
-                                # 插入这些单帧
-                                for feature_key in single_feature_list:
-                                    insert_multiple_words(self.rbt_data_content[row_data[feature_key][0]['index']['start_index']:row_data[feature_key][0]['index']['end_index']])
-                                insert_data(config.CMD_STR)
-                                insert_data(config.MFW_STR)
-                                for _ in range(12):
-                                    insert_data(config.NOOP_STR)
-                                insert_data(get_cmd_from_word_count(8, "MFWR"))
-                                for _ in range(8):
-                                    insert_data(config.ZERO_STR)
+                                insert_data(get_total_word(single_word_count))
+                            # 插入这些单帧
+                            for feature_key in single_feature_list:
+                                insert_multiple_words(self.rbt_data_content[row_data[feature_key][0]['index']['start_index']:row_data[feature_key][0]['index']['end_index']])
+                            # 最后插入 pad frame
+                            for _ in range(101):
+                                insert_data(getattr(config, "ZERO"+config_suffix))
+                            # ================ 方案一 ================ 
+                                
+                            # ================ 方案二 ================ 
+                            # if single_word_count < 2048:
+                            #     insert_data(get_cmd_from_word_count(single_word_count, "FDRI"))
+                            #     # 插入这些单帧
+                            #     for feature_key in single_feature_list:
+                            #         insert_multiple_words(self.rbt_data_content[row_data[feature_key][0]['index']['start_index']:row_data[feature_key][0]['index']['end_index']])
+                            #     # 最后插入 pad frame
+                            #     for _ in range(101):
+                            #         insert_data(getattr(config, "ZERO"+config_suffix))
+                            # else:
+                            #     # FDRI cmd 低11位表示 word count ，最大为2047，超过这个数目，需要额外的一行作为表示
+                            #     insert_data(get_cmd_from_word_count(0, "FDRI"))
+                            #     insert_data(get_total_word(single_word_count))
+                            #     # 插入这些单帧
+                            #     for feature_key in single_feature_list:
+                            #         insert_multiple_words(self.rbt_data_content[row_data[feature_key][0]['index']['start_index']:row_data[feature_key][0]['index']['end_index']])
+                            #     for _ in range(101):
+                            #         insert_data(getattr(config, "ZERO"+config_suffix))
+                            #     insert_data(getattr(config, "CMD"+config_suffix))
+                            #     insert_data(getattr(config, "MFW"+config_suffix))
+                            #     for _ in range(12):
+                            #         insert_data(getattr(config, "NOOP"+config_suffix))
+                            #     insert_data(get_cmd_from_word_count(8, "MFWR"))
+                            #     for _ in range(8):
+                            #         insert_data(getattr(config, "ZERO"+config_suffix))
+                            # ================ 方案二 ================ 
                                 
                         else:
                             # 异常情况
                             print(456)
                             break
-            
+           
         # ================================= 构造压缩位流 结束 =========================================
         
+        self.rbt_data_content = new_data_frame
+        
+        if self.file_type == ".rbt":
+            for i in range(len(self.rbt_cfg_content_pre)-1, 0, -1):
+                if self.rbt_cfg_content_pre[i].cmd_name == "FAR":
+                    self.rbt_cfg_content_pre = self.rbt_cfg_content_pre[:i]
+                    break
+            else:
+                raise ValueError("配置寄存器存在问题")
+        elif self.file_type == ".bit" or self.file_type == ".bin":
+            for i in range(len(self.bit_cfg_content_pre)-1, 0, -1):
+                if self.bit_cfg_content_pre[i].cmd_name == "FAR":
+                    self.bit_cfg_content_pre = self.bit_cfg_content_pre[:i]
+                    break
+            else:
+                raise ValueError("配置寄存器存在问题")
+            
+            
     # 计算crc
     def calculate_crc(self):
         # 拿到数据帧之前的寄存器
@@ -1287,7 +1342,8 @@ def main():
     logging.info(f"\tPCIE: {args.PCIE}")
     logging.info(f"\tGTP: {args.GTP}")
     logging.info(f"\tCRC: {args.CRC}")
-    logging.info(f"\tTRIM: {args.TRIM}\n")
+    logging.info(f"\tTRIM: {args.TRIM}")
+    logging.info(f"\tCOMPRESS: {args.COMPRESS}\n")
     
     bit_parser = BitstreamParser(args.file, args.CRC)
     

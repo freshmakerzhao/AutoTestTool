@@ -59,11 +59,18 @@ def reverse_bits(data, num_bits):
         reflected = '0' + reflected	
     return reflected
 
+# 二进制字符串转字节
 def binary_str_to_bytes(binary_str):
     # 将32位二进制字符串转换为整数
     num = int(binary_str, 2)
     # 使用struct将整数转换为4字节的字节对象
     return struct.pack('>I', num)  # '>I'表示大端4字节无符号整数
+
+# 整数转字节
+def decimal_to_bytes(decimal_value):
+    # 将十进制整数转换为 4 字节的字节序列（32 位）
+    byte_value = decimal_value.to_bytes(4, byteorder='big')
+    return byte_value
 
 # 获取特征值
 # 这里传入content为list， 每个元素的数据类型为 content_type
@@ -75,16 +82,9 @@ def get_feature(content:list, content_type = "int"):
         feature_hash = hashlib.sha256(combined_string.encode()).hexdigest()
         return feature_hash
     elif content_type == "int":
-        pass
-    
-# 获取特征值
-# 这里传入content为list， 每个元素的数据类型为 content_type
-def get_feature(content:list, content_type = "int"):
-    if content_type == "str":
-        # 此时是二进制字符串作为一个元素
-        combined_string = ''.join(content)
+        combined_bytes = b''.join(content)
         # 使用 hashlib 计算特征值（SHA256）
-        feature_hash = hashlib.sha256(combined_string.encode()).hexdigest()
+        feature_hash = hashlib.sha256(combined_bytes).hexdigest()
         return feature_hash
-    elif content_type == "int":
-        pass
+    else:
+        raise ValueError("Unsupported content_type. Use 'str' or 'int'.")

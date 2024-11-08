@@ -23,19 +23,19 @@
             "request": "launch",
             "args": [
                 "--file",
-                "E:\\workspace\\parse_bitstream\\parse_bitstream\\压缩位流相关知识\\compress\\222\\origin.rbt",
+                "E:\\workspace\\parse_bitstream\\parse_bitstream\\压缩位流相关知识\\compress\\test\\zy\\origin.rbt",
                 "--COMPRESS"
             ],
             "program": "E:\\workspace\\parse_bitstream\\parse_bitstream\\parse_bitstream_v2.py",
             "console": "integratedTerminal"
         },
         {
-            "name": "parse_bitstream_flow_led",
+            "name": "parse_bitstream_compress",
             "type": "debugpy",
             "request": "launch",
             "args": [
                 "--file",
-                "C:\\Users\\DELL\\Desktop\\compress_bit\\flow_led.rbt",
+                "E:\\workspace\\parse_bitstream\\parse_bitstream\\test\\system_wrapper.rbt",
                 "--COMPRESS"
             ],
             "program": "E:\\workspace\\parse_bitstream\\parse_bitstream\\parse_bitstream_v2.py",
