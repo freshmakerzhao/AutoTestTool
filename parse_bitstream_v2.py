@@ -113,7 +113,7 @@ class PacketItem:
         self.opcode = data
     
 class BitstreamParser:
-    def __init__(self, input_file_path: str, enable_crc: bool):
+    def __init__(self, device: str, input_file_path: str, enable_crc: bool):
         """
         初始化 BitstreamParser
 
@@ -127,6 +127,8 @@ class BitstreamParser:
         self.enable_crc = enable_crc
         self.crc_01 = "00000000000000000000000000000000"
         self.crc_02 = "00000000000000000000000000000000"
+        
+        self.device = device # 器件类型
         
         # 位流中的CRC内容
         self.crc_own_01 = "-1"
@@ -804,7 +806,7 @@ class BitstreamParser:
         all_frame_count = 0
         
         # ================================= 解析位流 开始 =========================================
-        for frame_type_key, frame_type_value in config.MC1P110_FRAME_STRUCT.items():
+        for frame_type_key, frame_type_value in getattr(config, self.device + "_FRAME_STRUCT").items():
             
             # type 0 type 1
             data_frame_features_index[frame_type_key] = {}
@@ -1403,7 +1405,8 @@ def main():
     # Add optional arguments
     parser.add_argument('--rbt_folder', type=str, help="Input .rbt folder path")
     parser.add_argument('--file', type=str, help="Only process this specific file")
-    parser.add_argument('--file_suffix', type=str, default=FILE_ENDWITH, help="Suffix to add to the new .rbt file (default: _HybrdChip)")
+    parser.add_argument('--device', type=str, help="Specific your chip's device (Default: MC1P110)")
+    parser.add_argument('--file_suffix', type=str, default=FILE_ENDWITH, help="Suffix to add to the new .rbt file (Default: _HybrdChip)")
     parser.add_argument('--PCIE', action='store_true', help="Enable PCIE processing (Default: False)")
     parser.add_argument('--GTP', action='store_true', help="Enable GTP processing (Default: False)")
     parser.add_argument('--CRC', action='store_true', help="Enable CRC processing (Default: False)")
@@ -1417,10 +1420,13 @@ def main():
     if not any(vars(args).values()):
         parser.print_help()
         return
-
+    
+    device = config.DEVICE_MAP.get(args.device.upper() if args.device else "MC1P110","MC1P110")
+    
     logging.info(f"Parameters:")
     logging.info(f"\tfolder: {args.rbt_folder}")
     logging.info(f"\tfile: {args.file}")
+    logging.info(f"\tdevice: {device}")
     logging.info(f"\tfile_suffix: {args.file_suffix}")
     logging.info(f"\tPCIE: {args.PCIE}")
     logging.info(f"\tGTP: {args.GTP}")
@@ -1428,7 +1434,7 @@ def main():
     logging.info(f"\tTRIM: {args.TRIM}")
     logging.info(f"\tCOMPRESS: {args.COMPRESS}\n")
     
-    bit_parser = BitstreamParser(args.file, args.CRC)
+    bit_parser = BitstreamParser(device, args.file, args.CRC)
     
     if args.GTP:
         # 处理GTP

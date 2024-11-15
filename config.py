@@ -56,6 +56,21 @@ MFW_BYTE = b'\x00\x00\x00\x02'
 ZERO_STR = "00000000000000000000000000000000"
 ZERO_BYTE = b'\x00\x00\x00\x00'
 
+DEVICE_MAP = {
+    "A100T":    "MC1P110",
+    "MC1P110":  "MC1P110",
+    "XC7A100":  "MC1P110",
+    "XC7A100T": "MC1P110",
+    "100":      "MC1P110",
+    "100T":     "MC1P110",
+    "K160T":    "MC1P170",
+    "MC1P170":  "MC1P170",
+    "XC7K160":  "MC1P170",
+    "XC7K160T": "MC1P170",
+    "160":      "MC1P170",
+    "160T":     "MC1P170",
+}
+
 MC1P110_FRAME_STRUCT = {
     "frame_type_0": {
         "region_type_0": {
