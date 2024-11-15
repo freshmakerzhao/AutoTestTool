@@ -918,7 +918,7 @@ class BitstreamParser:
         def insert_multiple_words(content):
             new_data_frame.extend(content)
         
-        # ================================= 构造压缩位流 开始 =========================================
+        # ================================= 构造压缩位流数据帧部分 开始 =========================================
         for frame_type_key, frame_type_value in data_frame_features_index.items():
             # 遍历 frame_type 层
             for region_type_key, region_type_value in frame_type_value.items():
@@ -1102,7 +1102,80 @@ class BitstreamParser:
                             print(456)
                             break
            
-        # ================================= 构造压缩位流 结束 =========================================
+        # ================================= 构造压缩位流数据帧部分 结束 =========================================
+        
+        # ================================= 构造压缩位流寄存器部分 开始 =========================================
+        
+         # 拿到数据帧之前的寄存器
+        if self.file_type == ".rbt":
+            for i in range(len(self.rbt_cfg_content_pre)):
+                # 连续的MASK CTL1才需要修改
+                if self.rbt_cfg_content_pre[i].cmd_name == "MASK" and i < len(self.rbt_cfg_content_pre)-1 and self.rbt_cfg_content_pre[i+1].cmd_name == "CTL1":
+                    # 对 MASK 的低12位做修改，从 0 -> 1
+                    new_line = self.rbt_cfg_content_pre[i].get_data_from_index(1)[:-13] + "1" + self.rbt_cfg_content_pre[i].get_data_from_index(1)[-12:]
+                    self.rbt_cfg_content_pre[i].set_data_to_index(1, new_line)
+                    # 对 CTL1 的低12位做修改，从 0 -> 1
+                    new_line = self.rbt_cfg_content_pre[i+1].get_data_from_index(1)[:-13] + "1" + self.rbt_cfg_content_pre[i+1].get_data_from_index(1)[-12:]
+                    self.rbt_cfg_content_pre[i+1].set_data_to_index(1, new_line)
+        elif self.file_type == ".bit" or self.file_type == ".bin":
+            for i in range(len(self.bit_cfg_content_pre)):
+                if self.bit_cfg_content_pre[i].cmd_name == "MASK" and i < len(self.bit_cfg_content_pre)-1 and self.bit_cfg_content_pre[i+1].cmd_name == "CTL1":
+                    word = utils.bytes_to_binary(self.bit_cfg_content_pre[i].get_data_from_index(1))
+                    word = word[:-13] + "1" + word[-12:]
+                    self.bit_cfg_content_pre[i].set_data_to_index(1, utils.binary_str_to_bytes(word))
+                    word = utils.bytes_to_binary(self.bit_cfg_content_pre[i+1].get_data_from_index(1))
+                    word = word[:-13] + "1" + word[-12:]
+                    self.bit_cfg_content_pre[i+1].set_data_to_index(1, utils.binary_str_to_bytes(word))
+        
+         # 拿到数据帧之后的寄存器
+        if self.file_type == ".rbt":
+            cur_index = 0
+            while cur_index < len(self.rbt_cfg_content_after):
+                # CMD 且 command:DGHIGH/LFRM 时，做插入
+                if self.rbt_cfg_content_after[cur_index].cmd_name == "CMD" \
+                    and self.rbt_cfg_content_after[cur_index].data_len == 2 \
+                    and self.rbt_cfg_content_after[cur_index].get_data_from_index(1)[-2:] == "11":
+                         
+                    # 此时需要在 cur_index+1位置插入两个 Item MASK CTL1
+                    # MASK
+                    item = PacketItem("MASK")
+                    item.set_opcode(0)
+                    item.append_data("00000000000000000001000000000000")
+                    self.rbt_cfg_content_after.insert(cur_index+1, item)
+                    
+                    # CTL1
+                    item = PacketItem("CTL1")
+                    item.set_opcode(0)
+                    item.append_data("00000000000000000000000000000000")
+                    self.rbt_cfg_content_after.insert(cur_index+2, item)
+                    
+                    cur_index += 2  # 跳过插入的元素
+                cur_index += 1
+        elif self.file_type == ".bit" or self.file_type == ".bin":
+            cur_index = 0
+            while cur_index < len(self.bit_cfg_content_after):
+                # CMD 且 command:DGHIGH/LFRM 时，做插入
+                if self.bit_cfg_content_after[cur_index].cmd_name == "CMD" \
+                    and self.bit_cfg_content_after[cur_index].data_len == 2 \
+                    and self.bit_cfg_content_after[cur_index].get_data_from_index(1)[-1:] == b"\x03":
+                       
+                    # 此时需要在 cur_index+1位置插入两个 Item MASK CTL1
+                    # MASK
+                    item = PacketItem("MASK")
+                    item.set_opcode(0)
+                    item.append_data(b"\x00\x00\x10\x00")
+                    self.bit_cfg_content_after.insert(cur_index+1, item)
+                    
+                    # CTL1
+                    item = PacketItem("CTL1")
+                    item.set_opcode(0)
+                    item.append_data(b"\x00\x00\x00\x00")
+                    self.bit_cfg_content_after.insert(cur_index+2, item)
+                    
+                    cur_index += 2  # 跳过插入的元素
+                cur_index += 1
+        
+        # ================================= 构造压缩位流寄存器部分 结束 =========================================
         
         if self.file_type == ".rbt":
             self.rbt_data_content = new_data_frame
@@ -1346,8 +1419,8 @@ def main():
         return
 
     logging.info(f"Parameters:")
-    logging.info(f"\trbt_folder: {args.rbt_folder}")
-    logging.info(f"\trbt_file: {args.file}")
+    logging.info(f"\tfolder: {args.rbt_folder}")
+    logging.info(f"\tfile: {args.file}")
     logging.info(f"\tfile_suffix: {args.file_suffix}")
     logging.info(f"\tPCIE: {args.PCIE}")
     logging.info(f"\tGTP: {args.GTP}")
