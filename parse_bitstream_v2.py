@@ -1403,7 +1403,7 @@ def main():
     parser = argparse.ArgumentParser(description="Auto Process")
 
     # Add optional arguments
-    parser.add_argument('--rbt_folder', type=str, help="Input .rbt folder path")
+    # parser.add_argument('--rbt_folder', type=str, help="Input .rbt folder path")
     parser.add_argument('--file', type=str, help="Only process this specific file")
     parser.add_argument('--device', type=str, help="Specific your chip's device (Default: MC1P110)")
     parser.add_argument('--file_suffix', type=str, default=FILE_ENDWITH, help="Suffix to add to the new .rbt file (Default: _HybrdChip)")
@@ -1424,7 +1424,7 @@ def main():
     device = config.DEVICE_MAP.get(args.device.upper() if args.device else "MC1P110","MC1P110")
     
     logging.info(f"Parameters:")
-    logging.info(f"\tfolder: {args.rbt_folder}")
+    # logging.info(f"\tfolder: {args.rbt_folder}")
     logging.info(f"\tfile: {args.file}")
     logging.info(f"\tdevice: {device}")
     logging.info(f"\tfile_suffix: {args.file_suffix}")
