@@ -779,6 +779,17 @@ class BitstreamParser:
                     self.bit_cfg_content_pre[i].append_data(config.CMD_TRIM_01_BYTE)
                     self.bit_cfg_content_pre[i].append_data(config.CMD_TRIM_02_BYTE)
        
+    # 
+    def delete_ghigh(self):
+        # 拿到数据帧之后的寄存器
+        if self.file_type == ".rbt":
+            self.rbt_cfg_content_after = [item for item in self.rbt_cfg_content_after
+                               if not (item.cmd_name == "CMD" and (item.get_data_from_index(1) == "00000000000000000000000000000011"))]
+            
+        elif self.file_type == ".bit" or self.file_type == ".bin":
+            self.bit_cfg_content_after = [item for item in self.bit_cfg_content_after
+                               if not (item.cmd_name == "CMD" and (item.get_data_from_index(1) == b"\x00\x00\x00\x03"))]
+            
     def process_compress(self):
         # 数据帧特征值作为key
         # value : 
@@ -1412,6 +1423,7 @@ def main():
     parser.add_argument('--CRC', action='store_true', help="Enable CRC processing (Default: False)")
     parser.add_argument('--COMPRESS', action='store_true', help="Enable COMPRESS processing (Default: False)")
     parser.add_argument('--TRIM', action='store_true', help="Enable TRIM processing (Default: False)")
+    parser.add_argument('--DELETE_GHIGH', action='store_true', help="DELETE GHIGH(Default: False)")
 
     # 解析参数
     args = parser.parse_args()
@@ -1432,6 +1444,7 @@ def main():
     logging.info(f"\tGTP: {args.GTP}")
     logging.info(f"\tCRC: {args.CRC}")
     logging.info(f"\tTRIM: {args.TRIM}")
+    logging.info(f"\tDELETE_GHIGH: {args.DELETE_GHIGH}")
     logging.info(f"\tCOMPRESS: {args.COMPRESS}\n")
     
     bit_parser = BitstreamParser(device, args.file, args.CRC)
@@ -1474,6 +1487,9 @@ def main():
         
     if args.TRIM:
         bit_parser.set_trim()
+        
+    if args.DELETE_GHIGH:
+        bit_parser.delete_ghigh()
         
     if args.COMPRESS:
         bit_parser.process_compress()

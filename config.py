@@ -5790,6 +5790,7 @@ class ConfigurationPacket:
         UNKNOWN_21 = 21
         BOOTSTS = 22
         CTL1 = 24
+        TRIM = 27
         UNKNOWN_30 = 30 #if next packet is Type2 and bcout_cnt(ib) = 0, set bocut_flag(ib) <= '1' and bout_cnt(ib) <= word count
         BSPI = 31
         
