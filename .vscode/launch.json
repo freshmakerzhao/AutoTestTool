@@ -35,10 +35,23 @@
             "request": "launch",
             "args": [
                 "--file",
-                "E:\\workspace\\parse_bitstream\\parse_bitstream\\test\\system_wrapper.bit",
+                "E:\\workspace\\parse_bitstream\\parse_bitstream\\compress_data\\compress\\test\\zy\\origin.rbt",
                 "--COMPRESS"
             ],
-            "program": "E:\\workspace\\parse_bitstream\\parse_bitstream\\parse_bitstream_v2.py",
+            "program": "E:\\workspace\\parse_bitstream\\parse_bitstream\\parse_bitstream.py",
+            "console": "integratedTerminal"
+        },
+        {
+            "name": "parse_bitstream_get_frame",
+            "type": "debugpy",
+            "request": "launch",
+            "args": [
+                "--file",
+                "E:\\workspace\\parse_bitstream\\parse_bitstream\\compress_data\\compress\\test\\zy\\origin.rbt",
+                "--specific_loc",
+                "33,1"
+            ],
+            "program": "E:\\workspace\\parse_bitstream\\parse_bitstream\\parse_bitstream.py",
             "console": "integratedTerminal"
         }
     ]

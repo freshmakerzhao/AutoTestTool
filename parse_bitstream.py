@@ -644,6 +644,7 @@ class BitstreamParser:
             raise ValueError("文件格式错误")
           
     def get_data_with_frame_word_bit(self, frame, word, bit):
+        print("frame: ", frame, "word: ", word, "bit: ", bit)
         line_index = frame*101 + word
         bit_index = 31 - bit # 这里是因为bit从右往左算，而index从左往右算
         if self.file_type == ".bit" or self.file_type == ".bin":
@@ -657,8 +658,16 @@ class BitstreamParser:
     def get_data_frame(self, frame):
         pass
     
-    def get_data_word(self, region, row, col, frame, word):
-        pass
+    def get_data_word(self, frame, word):
+        print("frame: ", frame, "word: ", word)
+        line_index = frame*101 + word
+        if self.file_type == ".bit" or self.file_type == ".bin":
+            word = utils.bytes_to_binary(self.bit_data_content[line_index])
+            return word
+        elif self.file_type == ".rbt":
+            return self.rbt_data_content[line_index]
+        else:
+            raise ValueError("文件格式错误") 
     
     def get_data_bit(self, region, row, col, frame, word, bit):
         pass
@@ -1424,6 +1433,7 @@ def main():
     parser.add_argument('--COMPRESS', action='store_true', help="Enable COMPRESS processing (Default: False)")
     parser.add_argument('--TRIM', action='store_true', help="Enable TRIM processing (Default: False)")
     parser.add_argument('--DELETE_GHIGH', action='store_true', help="DELETE GHIGH(Default: False)")
+    parser.add_argument('--specific_loc', type=str, help="Retrieve bit data at a specified position in the format frame,word,bit (e.g., 13,4,2).")
 
     # 解析参数
     args = parser.parse_args()
@@ -1446,6 +1456,7 @@ def main():
     logging.info(f"\tTRIM: {args.TRIM}")
     logging.info(f"\tDELETE_GHIGH: {args.DELETE_GHIGH}")
     logging.info(f"\tCOMPRESS: {args.COMPRESS}\n")
+    logging.info(f"\tspecific_loc: {args.specific_loc}\n")
     
     bit_parser = BitstreamParser(device, args.file, args.CRC)
     
@@ -1493,6 +1504,25 @@ def main():
         
     if args.COMPRESS:
         bit_parser.process_compress()
+        
+    if args.specific_loc:
+        # 检查 specific_loc 中的逗号数量
+        comma_count = args.specific_loc.count(",")
+        if comma_count == 2:
+            # 如果有两个逗号，分割为 frame, word, bit
+            frame, word, bit = args.specific_loc.split(",")
+            print(bit_parser.get_data_with_frame_word_bit(int(frame), int(word), int(bit)))
+
+        elif comma_count == 1:
+            # 如果有一个逗号（可以扩展为其他用法）
+            frame, word = args.specific_loc.split(",")
+            # 可根据需要调用相应的处理函数
+            print(bit_parser.get_data_word(int(frame), int(word)))
+        else:
+            # 如果逗号数量不符合要求，报错
+            raise ValueError(
+                f"Invalid format for specific_loc: '{args.specific_loc}'. Expected 2 or 3 argument."
+            )
             
     bit_parser.save_file(args.file_suffix)
 if __name__ == "__main__":
