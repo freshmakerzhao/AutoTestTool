@@ -1433,7 +1433,6 @@ def main():
     parser.add_argument('--COMPRESS', action='store_true', help="Enable COMPRESS processing (Default: False)")
     parser.add_argument('--TRIM', action='store_true', help="Enable TRIM processing (Default: False)")
     parser.add_argument('--DELETE_GHIGH', action='store_true', help="DELETE GHIGH(Default: False)")
-    parser.add_argument('--specific_loc', type=str, help="Retrieve bit data at a specified position in the format frame,word,bit (e.g., 13,4,2).")
 
     # 解析参数
     args = parser.parse_args()
@@ -1456,7 +1455,6 @@ def main():
     logging.info(f"\tTRIM: {args.TRIM}")
     logging.info(f"\tDELETE_GHIGH: {args.DELETE_GHIGH}")
     logging.info(f"\tCOMPRESS: {args.COMPRESS}\n")
-    logging.info(f"\tspecific_loc: {args.specific_loc}\n")
     
     bit_parser = BitstreamParser(device, args.file, args.CRC)
     
@@ -1505,25 +1503,6 @@ def main():
     if args.COMPRESS:
         bit_parser.process_compress()
         
-    if args.specific_loc:
-        # 检查 specific_loc 中的逗号数量
-        comma_count = args.specific_loc.count(",")
-        if comma_count == 2:
-            # 如果有两个逗号，分割为 frame, word, bit
-            frame, word, bit = args.specific_loc.split(",")
-            print(bit_parser.get_data_with_frame_word_bit(int(frame), int(word), int(bit)))
-
-        elif comma_count == 1:
-            # 如果有一个逗号（可以扩展为其他用法）
-            frame, word = args.specific_loc.split(",")
-            # 可根据需要调用相应的处理函数
-            print(bit_parser.get_data_word(int(frame), int(word)))
-        else:
-            # 如果逗号数量不符合要求，报错
-            raise ValueError(
-                f"Invalid format for specific_loc: '{args.specific_loc}'. Expected 2 or 3 argument."
-            )
-            
     bit_parser.save_file(args.file_suffix)
 if __name__ == "__main__":
     main()
