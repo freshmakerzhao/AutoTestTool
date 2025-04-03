@@ -127,6 +127,7 @@ class BitstreamParser:
         self.enable_crc = enable_crc
         self.crc_01 = "00000000000000000000000000000000"
         self.crc_02 = "00000000000000000000000000000000"
+        self.own_crc_is_enable = False # 码流本身是否开启CRC
         
         self.device = device # 器件类型
         
@@ -367,6 +368,7 @@ class BitstreamParser:
             
             # 记录crc
             if item.cmd_name == "CRC":
+                self.own_crc_is_enable = True # 如果存在crc cmd 就证明该位流开启了CRC
                 if self.crc_own_01 == '-1':
                     self.crc_own_01 = self.rbt_content[self.rbt_content_cur_loc]
                 else:
@@ -1249,51 +1251,58 @@ class BitstreamParser:
                 # 计算crc
                 crc_data_in = self.cfg_obj.make_len_37_crc_data_in(word, config.FDRI_STR, "str")
                 self.crc_01 = self.icap_crc(crc_data_in, self.crc_01)
-            
-            print(self.crc_01) # 01111100100101011110011001111001 7C95E679
+            print("第一段crc数据：%s" ,self.crc_01)
             # ============== 第一段 =====================
             
             # ============== 第二段 =====================
-            crc_end_flag = False
+            crc_cmd_count = 0 # crc命令计数器，每遇到一次crc，就记一次，第二次时完成计算
             rbt_cfg_content_after_len = len(self.rbt_cfg_content_after)
             # 这里从索引2开始，因为数据帧后的寄存器0,1位置为CRC write
-            for index in range(2, rbt_cfg_content_after_len):
-                item = self.rbt_cfg_content_after[index]
+            for cfg_index in range(2, rbt_cfg_content_after_len):
+                item = self.rbt_cfg_content_after[cfg_index]
                 if item.opcode == -1 or item.opcode.value != 2:
                     # 不参与运算
                     continue
                 else:
                     # 参与运算
                     words_len = item.get_data_len()
-                    for index in range(1, words_len):
-                        if item.get_data_from_index(0) == config.CRC_STR:
-                            crc_end_flag = True
-                            break
+                    for data_index in range(1, words_len):
+                        if self.own_crc_is_enable:
+                             # 当开启crc时，遇到 crc 计数一次
+                            if item.get_data_from_index(0) == config.CRC_BIT:
+                                crc_cmd_count += 1
+                                break
+                        else:
+                            # 当没有开启crc, 遇到cmd + 07时，计数一次
+                            if words_len == 2 \
+                                and item.get_data_from_index(0) == config.CMD_RCRC_01_STR \
+                                and item.get_data_from_index(1) == config.CMD_RCRC_02_STR:
+                                # 将得到的crc赋值给 bit_cfg_content_after 
+                                if crc_cmd_count == 0:
+                                    # 第一个
+                                    self.bit_cfg_content_after[cfg_index].set_data_to_index(0, config.CRC_STR)
+                                    self.bit_cfg_content_after[cfg_index].set_data_to_index(1, self.crc_01)
+                                elif crc_cmd_count == 1:
+                                    # 第二个
+                                    self.bit_cfg_content_after[cfg_index].set_data_to_index(0, config.CRC_STR)
+                                    self.bit_cfg_content_after[cfg_index].set_data_to_index(1, self.crc_02)
+                                crc_cmd_count += 1
+                                break
+                        
                         # 计算crc
                         # 拿到cmd本身
                         cmd_word = item.get_data_from_index(0) # RBT
                         # 拿到当前cmd下的word
-                        cur_word = item.get_data_from_index(index) # RBT
+                        cur_word = item.get_data_from_index(data_index) # RBT
                         
                         crc_data_in = self.cfg_obj.make_len_37_crc_data_in(cur_word, cmd_word, "str")
-                        print(crc_data_in)
+                        # print("第二段数据：%s" ,crc_data_in)
                         self.crc_02 = self.icap_crc(crc_data_in, self.crc_02)
-                if crc_end_flag:
+                if crc_cmd_count == 2:
+                    # 遇到两次crc，计算完成
                     break
-            print(self.crc_02) # 11100011101011010111111010100101 E3AD7EA5
+            print("第二段crc数据：%s" ,self.crc_02)
             # ============== 第二段 =====================
-            
-            # 设置crc
-            first_flag = True
-            for i in range(rbt_cfg_content_after_len):
-                if self.rbt_cfg_content_after[i].cmd_name == "CRC":
-                    if first_flag:
-                        # 第一个
-                        self.rbt_cfg_content_after[i].set_data_to_index(1, self.crc_01)
-                        first_flag = False
-                    else:
-                        # 第二个
-                        self.rbt_cfg_content_after[i].set_data_to_index(1, self.crc_02)
             
         elif self.file_type == ".bit" or self.file_type == ".bin":
             # ============== 第一段 =====================
@@ -1332,46 +1341,53 @@ class BitstreamParser:
             
             
             # ============== 第二段 =====================
-            crc_end_flag = False
+            crc_cmd_count = 0 # crc命令计数器，每遇到一次crc，就记一次，第二次时完成计算
             bit_cfg_content_after_len = len(self.bit_cfg_content_after)
-            # 这里从索引2开始，因为数据帧后的寄存器0,1位置为CRC write
-            for index in range(2, bit_cfg_content_after_len):
-                item = self.bit_cfg_content_after[index]
+            for cfg_index in range(bit_cfg_content_after_len):
+                item = self.bit_cfg_content_after[cfg_index]
                 if item.opcode == -1 or item.opcode.value != 2:
                     # 不参与运算
                     continue
                 else:
                     # 参与运算
                     words_len = item.get_data_len()
-                    for index in range(1, words_len):
-                        if item.get_data_from_index(0) == config.CRC_BIT:
-                            crc_end_flag = True
-                            break
+                    for data_index in range(1, words_len):
+                        if self.own_crc_is_enable:
+                             # 当开启crc时，遇到 crc 计数一次
+                            if item.get_data_from_index(0) == config.CRC_BIT:
+                                crc_cmd_count += 1
+                                break
+                        else:
+                            # 当没有开启crc, 遇到cmd + 07时，计数一次
+                            if words_len == 2 \
+                                and item.get_data_from_index(0) == config.CMD_RCRC_01_BYTE \
+                                and item.get_data_from_index(1) == config.CMD_RCRC_02_BYTE:
+                                # 将得到的crc赋值给 bit_cfg_content_after 
+                                if crc_cmd_count == 0:
+                                    # 第一个
+                                    self.bit_cfg_content_after[cfg_index].set_data_to_index(0, config.CRC_BIT)
+                                    self.bit_cfg_content_after[cfg_index].set_data_to_index(1, utils.binary_str_to_bytes(self.crc_01))
+                                elif crc_cmd_count == 1:
+                                    # 第二个
+                                    self.bit_cfg_content_after[cfg_index].set_data_to_index(0, config.CRC_BIT)
+                                    self.bit_cfg_content_after[cfg_index].set_data_to_index(1, utils.binary_str_to_bytes(self.crc_02))
+                                crc_cmd_count += 1
+                                break
                         # 计算crc
                         # 拿到cmd本身
                         cmd_word = item.get_data_from_index(0) # 字节
                         # 拿到当前cmd下的word
-                        cur_word = item.get_data_from_index(index) # 字节
+                        cur_word = item.get_data_from_index(data_index) # 字节
                         
                         crc_data_in = self.cfg_obj.make_len_37_crc_data_in(cur_word, cmd_word, "byte")
-                        print(crc_data_in)
+                        int_value = int(''.join(map(str, crc_data_in)), 2)
+                        hex_str = f"{int_value:x}"
                         self.crc_02 = self.icap_crc(crc_data_in, self.crc_02)
-                if crc_end_flag:
+                if crc_cmd_count == 2:
+                    # 遇到两次crc，计算完成
                     break
             print(self.crc_02) # 11100011101011010111111010100101 E3AD7EA5
             # ============== 第二段 =====================
-            
-            # 设置crc
-            first_flag = True
-            for i in range(bit_cfg_content_after_len):
-                if self.bit_cfg_content_after[i].cmd_name == "CRC":
-                    if first_flag:
-                        # 第一个
-                        self.bit_cfg_content_after[i].set_data_to_index(1, self.crc_01)
-                        first_flag = False
-                    else:
-                        # 第二个
-                        self.bit_cfg_content_after[i].set_data_to_index(1, self.crc_02)
                     
     # 迭代crc
     def icap_crc(self, crc_data_in, crc):
