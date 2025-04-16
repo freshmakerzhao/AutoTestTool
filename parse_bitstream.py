@@ -571,6 +571,7 @@ class BitstreamParser:
                 
             # 记录crc
             if item.cmd_name == "CRC":
+                self.own_crc_is_enable = True # 如果存在crc cmd 就证明该位流开启了CRC
                 if self.crc_own_01 == '-1':
                     self.crc_own_01 = item.get_data_from_index(1)
                 else:
@@ -1226,7 +1227,7 @@ class BitstreamParser:
             crc_start_flag = False
             # 1. 拿到数据帧前的寄存器，确定RCRC位置
             for item in self.rbt_cfg_content_pre:
-                if item.opcode == -1 or item.opcode.value != 2:
+                if item.opcode == -1 or item.opcode.value != 2 or item.cmd_name == "RHBD":
                     # 不参与运算
                     continue
                 else:
@@ -1258,9 +1259,9 @@ class BitstreamParser:
             crc_cmd_count = 0 # crc命令计数器，每遇到一次crc，就记一次，第二次时完成计算
             rbt_cfg_content_after_len = len(self.rbt_cfg_content_after)
             # 这里从索引2开始，因为数据帧后的寄存器0,1位置为CRC write
-            for cfg_index in range(2, rbt_cfg_content_after_len):
+            for cfg_index in range(rbt_cfg_content_after_len):
                 item = self.rbt_cfg_content_after[cfg_index]
-                if item.opcode == -1 or item.opcode.value != 2:
+                if item.opcode == -1 or item.opcode.value != 2 or item.cmd_name == "RHBD":
                     # 不参与运算
                     continue
                 else:
@@ -1269,7 +1270,15 @@ class BitstreamParser:
                     for data_index in range(1, words_len):
                         if self.own_crc_is_enable:
                              # 当开启crc时，遇到 crc 计数一次
-                            if item.get_data_from_index(0) == config.CRC_BIT:
+                            if item.get_data_from_index(0) == config.CRC_STR:
+                                if crc_cmd_count == 0:
+                                    # 第一个
+                                    self.rbt_cfg_content_after[cfg_index].set_data_to_index(0, config.CRC_STR)
+                                    self.rbt_cfg_content_after[cfg_index].set_data_to_index(1, self.crc_01)
+                                elif crc_cmd_count == 1:
+                                    # 第二个
+                                    self.rbt_cfg_content_after[cfg_index].set_data_to_index(0, config.CRC_STR)
+                                    self.rbt_cfg_content_after[cfg_index].set_data_to_index(1, self.crc_02)
                                 crc_cmd_count += 1
                                 break
                         else:
@@ -1280,12 +1289,12 @@ class BitstreamParser:
                                 # 将得到的crc赋值给 bit_cfg_content_after 
                                 if crc_cmd_count == 0:
                                     # 第一个
-                                    self.bit_cfg_content_after[cfg_index].set_data_to_index(0, config.CRC_STR)
-                                    self.bit_cfg_content_after[cfg_index].set_data_to_index(1, self.crc_01)
+                                    self.rbt_cfg_content_after[cfg_index].set_data_to_index(0, config.CRC_STR)
+                                    self.rbt_cfg_content_after[cfg_index].set_data_to_index(1, self.crc_01)
                                 elif crc_cmd_count == 1:
                                     # 第二个
-                                    self.bit_cfg_content_after[cfg_index].set_data_to_index(0, config.CRC_STR)
-                                    self.bit_cfg_content_after[cfg_index].set_data_to_index(1, self.crc_02)
+                                    self.rbt_cfg_content_after[cfg_index].set_data_to_index(0, config.CRC_STR)
+                                    self.rbt_cfg_content_after[cfg_index].set_data_to_index(1, self.crc_02)
                                 crc_cmd_count += 1
                                 break
                         
@@ -1309,7 +1318,7 @@ class BitstreamParser:
             crc_start_flag = False
             # 1. 拿到数据帧前的寄存器，确定RCRC位置
             for item in self.bit_cfg_content_pre:
-                if item.opcode == -1 or item.opcode.value != 2:
+                if item.opcode == -1 or item.opcode.value != 2 or item.cmd_name == "RHBD":
                     # 不参与运算
                     continue
                 else:
@@ -1341,11 +1350,12 @@ class BitstreamParser:
             
             
             # ============== 第二段 =====================
+            # self.crc_02 = self.crc_01
             crc_cmd_count = 0 # crc命令计数器，每遇到一次crc，就记一次，第二次时完成计算
             bit_cfg_content_after_len = len(self.bit_cfg_content_after)
             for cfg_index in range(bit_cfg_content_after_len):
                 item = self.bit_cfg_content_after[cfg_index]
-                if item.opcode == -1 or item.opcode.value != 2:
+                if item.opcode == -1 or item.opcode.value != 2 or item.cmd_name == "RHBD":
                     # 不参与运算
                     continue
                 else:
@@ -1355,6 +1365,14 @@ class BitstreamParser:
                         if self.own_crc_is_enable:
                              # 当开启crc时，遇到 crc 计数一次
                             if item.get_data_from_index(0) == config.CRC_BIT:
+                                if crc_cmd_count == 0:
+                                    # 第一个
+                                    self.bit_cfg_content_after[cfg_index].set_data_to_index(0, config.CRC_BIT)
+                                    self.bit_cfg_content_after[cfg_index].set_data_to_index(1, utils.binary_str_to_bytes(self.crc_01))
+                                elif crc_cmd_count == 1:
+                                    # 第二个
+                                    self.bit_cfg_content_after[cfg_index].set_data_to_index(0, config.CRC_BIT)
+                                    self.bit_cfg_content_after[cfg_index].set_data_to_index(1, utils.binary_str_to_bytes(self.crc_02))
                                 crc_cmd_count += 1
                                 break
                         else:

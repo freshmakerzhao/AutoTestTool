@@ -5791,9 +5791,9 @@ class ConfigurationPacket:
         BOOTSTS = 22
         CTL1 = 24
         TRIM = 27
+        RHBD = 28
         UNKNOWN_30 = 30 #if next packet is Type2 and bcout_cnt(ib) = 0, set bocut_flag(ib) <= '1' and bout_cnt(ib) <= word count
         BSPI = 31
-        
     @enum.unique
     class OpCode(enum.Enum):
         UNKNOWN = -1
@@ -5815,7 +5815,7 @@ class ConfigurationPacket:
         if content_type != "int":
             word = int(word, 2)
         return self.OpCode((word >> 27) & 0x3) 
-
+    # TODO 遇见无法识别的寄存器当作正常数据并给出提示
     # 根据传入word获取其type1格式的数据，content_type为int时，直接读，str时转换后再读
     def get_type_1_packet_content(self, word, content_type = "int"):
         if content_type != "int":
@@ -5882,5 +5882,6 @@ class ConfigurationPacket:
             self.Address.BOOTSTS : "BOOTSTS",
             self.Address.CTL1 : "CTL1",
             self.Address.UNKNOWN_30 : "UNKNOWN_30",
-            self.Address.BSPI : "BSPI"
+            self.Address.BSPI : "BSPI",
+            self.Address.RHBD : "RHBD"
         }
