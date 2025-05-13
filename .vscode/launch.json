@@ -5,17 +5,67 @@
     "version": "0.2.0",
     "configurations": [
         {
-            "name": "parse_bitstream_新版",
+            "name": "parse_bitstream",
             "type": "debugpy",
             "request": "launch",
             "args": [
-                "--rbt_file",
-                "E:\\workspace\\parse_bitstream\\parse_bitstream\\data\\system_wrapper_1_原版.bin",
+                "--file",
+                "E:\\workspace\\parse_bitstream\\parse_bitstream\\data\\system_wrapper_1_原版.rbt",
                 "--GTP",
                 "--PCIE",
             ],
-            "program": "E:/workspace/parse_bitstream/parse_bitstream/parse_bitstream_新版.py",
+            "program": "E:\\workspace\\parse_bitstream\\parse_bitstream\\parse_bitstream.py",
             "console": "integratedTerminal"
+        },
+        {
+            "name": "parse_bitstream_v2",
+            "type": "debugpy",
+            "request": "launch",
+            "args": [
+                "--file",
+                "E:\\workspace\\parse_bitstream\\parse_bitstream\\压缩位流相关知识\\compress\\test\\zy\\origin.rbt",
+                "--COMPRESS"
+            ],
+            "program": "E:\\workspace\\parse_bitstream\\parse_bitstream\\parse_bitstream_v2.py",
+            "console": "integratedTerminal"
+        },
+        {
+            "name": "parse_bitstream_compress",
+            "type": "debugpy",
+            "request": "launch",
+            "args": [
+                "--file",
+                "E:\\workspace\\parse_bitstream\\parse_bitstream\\compress_data\\compress\\test\\zy\\origin.rbt",
+                "--COMPRESS"
+            ],
+            "program": "E:\\workspace\\parse_bitstream\\parse_bitstream\\parse_bitstream.py",
+            "console": "integratedTerminal"
+        },
+        {
+            "name": "parse_bitstream_get_frame",
+            "type": "debugpy",
+            "request": "launch",
+            "args": [
+                "--file",
+                "E:\\workspace\\parse_bitstream\\parse_bitstream\\compress_data\\compress\\test\\zy\\origin.rbt",
+                "--specific_loc",
+                "33,1"
+            ],
+            "program": "E:\\workspace\\parse_bitstream\\parse_bitstream\\parse_bitstream.py",
+            "console": "integratedTerminal"
+        },
+        {
+            "name": "CRC2",
+            "type": "debugpy",
+            "request": "launch",
+            "args": [
+                "--file",
+                "E:\\workspace\\parse_bitstream\\data\\top_refresh.rbt",
+                "--CRC"
+            ],
+            "program": "E:\\workspace\\parse_bitstream\\parse_bitstream.py",
+            "console": "integratedTerminal",
+            "justMyCode": false
         }
     ]
 }
