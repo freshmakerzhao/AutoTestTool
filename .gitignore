@@ -1,5 +1,6 @@
 build
 dist
+data
 test
 __pycache__
 *.pyc

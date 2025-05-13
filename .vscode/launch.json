@@ -66,6 +66,19 @@
             "program": "E:\\workspace\\parse_bitstream\\parse_bitstream.py",
             "console": "integratedTerminal",
             "justMyCode": false
+        },
+        {
+            "name": "回读刷新",
+            "type": "debugpy",
+            "request": "launch",
+            "args": [
+                "--file",
+                "E:\\workspace\\parse_bitstream\\data\\刷新\\top.rbt",
+                "--huidushuaxin"
+            ],
+            "program": "E:\\workspace\\parse_bitstream\\parse_bitstream.py",
+            "console": "integratedTerminal",
+            "justMyCode": false
         }
     ]
 }

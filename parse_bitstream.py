@@ -1502,6 +1502,7 @@ def main():
     parser.add_argument('--COMPRESS', action='store_true', help="Enable COMPRESS processing (Default: False)")
     parser.add_argument('--TRIM', action='store_true', help="Enable TRIM processing (Default: False)")
     parser.add_argument('--DELETE_GHIGH', action='store_true', help="DELETE GHIGH(Default: False)")
+    parser.add_argument('--huidushuaxin', action='store_true', help="回读刷新")
 
     # 解析参数
     args = parser.parse_args()
