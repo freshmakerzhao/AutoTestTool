@@ -1,4 +1,6 @@
 build
 dist
 test
+__pycache__
+*.pyc
 *.spec

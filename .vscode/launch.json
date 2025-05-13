@@ -53,6 +53,19 @@
             ],
             "program": "E:\\workspace\\parse_bitstream\\parse_bitstream\\parse_bitstream.py",
             "console": "integratedTerminal"
+        },
+        {
+            "name": "CRC2",
+            "type": "debugpy",
+            "request": "launch",
+            "args": [
+                "--file",
+                "E:\\workspace\\parse_bitstream\\data\\top_refresh.rbt",
+                "--CRC"
+            ],
+            "program": "E:\\workspace\\parse_bitstream\\parse_bitstream.py",
+            "console": "integratedTerminal",
+            "justMyCode": false
         }
     ]
 }

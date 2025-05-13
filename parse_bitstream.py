@@ -632,19 +632,54 @@ class BitstreamParser:
         utils.log_debug_with_description(bit_cfg_content_after_len*4, 'X', '数据帧之后的寄存器字节数')
         utils.log_debug_with_description(bit_cfg_content_after_len*4 + len(self.bit_data_content)*4 + bit_cfg_content_pre_len*4 + len(self.bit_head_byte_content), 'X', '总字节数')
         # ============================================ debug ============================================
-    
+          
     def set_data_with_frame_word_bit(self, data, frame, word, bit):
-        line_index = frame*101 + word
-        bit_index = 31 - bit # 这里是因为bit从右往左算，而index从左往右算
-        if self.file_type == ".bit" or self.file_type == ".bin":
-            word = utils.bytes_to_binary(self.bit_data_content[line_index])
-            word = word[:bit_index] + data + ( word[bit_index+1:] if bit_index<31 else "")
-            self.bit_data_content[line_index] = utils.binary_str_to_bytes(word)
-        elif self.file_type == ".rbt":
-            # rbt_data_content中的内容是左高右低的
-            self.rbt_data_content[line_index] = self.rbt_data_content[line_index][:bit_index] + data + ( self.rbt_data_content[line_index][bit_index+1:] if bit_index<31 else "")
-        else:
-            raise ValueError("文件格式错误")
+        try:
+            # === 参数验证 ===
+            if not (0 <= bit <= 31):
+                raise ValueError(f"无效 bit 值: {bit}，应为 0~31 之间的整数")
+
+            line_index = frame * 101 + word
+            bit_index = 31 - bit  # 右高位，对应字符串的低索引
+
+            # === 文件类型为 .bit/.bin ===
+            if self.file_type in [".bit", ".bin"]:
+                if not (0 <= line_index < len(self.bit_data_content)):
+                    raise IndexError(f"bit_data_content 越界，line_index={line_index}，长度={len(self.bit_data_content)}")
+
+                original_bytes = self.bit_data_content[line_index]
+                try:
+                    word_str = utils.bytes_to_binary(original_bytes)
+                except Exception as e:
+                    raise ValueError(f"无法将 bytes 转换为 binary 字符串，原始值={original_bytes}: {e}")
+
+                if len(word_str) != 32:
+                    raise ValueError(f"转换后的 binary 字符串长度异常: {len(word_str)}，应为32")
+
+                word_str = word_str[:bit_index] + data + (word_str[bit_index+1:] if bit_index < 31 else "")
+                self.bit_data_content[line_index] = utils.binary_str_to_bytes(word_str)
+
+            # === 文件类型为 .rbt ===
+            elif self.file_type == ".rbt":
+                if not (0 <= line_index < len(self.rbt_data_content)):
+                    raise IndexError(f"rbt_data_content 越界，line_index={line_index}，长度={len(self.rbt_data_content)}")
+
+                line = self.rbt_data_content[line_index]
+                if len(line) != 32:
+                    raise ValueError(f"rbt_data_content[{line_index}] 长度不为 32，实际长度: {len(line)}")
+
+                self.rbt_data_content[line_index] = line[:bit_index] + data + (line[bit_index+1:] if bit_index < 31 else "")
+
+            else:
+                raise ValueError(f"不支持的文件类型: {self.file_type}")
+
+        except Exception as e:
+            # 添加更多上下文信息
+            raise RuntimeError(
+                f"设置 bit 值失败：frame={frame}, word={word}, bit={bit}, data={data}, file_type={self.file_type}\n"
+                f"错误信息: {e}"
+            ) from e
+          
           
     def get_data_with_frame_word_bit(self, frame, word, bit):
         print("frame: ", frame, "word: ", word, "bit: ", bit)
