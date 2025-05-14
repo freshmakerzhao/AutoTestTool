@@ -788,6 +788,7 @@ class BitstreamParser:
         else:
             raise ValueError("文件格式错误")
         print(f"writing file : {new_file_path}")
+        return new_file_path
 
     # 关闭CRC    
     def disable_crc(self):

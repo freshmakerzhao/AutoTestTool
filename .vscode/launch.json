@@ -83,6 +83,21 @@
             "program": "E:\\workspace\\parse_bitstream\\CLI\\parse_bitstream_cli.py",
             "console": "integratedTerminal",
             "justMyCode": false
+        },
+        {
+            "name": "测试UI",
+            "type": "debugpy",
+            "request": "launch",
+            "args": [
+            ],
+            "env": {
+                // 把根目录塞进 PYTHONPATH，省去 import 麻烦
+                "PYTHONPATH": "${workspaceFolder}"
+            },
+            "cwd": "${workspaceFolder}",
+            "program": "E:\\workspace\\parse_bitstream\\GUI\\app.py",
+            "console": "integratedTerminal",
+            "justMyCode": false
         }
     ]
 }
