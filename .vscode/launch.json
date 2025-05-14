@@ -74,9 +74,13 @@
             "args": [
                 "--file",
                 "E:\\workspace\\parse_bitstream\\data\\刷新\\top.rbt",
-                "--huidushuaxin"
+                "--readback_refresh"
             ],
-            "program": "E:\\workspace\\parse_bitstream\\parse_bitstream.py",
+            "env": {
+                // 把根目录塞进 PYTHONPATH，省去 import 麻烦
+                "PYTHONPATH": "${workspaceFolder}"
+            },
+            "program": "E:\\workspace\\parse_bitstream\\CLI\\parse_bitstream_cli.py",
             "console": "integratedTerminal",
             "justMyCode": false
         }
