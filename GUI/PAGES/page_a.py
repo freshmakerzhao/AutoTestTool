@@ -1,7 +1,7 @@
 import pathlib, threading, tkinter as tk
-from   tkinter import ttk, filedialog, messagebox
-from   GUI.logger import gui_logger
-from   CORE.parse_bitstream import run_bit_process,FILE_ENDWITH       # 业务函数
+from tkinter import ttk, filedialog, messagebox
+from GUI.logger import gui_logger
+from CORE.process_runner import run_task,FILE_ENDWITH
 
 class PageA(ttk.Frame):
     """A 组：Bitstream 解析功能"""
@@ -88,7 +88,7 @@ class PageA(ttk.Frame):
     def _run_thread(self, kwargs):
         import logging
         try:
-            out = run_bit_process(**kwargs)
+            out = run_task(**kwargs)
             messagebox.showinfo("完成", f"输出文件已保存：\n{out}")
         except Exception as e:
             logging.error("❌ %s", e)

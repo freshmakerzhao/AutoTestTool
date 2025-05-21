@@ -4,7 +4,7 @@ from tkinter import ttk, filedialog, messagebox
 from GUI.COMPONENT.collapsible import CollapsibleFrame 
 import COMMON.utils as utils
 from GUI.COMPONENT.thread_utils import run_in_thread
-from CORE.parse_bitstream import run_bit_process
+from CORE.process_runner import run_task
 
 class PageB(ttk.Frame):
     """B 组：定时刷新 & 回读刷新 双抽屉设置界面"""
@@ -281,7 +281,7 @@ class PageB(ttk.Frame):
         
         run_in_thread(
             self,                             # root
-            run_bit_process,                
+            run_task,                
             lock_widget=self.run_btn,         
             on_success=self._after_ok,        # 成功回调
             on_error=self._after_err,         # 失败回调
