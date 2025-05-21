@@ -11,7 +11,7 @@ logging.basicConfig(level=logging.DEBUG, format='%(asctime)s - %(levelname)s - %
 # logging.basicConfig(level=logging.WARNING,  format='%(asctime)s - %(levelname)s - %(message)s')
 # logging.basicConfig(level=logging.INFO,  format='%(asctime)s - %(levelname)s - %(message)s')
 
-FILE_ENDWITH = "_replace"
+FILE_ENDWITH = "_new"
 
 BITS_CMD = 'Bits:'
 
@@ -826,9 +826,144 @@ class BitstreamParser:
                     self.bit_cfg_content_pre[i].append_data(config.CMD_MASK_02_BYTE)
                     self.bit_cfg_content_pre[i].append_data(config.CMD_TRIM_01_BYTE)
                     self.bit_cfg_content_pre[i].append_data(config.CMD_TRIM_02_BYTE)
+     
+    # 设置定时刷新
+    def timer_refresh(self, RHBD_DATA_STR="00000000000000000000000000000000"):
+        # 长度必须是 32
+        if len(RHBD_DATA_STR) != 32:
+            raise ValueError("RHBD_DATA_STR 长度不合法，必须为 32 位")
+
+        # 只能包含 0 或 1
+        if not set(RHBD_DATA_STR) <= {"0", "1"}:
+            raise ValueError("RHBD_DATA_STR 只能是二进制字符串，包含 0 或 1")
+
+        # 拿到数据帧之前的寄存器
+        if self.file_type == ".rbt":
+            cur_index = 0
+            while cur_index < len(self.rbt_cfg_content_pre):
+                if self.rbt_cfg_content_pre[cur_index].cmd_name == "COR0":
+                    # 更新COR0
+                    cur_cor_reg  = self.rbt_cfg_content_pre[cur_index].get_data_from_index(0)
+                    cur_cor_data = self.rbt_cfg_content_pre[cur_index].get_data_from_index(1)
+                    new_cor_data = utils.update_data_by_index(cur_cor_data,[30,29,28],["0","1","0"])
+                    self.rbt_cfg_content_pre[cur_index].set_data_to_index(1, new_cor_data)
+                    
+                    # ============ 插入noop * 2 ============ 
+                    for _ in range(2):
+                        item = PacketItem("NOOP")
+                        item.set_opcode(-1)
+                        item.append_data(config.NOOP_STR)
+                        self.rbt_cfg_content_pre.insert(cur_index+1, item)
+                        cur_index += 1
+                    # ============ 插入noop * 2 ============ 
+                    
+                    # ============ 插入RHBD ============ 
+                    item = PacketItem("RHBD")
+                    item.set_opcode(-1)
+                    item.append_data(config.RHBD_REG_STR)
+                    line = config.ZERO_DATA_STR
+                    new_line = utils.update_data_by_index(line,[4],["1"])
+                    item.append_data(new_line)
+                    self.rbt_cfg_content_pre.insert(cur_index+1, item)
+                    cur_index += 1
+                    # ============ 插入RHBD ============ 
+                    
+                    # ============ 插入noop * 2 ============ 
+                    for _ in range(2):
+                        item = PacketItem("NOOP")
+                        item.set_opcode(-1)
+                        item.append_data(config.NOOP_STR)
+                        self.rbt_cfg_content_pre.insert(cur_index+1, item)
+                        cur_index += 1
+                    # ============ 插入noop * 2 ============ 
+                    
+                    # ============ 插入COR0  ============ 
+                    new_cor_data = utils.update_data_by_index(cur_cor_data,[30,29,28],["0","0","1"])
+                    item = PacketItem("COR0")
+                    item.set_opcode(2)
+                    item.append_data(cur_cor_reg)
+                    item.append_data(new_cor_data)
+                    self.rbt_cfg_content_pre.insert(cur_index+1, item)
+                    cur_index += 1
+                    # ============ 插入COR0  ============ 
+                    
+                    # ============ 插入noop * 2 ============ 
+                    for _ in range(2):
+                        item = PacketItem("NOOP")
+                        item.set_opcode(-1)
+                        item.append_data(config.NOOP_STR)
+                        self.rbt_cfg_content_pre.insert(cur_index+1, item)
+                        cur_index += 1
+                    # ============ 插入noop * 2 ============ 
+                    
+                    # ============ 插入RHBD ============ 
+                    item = PacketItem("RHBD")
+                    item.set_opcode(-1)
+                    item.append_data(config.RHBD_REG_STR)
+                    item.append_data(RHBD_DATA_STR)
+                    self.rbt_cfg_content_pre.insert(cur_index+1, item)
+                    cur_index += 1
+                    # ============ 插入RHBD ============ 
+                    
+                    # ============ 插入noop * 2 ============ 
+                    for _ in range(2):
+                        item = PacketItem("NOOP")
+                        item.set_opcode(-1)
+                        item.append_data(config.NOOP_STR)
+                        self.rbt_cfg_content_pre.insert(cur_index+1, item)
+                        cur_index += 1
+                    # ============ 插入noop * 2 ============ 
+                    break
+                cur_index += 1
+        elif self.file_type == ".bit" or self.file_type == ".bin":         
+                    # word = utils.bytes_to_binary(self.bit_cfg_content_pre[i].get_data_from_index(1))
+            while cur_index < len(self.bit_cfg_content_pre):
+                if self.bit_cfg_content_pre[cur_index].cmd_name == "COR0":
+                    # 更新COR0
+                    cor_data = utils.bytes_to_binary(self.bit_cfg_content_pre[cur_index].get_data_from_index(1))
+                    new_cor_data = utils.update_data_by_index(cor_data,[30,29,28],["0","1","0"])
+                    self.bit_cfg_content_pre[cur_index].set_data_to_index(1, utils.binary_str_to_bytes(new_cor_data))
+                    
+                    # ============ 插入noop * 2 ============ 
+                    for _ in range(2):
+                        item = PacketItem("NOOP")
+                        item.set_opcode(-1)
+                        item.append_data(config.NOOP_BYTE)
+                        self.bit_cfg_content_pre.insert(cur_index+1, item)
+                        cur_index += 1
+                    # ============ 插入noop * 2 ============ 
+                    
+                    
+                    # ============ 插入RHBD ============ 
+                    item = PacketItem("RHBD")
+                    item.set_opcode(-1)
+                    item.append_data(config.RHBD_REG_BYTE)
+                    item.append_data(utils.binary_str_to_bytes(RHBD_DATA_STR))
+                    self.bit_cfg_content_pre.insert(cur_index+1, item)
+                    cur_index += 1
+                    # ============ 插入RHBD ============ 
+                    
+                    # ============ 插入noop * 2 ============ 
+                    for _ in range(2):
+                        item = PacketItem("NOOP")
+                        item.set_opcode(-1)
+                        item.append_data(config.NOOP_BYTE)
+                        self.bit_cfg_content_pre.insert(cur_index+1, item)
+                        cur_index += 1
+                    # ============ 插入noop * 2 ============ 
+                    break
+                cur_index += 1
        
     # 设置回读刷新
-    def set_refresh(self, _error_num = 2):
+    def readback_refresh(self, RHBD_DATA_STR="00000000000000000000000000000000"):
+        # 长度必须是 32
+        if len(RHBD_DATA_STR) != 32:
+            raise ValueError("RHBD_DATA_STR 长度不合法，必须为 32 位")
+
+        # 只能包含 0 或 1
+        if not set(RHBD_DATA_STR) <= {"0", "1"}:
+            raise ValueError("RHBD_DATA_STR 只能是二进制字符串，包含 0 或 1")
+
         # 拿到数据帧之前的寄存器
         if self.file_type == ".rbt":
             cur_index = 0
@@ -848,17 +983,11 @@ class BitstreamParser:
                         cur_index += 1
                     # ============ 插入noop * 2 ============ 
                     
-                    
                     # ============ 插入RHBD ============ 
                     item = PacketItem("RHBD")
                     item.set_opcode(-1)
                     item.append_data(config.RHBD_REG_STR)
-                    
-                    data = config.ZERO_DATA_STR
-                    # [30:17]
-                    error_num_str = utils.int_to_bin_str(0 if _error_num<0 else _error_num ,30-17+1)
-                    data = data[0] + error_num_str + data[15:]
-                    item.append_data(data)
+                    item.append_data(RHBD_DATA_STR)
                     self.rbt_cfg_content_pre.insert(cur_index+1, item)
                     cur_index += 1
                     # ============ 插入RHBD ============ 
@@ -873,17 +1002,44 @@ class BitstreamParser:
                     # ============ 插入noop * 2 ============ 
                     break
                 cur_index += 1
+        elif self.file_type == ".bit" or self.file_type == ".bin":         
+                    # word = utils.bytes_to_binary(self.bit_cfg_content_pre[i].get_data_from_index(1))
+            while cur_index < len(self.bit_cfg_content_pre):
+                if self.bit_cfg_content_pre[cur_index].cmd_name == "COR0":
+                    # 更新COR0
+                    cor_data = utils.bytes_to_binary(self.bit_cfg_content_pre[cur_index].get_data_from_index(1))
+                    new_cor_data = utils.update_data_by_index(cor_data,[30,29,28],["0","1","0"])
+                    self.bit_cfg_content_pre[cur_index].set_data_to_index(1, utils.binary_str_to_bytes(new_cor_data))
                     
-        # elif self.file_type == ".bit" or self.file_type == ".bin":
-        #     for i in range(len(self.bit_cfg_content_pre)):
-        #         if self.bit_cfg_content_pre[i].cmd_name == "COR0":
-        #             word = utils.bytes_to_binary(self.bit_cfg_content_pre[i].get_data_from_index(1))
-        #             word = word[:-13] + "1" + word[-12:]
-        #             self.bit_cfg_content_pre[i].set_data_to_index(1, utils.binary_str_to_bytes(word))
-        #             self.bit_cfg_content_pre[i].append_data(config.CMD_MASK_01_BYTE)
-        #             self.bit_cfg_content_pre[i].append_data(config.CMD_MASK_02_BYTE)
-        #             self.bit_cfg_content_pre[i].append_data(config.CMD_TRIM_01_BYTE)
-        #             self.bit_cfg_content_pre[i].append_data(config.CMD_TRIM_02_BYTE)
+                    # ============ 插入noop * 2 ============ 
+                    for _ in range(2):
+                        item = PacketItem("NOOP")
+                        item.set_opcode(-1)
+                        item.append_data(config.NOOP_BYTE)
+                        self.bit_cfg_content_pre.insert(cur_index+1, item)
+                        cur_index += 1
+                    # ============ 插入noop * 2 ============ 
+                    
+                    
+                    # ============ 插入RHBD ============ 
+                    item = PacketItem("RHBD")
+                    item.set_opcode(-1)
+                    item.append_data(config.RHBD_REG_BYTE)
+                    item.append_data(utils.binary_str_to_bytes(RHBD_DATA_STR))
+                    self.bit_cfg_content_pre.insert(cur_index+1, item)
+                    cur_index += 1
+                    # ============ 插入RHBD ============ 
+                    
+                    # ============ 插入noop * 2 ============ 
+                    for _ in range(2):
+                        item = PacketItem("NOOP")
+                        item.set_opcode(-1)
+                        item.append_data(config.NOOP_BYTE)
+                        self.bit_cfg_content_pre.insert(cur_index+1, item)
+                        cur_index += 1
+                    # ============ 插入noop * 2 ============ 
+                    break
+                cur_index += 1
        
     # delete_ghigh
     def delete_ghigh(self):
@@ -1557,7 +1713,8 @@ def run_bit_process(
     compress: bool = False,
     trim: bool = False,
     delete_ghigh: bool = False,
-    readback_refresh: bool = False,
+    timer_refresh: bool = False,
+    readback_refresh: str = None,
 ) -> str:
     
     logging.info(f"Parameters:")
@@ -1571,7 +1728,8 @@ def run_bit_process(
     logging.info(f"\tTRIM: {trim}")
     logging.info(f"\tDELETE_GHIGH: {delete_ghigh}")
     logging.info(f"\tCOMPRESS: {compress}")
-    logging.info(f"\t回读刷新: {readback_refresh}\n")
+    logging.info(f"\t定时刷新: {timer_refresh}\n")
+    logging.info(f"\t回读刷新RHBD DATA: {readback_refresh}\n")
     
     dev = config.DEVICE_MAP.get(device.upper(), "MC1P110")
     logging.info("Running bit process ...")
@@ -1611,8 +1769,10 @@ def run_bit_process(
         bit_parser.set_trim()
     if delete_ghigh:
         bit_parser.delete_ghigh()
+    if timer_refresh:
+        bit_parser.timer_refresh(timer_refresh)
     if readback_refresh:
-        bit_parser.set_refresh()
+        bit_parser.readback_refresh(readback_refresh)
 
     if crc:
         # 计算CRC

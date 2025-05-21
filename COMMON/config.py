@@ -1,5 +1,5 @@
 import enum
-import COMMON.utils
+import COMMON.utils as utils
 
 ZERO_DATA_STR = '00000000000000000000000000000000'
 ZERO_DATA_BYTE = b'\x00\x00\x00\x00'

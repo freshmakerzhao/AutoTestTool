@@ -1,6 +1,7 @@
 import tkinter as tk
 from tkinter import ttk
 from pathlib import Path
+import COMMON.utils as utils
 
 # 项目根目录 = “resource/image/” 的上两级
 ROOT_DIR   = Path(__file__).resolve().parents[2]
@@ -26,9 +27,10 @@ class CollapsibleFrame(ttk.Frame):
             return
         root = widget.winfo_toplevel()      # 拿到已有 Tk
         cls._icons["right"] = tk.PhotoImage(master=root,
-                                            file=IMAGE_DIR / "arrow_right.png")
+                                            file=utils.resource_path("RESOURCE/IMAGE/arrow_right.png"))
         cls._icons["down"]  = tk.PhotoImage(master=root,
-                                            file=IMAGE_DIR / "arrow_down.png")
+                                            file=utils.resource_path("RESOURCE/IMAGE/arrow_down.png"))
+        
     # 方便判断当前激活的面板
     def is_expanded(self) -> bool:
         return self._container.winfo_ismapped()

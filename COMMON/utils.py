@@ -3,6 +3,7 @@ import logging
 import os 
 import struct
 import hashlib
+import sys
 
 def log_debug_with_description(value: int, format_spec: str = '', description: str = ''):
     if format_spec:
@@ -126,3 +127,11 @@ HEX_CHARS = set("0123456789abcdefABCDEF")
 def is_hex(P: str) -> bool:
     """允许空串或 0-9a-fA-F"""
     return P == "" or all(ch in HEX_CHARS for ch in P)
+
+def resource_path(relative_path):
+    """返回资源文件在打包状态或开发状态下的绝对路径"""
+    if getattr(sys, 'frozen', False):
+        base_path = sys._MEIPASS
+    else:
+        base_path = os.path.abspath(".")
+    return os.path.join(base_path, relative_path)
