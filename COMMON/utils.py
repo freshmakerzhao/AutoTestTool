@@ -117,3 +117,12 @@ def int_to_bin_str(value: int, length: int = 32) -> str:
         raise ValueError(f"value={value} 超出 {length} 位可表示范围 0~{max_val}")
     # ---------- 转二进制并前导补零 ----------
     return format(value, f'0{length}b')
+
+# 判断输入内容是否符合十进制或十六进制格式
+def is_dec(P: str) -> bool:
+    """允许空串或纯 0-9"""
+    return P == "" or P.isdigit()
+HEX_CHARS = set("0123456789abcdefABCDEF")
+def is_hex(P: str) -> bool:
+    """允许空串或 0-9a-fA-F"""
+    return P == "" or all(ch in HEX_CHARS for ch in P)

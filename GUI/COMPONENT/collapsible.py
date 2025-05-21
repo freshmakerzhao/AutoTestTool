@@ -29,7 +29,9 @@ class CollapsibleFrame(ttk.Frame):
                                             file=IMAGE_DIR / "arrow_right.png")
         cls._icons["down"]  = tk.PhotoImage(master=root,
                                             file=IMAGE_DIR / "arrow_down.png")
-
+    # 方便判断当前激活的面板
+    def is_expanded(self) -> bool:
+        return self._container.winfo_ismapped()
 
     # ---------- UI ----------
     def _build_header(self):

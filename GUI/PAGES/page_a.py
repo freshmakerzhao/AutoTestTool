@@ -28,9 +28,14 @@ class PageA(ttk.Frame):
         dev_row = ttk.Frame(self); dev_row.grid(row=1, column=0, sticky="ew", pady=6)
         ttk.Label(dev_row, text="Device:").grid(row=0, column=0, sticky=tk.W)
         self.dev_var = tk.StringVar(value="MC1P110")
-        ttk.Combobox(dev_row, textvariable=self.dev_var,
-                     values=["MC1P110", "MC1P170", "MC1P210"], width=10)\
-            .grid(row=0, column=1, sticky=tk.W, padx=4)
+        ttk.Combobox(
+            dev_row,
+            textvariable=self.dev_var,
+            values=["MC1P110", "MC1P170", "MC1P210"],
+            width=10,
+            state="readonly"
+        ).grid(row=0, column=1, sticky=tk.W, padx=4)
+
 
         # --- 文件后缀 ---
         suffix_row = ttk.Frame(self); suffix_row.grid(row=2, column=0, sticky="ew", pady=6)
@@ -41,7 +46,7 @@ class PageA(ttk.Frame):
 
         # --- 选项区：4 列均分 ---
         opts = [("PCIE","pcie"),("GTP","gtp"),("CRC","crc"),("COMPRESS","compress"),
-                ("TRIM","trim"),("DELETE_GHIGH","delete_ghigh"),("回读刷新","readback_refresh")]
+                ("TRIM","trim"),("DELETE_GHIGH","delete_ghigh")]
         self.check_vars = {}
         for idx, (txt,key) in enumerate(opts):
             if idx % 4 == 0:
@@ -64,7 +69,7 @@ class PageA(ttk.Frame):
 
     # ---------- 事件 ----------
     def browse_file(self):
-        f = filedialog.askopenfilename(filetypes=[("Bitstream", "*.rbt *.bit")])
+        f = filedialog.askopenfilename(filetypes=[("Bitstream", "*.rbt *.bit *.bin")])
         if f: self.file_var.set(f)
 
     def on_run(self):

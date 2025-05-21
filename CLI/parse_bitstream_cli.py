@@ -12,8 +12,8 @@ def main():
     parser.add_argument('--COMPRESS', action='store_true')
     parser.add_argument('--TRIM', action='store_true')
     parser.add_argument('--DELETE_GHIGH', action='store_true')
-    parser.add_argument('--readback_refresh', action='store_true')
-
+    parser.add_argument('--readback_refresh', type=str ,help="启用回读刷新，指定发生两比特错误次数的阈值")
+    parser.add_argument('--timer_refresh', type=str ,help="启用定时刷新，指定刷新周期")
     args = parser.parse_args()
     logging.basicConfig(level=logging.INFO, format="%(message)s")
     try:
@@ -28,6 +28,7 @@ def main():
             trim=args.TRIM,
             delete_ghigh=args.DELETE_GHIGH,
             readback_refresh=args.readback_refresh,
+            timer_refresh=args.timer_refresh,
         )
     except Exception as exc:
         logging.error("❌ %s", exc)
