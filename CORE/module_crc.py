@@ -3,11 +3,6 @@ import logging
 import COMMON.config as config
 import COMMON.utils as utils
 
-# 配置日志级别和格式
-logging.basicConfig(level=logging.DEBUG, format='%(asctime)s - %(levelname)s - %(message)s')
-# logging.basicConfig(level=logging.WARNING,  format='%(asctime)s - %(levelname)s - %(message)s')
-# logging.basicConfig(level=logging.INFO,  format='%(asctime)s - %(levelname)s - %(message)s')
-
 # 关闭CRC    
 def disable_crc(bitsteam_obj):
     # 拿到数据帧之后的寄存器

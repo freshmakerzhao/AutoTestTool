@@ -15,7 +15,7 @@ def main():
     parser.add_argument('--readback_refresh', type=str ,help="启用回读刷新，指定发生两比特错误次数的阈值")
     parser.add_argument('--timer_refresh', type=str ,help="启用定时刷新，指定刷新周期")
     args = parser.parse_args()
-    logging.basicConfig(level=logging.INFO, format="%(message)s")
+    # logging.basicConfig(level=logging.INFO, format="%(message)s")
     
     try:
         out_path = run_task(

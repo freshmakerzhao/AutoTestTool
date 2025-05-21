@@ -1,7 +1,7 @@
 import pathlib, threading, tkinter as tk
 from tkinter import ttk, filedialog, messagebox
-from GUI.logger import gui_logger
 from CORE.process_runner import run_task,FILE_ENDWITH
+import logging
 
 class PageA(ttk.Frame):
     """A 组：Bitstream 解析功能"""
@@ -53,7 +53,8 @@ class PageA(ttk.Frame):
                 row_frame = ttk.Frame(self); row_frame.grid(
                     row=3+idx//4, column=0, sticky="ew", pady=3)
                 for c in range(4): row_frame.columnconfigure(c, weight=1)
-            var = tk.BooleanVar(); self.check_vars[key]=var
+            var = tk.BooleanVar()
+            self.check_vars[key]=var
             ttk.Checkbutton(row_frame, text=txt, variable=var)\
                 .grid(row=0, column=idx%4, sticky="w", padx=4)
 
@@ -65,8 +66,6 @@ class PageA(ttk.Frame):
         self.log_text = tk.Text(self, height=10, state="disabled")
         self.log_text.grid(row=11, column=0, sticky="nsew")
         self.rowconfigure(11, weight=1)
-        gui_logger(self.log_text)
-
     # ---------- 事件 ----------
     def browse_file(self):
         f = filedialog.askopenfilename(filetypes=[("Bitstream", "*.rbt *.bit *.bin")])
@@ -75,21 +74,40 @@ class PageA(ttk.Frame):
     def on_run(self):
         path = self.file_var.get()
         if not pathlib.Path(path).is_file():
+            logging.error("[错误] 请选择正确的输入文件！")
             messagebox.showerror("错误", "请选择正确的输入文件！"); return
         kwargs = dict(
             file=path, device=self.dev_var.get(), file_suffix=self.suffix_var.get(),
             pcie=self.check_vars["pcie"].get(), gtp=self.check_vars["gtp"].get(),
             crc=self.check_vars["crc"].get(), compress=self.check_vars["compress"].get(),
             trim=self.check_vars["trim"].get(), delete_ghigh=self.check_vars["delete_ghigh"].get(),
-            readback_refresh=self.check_vars["readback_refresh"].get(),
         )
         threading.Thread(target=self._run_thread, args=(kwargs,), daemon=True).start()
 
     def _run_thread(self, kwargs):
-        import logging
         try:
             out = run_task(**kwargs)
+            logging.info("[提示] 输出文件保存至: %s", out)
             messagebox.showinfo("完成", f"输出文件已保存：\n{out}")
         except Exception as e:
-            logging.error("❌ %s", e)
+            logging.error("[错误] %s", e)
             messagebox.showerror("出错", str(e))
+            
+    def reset(self):
+        # 清空日志
+        self.log_text.config(state="normal")
+        self.log_text.delete(1.0, "end")
+        self.log_text.config(state="disabled")
+
+        # 清空输入文件路径
+        self.file_var.set("")
+
+        # 重置设备下拉选项
+        self.dev_var.set("MC1P110")
+
+        # 重置文件后缀
+        self.suffix_var.set(FILE_ENDWITH)
+
+        # 重置所有选项
+        for var in self.check_vars.values():
+            var.set(False)

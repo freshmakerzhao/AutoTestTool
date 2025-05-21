@@ -3,11 +3,6 @@ import COMMON.config as config
 import COMMON.utils as utils
 from collections import defaultdict
 
-# 配置日志级别和格式
-logging.basicConfig(level=logging.DEBUG, format='%(asctime)s - %(levelname)s - %(message)s')
-# logging.basicConfig(level=logging.WARNING,  format='%(asctime)s - %(levelname)s - %(message)s')
-# logging.basicConfig(level=logging.INFO,  format='%(asctime)s - %(levelname)s - %(message)s')
-
 # ====================== GTP 修改位置和数据 ====================== 
 GTP_CONFIG = [
     {"frame": 3829, "word":  0, "bit": 2, "data": "1"},
