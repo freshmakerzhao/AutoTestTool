@@ -1,7 +1,7 @@
 # -*- mode: python ; coding: utf-8 -*-
 
 a = Analysis(
-    ['CLI/parse_bitstream_cli.py'],
+    ['CLI/main_cli.py'],
     pathex=['.'],
     binaries=[],
     datas=[],

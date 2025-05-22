@@ -161,7 +161,7 @@ class PageCVCCM(ttk.Frame):
             "模块目录：\n"
             "   - 选择文件夹，递归处理该文件夹下所有 bitstream（.rbt、.bit、.bin） 文件，输出到选择文件夹下的各 vccm_1pxx 文件夹中\n\n"
             "项目目录：\n"
-            "   - 对当前目录下的每个一级子目录分别执行 VCCM 批处理，分别创建对应的 vccm_1pxx 文件夹\n\n"
+            "   - 选择文件夹，对当前目录下的每个一级子目录分别执行 VCCM 批处理，分别创建对应的 vccm_1pxx 文件夹\n\n"
         )
             
     def _after_err(self, exc: Exception):
