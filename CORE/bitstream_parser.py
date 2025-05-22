@@ -648,8 +648,13 @@ class BitstreamParser:
         self.bit_byte_content_cur_loc += read_length
         return data
     
-    def save_file(self, file_suffix = ""):
-        new_file_path = self.file_path_except_type + file_suffix + self.file_type
+    # file_suffix表示文件名称后缀，不影响类型
+    # output_file_path表示文件存储路径，不带文件类型
+    def save_file(self, file_suffix = "", output_file_path = ""):
+        if output_file_path == "":
+            new_file_path = self.file_path_except_type + file_suffix + self.file_type
+        else:
+            new_file_path = output_file_path + self.file_type
         if self.file_type == ".rbt":
             # 计算长度
             byte_nums = len(self.rbt_data_content)
@@ -700,5 +705,4 @@ class BitstreamParser:
                         file.write(word)
         else:
             raise ValueError("文件格式错误")
-        print(f"writing file : {new_file_path}")
         return new_file_path

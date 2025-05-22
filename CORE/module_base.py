@@ -81,43 +81,43 @@ PCIE_CONFIG = {
 # ====================== PCIE 修改位置 ====================== 
 
 # 修改trim0寄存器，从0置1  
-def process_trim(bitsteam_obj):
+def process_trim(bitstream_obj):
     # 拿到数据帧之前的寄存器
-    if bitsteam_obj.file_type == ".rbt":
-        for i in range(len(bitsteam_obj.rbt_cfg_content_pre)):
-            if bitsteam_obj.rbt_cfg_content_pre[i].cmd_name == "COR1":
-                new_line = bitsteam_obj.rbt_cfg_content_pre[i].get_data_from_index(1)[:-13] + "1" + bitsteam_obj.rbt_cfg_content_pre[i].get_data_from_index(1)[-12:]
-                bitsteam_obj.rbt_cfg_content_pre[i].set_data_to_index(1, new_line)
-                bitsteam_obj.rbt_cfg_content_pre[i].append_data(config.CMD_MASK_01_STR)
-                bitsteam_obj.rbt_cfg_content_pre[i].append_data(config.CMD_MASK_02_STR)
-                bitsteam_obj.rbt_cfg_content_pre[i].append_data(config.CMD_TRIM_01_STR)
-                bitsteam_obj.rbt_cfg_content_pre[i].append_data(config.CMD_TRIM_02_STR)
-    elif bitsteam_obj.file_type == ".bit" or bitsteam_obj.file_type == ".bin":
-        for i in range(len(bitsteam_obj.bit_cfg_content_pre)):
-            if bitsteam_obj.bit_cfg_content_pre[i].cmd_name == "COR1":
-                word = utils.bytes_to_binary(bitsteam_obj.bit_cfg_content_pre[i].get_data_from_index(1))
+    if bitstream_obj.file_type == ".rbt":
+        for i in range(len(bitstream_obj.rbt_cfg_content_pre)):
+            if bitstream_obj.rbt_cfg_content_pre[i].cmd_name == "COR1":
+                new_line = bitstream_obj.rbt_cfg_content_pre[i].get_data_from_index(1)[:-13] + "1" + bitstream_obj.rbt_cfg_content_pre[i].get_data_from_index(1)[-12:]
+                bitstream_obj.rbt_cfg_content_pre[i].set_data_to_index(1, new_line)
+                bitstream_obj.rbt_cfg_content_pre[i].append_data(config.CMD_MASK_01_STR)
+                bitstream_obj.rbt_cfg_content_pre[i].append_data(config.CMD_MASK_02_STR)
+                bitstream_obj.rbt_cfg_content_pre[i].append_data(config.CMD_TRIM_01_STR)
+                bitstream_obj.rbt_cfg_content_pre[i].append_data(config.CMD_TRIM_02_STR)
+    elif bitstream_obj.file_type == ".bit" or bitstream_obj.file_type == ".bin":
+        for i in range(len(bitstream_obj.bit_cfg_content_pre)):
+            if bitstream_obj.bit_cfg_content_pre[i].cmd_name == "COR1":
+                word = utils.bytes_to_binary(bitstream_obj.bit_cfg_content_pre[i].get_data_from_index(1))
                 word = word[:-13] + "1" + word[-12:]
-                bitsteam_obj.bit_cfg_content_pre[i].set_data_to_index(1, utils.binary_str_to_bytes(word))
-                bitsteam_obj.bit_cfg_content_pre[i].append_data(config.CMD_MASK_01_BYTE)
-                bitsteam_obj.bit_cfg_content_pre[i].append_data(config.CMD_MASK_02_BYTE)
-                bitsteam_obj.bit_cfg_content_pre[i].append_data(config.CMD_TRIM_01_BYTE)
-                bitsteam_obj.bit_cfg_content_pre[i].append_data(config.CMD_TRIM_02_BYTE)
+                bitstream_obj.bit_cfg_content_pre[i].set_data_to_index(1, utils.binary_str_to_bytes(word))
+                bitstream_obj.bit_cfg_content_pre[i].append_data(config.CMD_MASK_01_BYTE)
+                bitstream_obj.bit_cfg_content_pre[i].append_data(config.CMD_MASK_02_BYTE)
+                bitstream_obj.bit_cfg_content_pre[i].append_data(config.CMD_TRIM_01_BYTE)
+                bitstream_obj.bit_cfg_content_pre[i].append_data(config.CMD_TRIM_02_BYTE)
             
 # 修改gtp     
-def process_gtp_config(bitsteam_obj):
+def process_gtp_config(bitstream_obj):
     for item in GTP_CONFIG:
-        bitsteam_obj.set_data_with_frame_word_bit(
+        bitstream_obj.set_data_with_frame_word_bit(
             item["data"], item["frame"], item["word"], item["bit"]
         )
   
 # 处理PCIE    
-def process_pcie_config(bitsteam_obj):
+def process_pcie_config(bitstream_obj):
     # 处理PCIE
     for index in PCIE_CHECK:
         check_group = PCIE_CHECK[index]
         cur_group_have_value = False
         for item in check_group:
-            bit = bitsteam_obj.get_data_with_frame_word_bit(item["frame"],  item["word"], item["bit"])
+            bit = bitstream_obj.get_data_with_frame_word_bit(item["frame"],  item["word"], item["bit"])
             if bit == "1":
                 # 有任意一个为1，这组就无法修改
                 cur_group_have_value = True
@@ -129,22 +129,22 @@ def process_pcie_config(bitsteam_obj):
             # 如果这一组全为0，则这组可修改
             config_group = PCIE_CONFIG[index]
             for item in config_group:
-                bitsteam_obj.set_data_with_frame_word_bit(item["data"], item["frame"],  item["word"], item["bit"])
+                bitstream_obj.set_data_with_frame_word_bit(item["data"], item["frame"],  item["word"], item["bit"])
             break
     else:
         raise ValueError("PCIE 规则无法适配")
 
 # delete_ghigh
-def delete_ghigh(bitsteam_obj):
+def delete_ghigh(bitstream_obj):
     # 拿到数据帧之后的寄存器
-    if bitsteam_obj.file_type == ".rbt":
-        bitsteam_obj.rbt_cfg_content_after = [item for item in bitsteam_obj.rbt_cfg_content_after
+    if bitstream_obj.file_type == ".rbt":
+        bitstream_obj.rbt_cfg_content_after = [item for item in bitstream_obj.rbt_cfg_content_after
                             if not (item.cmd_name == "CMD" and (item.get_data_from_index(1) == "00000000000000000000000000000011"))]
-    elif bitsteam_obj.file_type == ".bit" or bitsteam_obj.file_type == ".bin":
-        bitsteam_obj.bit_cfg_content_after = [item for item in bitsteam_obj.bit_cfg_content_after
+    elif bitstream_obj.file_type == ".bit" or bitstream_obj.file_type == ".bin":
+        bitstream_obj.bit_cfg_content_after = [item for item in bitstream_obj.bit_cfg_content_after
                             if not (item.cmd_name == "CMD" and (item.get_data_from_index(1) == b"\x00\x00\x00\x03"))]
            
-def process_compress(bitsteam_obj):
+def process_compress(bitstream_obj):
     # 数据帧特征值作为key
     # value : 
     # {   
@@ -171,7 +171,7 @@ def process_compress(bitsteam_obj):
     all_frame_count = 0
     
     # ================================= 解析位流 开始 =========================================
-    for frame_type_key, frame_type_value in getattr(config, bitsteam_obj.device + "_FRAME_STRUCT").items():
+    for frame_type_key, frame_type_value in getattr(config, bitstream_obj.device + "_FRAME_STRUCT").items():
         
         # type 0 type 1
         data_frame_features_index[frame_type_key] = {}
@@ -198,10 +198,10 @@ def process_compress(bitsteam_obj):
                     # 每次拿一帧的数据计算
                     frame_index = 0
                     for index in range(start_index, end_index, 101):
-                        if bitsteam_obj.file_type == ".rbt":
-                            feature = utils.get_feature(bitsteam_obj.rbt_data_content[index:index+101] , "str")
-                        elif bitsteam_obj.file_type == ".bit" or bitsteam_obj.file_type == ".bin":
-                            feature = utils.get_feature(bitsteam_obj.bit_data_content[index:index+101] , "int")
+                        if bitstream_obj.file_type == ".rbt":
+                            feature = utils.get_feature(bitstream_obj.rbt_data_content[index:index+101] , "str")
+                        elif bitstream_obj.file_type == ".bit" or bitstream_obj.file_type == ".bin":
+                            feature = utils.get_feature(bitstream_obj.bit_data_content[index:index+101] , "int")
                             
                         
                         # 添加到字典
@@ -234,7 +234,7 @@ def process_compress(bitsteam_obj):
     
     new_data_frame = [] # 存储新生成的data frame
     is_first = True
-    config_suffix = "_STR" if bitsteam_obj.file_type == ".rbt" else "_BYTE"
+    config_suffix = "_STR" if bitstream_obj.file_type == ".rbt" else "_BYTE"
     
     # 构造FAR
     def get_frame_address_register(frame_type, region_type, row_num, col_num, frame_index):
@@ -242,10 +242,10 @@ def process_compress(bitsteam_obj):
         # 构造32位二进制数
         decimal_value = (frame_type << 23) | (region_type << 22) | (row_num << 17) | (col_num << 7) | frame_index
         
-        if bitsteam_obj.file_type == ".rbt":
+        if bitstream_obj.file_type == ".rbt":
             # 转换为32位二进制字符串
             return format(decimal_value, '032b')
-        elif bitsteam_obj.file_type == ".bit" or bitsteam_obj.file_type == ".bin":
+        elif bitstream_obj.file_type == ".bit" or bitstream_obj.file_type == ".bin":
             return utils.decimal_to_bytes(decimal_value)
             
     # 获取Totalword
@@ -254,9 +254,9 @@ def process_compress(bitsteam_obj):
         word_count_binary = f'{word_count:028b}'[-28:]
         fixed_part = "0101"
         total_word = fixed_part + word_count_binary
-        if bitsteam_obj.file_type == ".rbt":
+        if bitstream_obj.file_type == ".rbt":
             return total_word
-        elif bitsteam_obj.file_type == ".bit" or bitsteam_obj.file_type == ".bin":
+        elif bitstream_obj.file_type == ".bit" or bitstream_obj.file_type == ".bin":
             return utils.binary_str_to_bytes(total_word)
             
     # 构造可变的cmd
@@ -273,9 +273,9 @@ def process_compress(bitsteam_obj):
         # 拼接前 22 位和后 11 位的 word_count(二进制字符串)
         frame_data_register_input = fixed_part + word_count_binary
         
-        if bitsteam_obj.file_type == ".rbt":
+        if bitstream_obj.file_type == ".rbt":
             return frame_data_register_input
-        elif bitsteam_obj.file_type == ".bit" or bitsteam_obj.file_type == ".bin":
+        elif bitstream_obj.file_type == ".bit" or bitstream_obj.file_type == ".bin":
             return utils.binary_str_to_bytes(frame_data_register_input)
             
     # 插入数据，方便维护
@@ -331,10 +331,10 @@ def process_compress(bitsteam_obj):
                             insert_data(getattr(config, "NOOP"+config_suffix))
                             insert_data(get_cmd_from_word_count(101, "FDRI"))
                             
-                            if bitsteam_obj.file_type == ".rbt":
-                                insert_multiple_words(bitsteam_obj.rbt_data_content[row_data[current_feature][0]['index']['start_index']:row_data[current_feature][0]['index']['end_index']])
-                            elif bitsteam_obj.file_type == ".bit" or bitsteam_obj.file_type == ".bin":
-                                insert_multiple_words(bitsteam_obj.bit_data_content[row_data[current_feature][0]['index']['start_index']:row_data[current_feature][0]['index']['end_index']])
+                            if bitstream_obj.file_type == ".rbt":
+                                insert_multiple_words(bitstream_obj.rbt_data_content[row_data[current_feature][0]['index']['start_index']:row_data[current_feature][0]['index']['end_index']])
+                            elif bitstream_obj.file_type == ".bit" or bitstream_obj.file_type == ".bin":
+                                insert_multiple_words(bitstream_obj.bit_data_content[row_data[current_feature][0]['index']['start_index']:row_data[current_feature][0]['index']['end_index']])
                             
                             is_first = False
                         else:
@@ -345,10 +345,10 @@ def process_compress(bitsteam_obj):
                             insert_data(get_frame_address_register(row_data[current_feature][0]["FAR"]["frame_type"], row_data[current_feature][0]["FAR"]["region_type"], row_data[current_feature][0]["FAR"]["row_num"], row_data[current_feature][0]["FAR"]["col_num"], row_data[current_feature][0]["FAR"]["frame_index"]))
                             insert_data(getattr(config, "NOOP"+config_suffix))
                             insert_data(get_cmd_from_word_count(101, "FDRI"))
-                            if bitsteam_obj.file_type == ".rbt":
-                                insert_multiple_words(bitsteam_obj.rbt_data_content[row_data[current_feature][0]['index']['start_index']:row_data[current_feature][0]['index']['end_index']])
-                            elif bitsteam_obj.file_type == ".bit" or bitsteam_obj.file_type == ".bin":
-                                insert_multiple_words(bitsteam_obj.bit_data_content[row_data[current_feature][0]['index']['start_index']:row_data[current_feature][0]['index']['end_index']])
+                            if bitstream_obj.file_type == ".rbt":
+                                insert_multiple_words(bitstream_obj.rbt_data_content[row_data[current_feature][0]['index']['start_index']:row_data[current_feature][0]['index']['end_index']])
+                            elif bitstream_obj.file_type == ".bit" or bitstream_obj.file_type == ".bin":
+                                insert_multiple_words(bitstream_obj.bit_data_content[row_data[current_feature][0]['index']['start_index']:row_data[current_feature][0]['index']['end_index']])
 
                         insert_data(getattr(config, "CMD"+config_suffix))
                         insert_data(getattr(config, "MFW"+config_suffix))
@@ -422,10 +422,10 @@ def process_compress(bitsteam_obj):
                             insert_data(get_total_word(single_word_count))
                         # 插入这些单帧
                         for feature_key in single_feature_list:
-                            if bitsteam_obj.file_type == ".rbt":
-                                insert_multiple_words(bitsteam_obj.rbt_data_content[row_data[feature_key][0]['index']['start_index']:row_data[feature_key][0]['index']['end_index']])
-                            elif bitsteam_obj.file_type == ".bit" or bitsteam_obj.file_type == ".bin":
-                                insert_multiple_words(bitsteam_obj.bit_data_content[row_data[feature_key][0]['index']['start_index']:row_data[feature_key][0]['index']['end_index']])
+                            if bitstream_obj.file_type == ".rbt":
+                                insert_multiple_words(bitstream_obj.rbt_data_content[row_data[feature_key][0]['index']['start_index']:row_data[feature_key][0]['index']['end_index']])
+                            elif bitstream_obj.file_type == ".bit" or bitstream_obj.file_type == ".bin":
+                                insert_multiple_words(bitstream_obj.bit_data_content[row_data[feature_key][0]['index']['start_index']:row_data[feature_key][0]['index']['end_index']])
                         # 最后插入 pad frame
                         for _ in range(101):
                             insert_data(getattr(config, "ZERO"+config_suffix))
@@ -436,10 +436,10 @@ def process_compress(bitsteam_obj):
                         #     insert_data(get_cmd_from_word_count(single_word_count, "FDRI"))
                         #     # 插入这些单帧
                         #     for feature_key in single_feature_list:
-                        #         if bitsteam_obj.file_type == ".rbt":
-                        #             insert_multiple_words(bitsteam_obj.rbt_data_content[row_data[feature_key][0]['index']['start_index']:row_data[feature_key][0]['index']['end_index']])
-                        #         elif bitsteam_obj.file_type == ".bit" or bitsteam_obj.file_type == ".bin":
-                        #             insert_multiple_words(bitsteam_obj.bit_data_content[row_data[feature_key][0]['index']['start_index']:row_data[feature_key][0]['index']['end_index']])
+                        #         if bitstream_obj.file_type == ".rbt":
+                        #             insert_multiple_words(bitstream_obj.rbt_data_content[row_data[feature_key][0]['index']['start_index']:row_data[feature_key][0]['index']['end_index']])
+                        #         elif bitstream_obj.file_type == ".bit" or bitstream_obj.file_type == ".bin":
+                        #             insert_multiple_words(bitstream_obj.bit_data_content[row_data[feature_key][0]['index']['start_index']:row_data[feature_key][0]['index']['end_index']])
                         #         
                         #     # 最后插入 pad frame
                         #     for _ in range(101):
@@ -450,10 +450,10 @@ def process_compress(bitsteam_obj):
                         #     insert_data(get_total_word(single_word_count))
                         #     # 插入这些单帧
                         #     for feature_key in single_feature_list:
-                        #         if bitsteam_obj.file_type == ".rbt":
-                        #             insert_multiple_words(bitsteam_obj.rbt_data_content[row_data[feature_key][0]['index']['start_index']:row_data[feature_key][0]['index']['end_index']])
-                        #         elif bitsteam_obj.file_type == ".bit" or bitsteam_obj.file_type == ".bin":
-                        #             insert_multiple_words(bitsteam_obj.bit_data_content[row_data[feature_key][0]['index']['start_index']:row_data[feature_key][0]['index']['end_index']])
+                        #         if bitstream_obj.file_type == ".rbt":
+                        #             insert_multiple_words(bitstream_obj.rbt_data_content[row_data[feature_key][0]['index']['start_index']:row_data[feature_key][0]['index']['end_index']])
+                        #         elif bitstream_obj.file_type == ".bit" or bitstream_obj.file_type == ".bin":
+                        #             insert_multiple_words(bitstream_obj.bit_data_content[row_data[feature_key][0]['index']['start_index']:row_data[feature_key][0]['index']['end_index']])
                         #     for _ in range(101):
                         #         insert_data(getattr(config, "ZERO"+config_suffix))
                         #     insert_data(getattr(config, "CMD"+config_suffix))
@@ -474,89 +474,89 @@ def process_compress(bitsteam_obj):
     # ================================= 构造压缩位流寄存器部分 开始 =========================================
     
         # 拿到数据帧之前的寄存器
-    if bitsteam_obj.file_type == ".rbt":
-        for i in range(len(bitsteam_obj.rbt_cfg_content_pre)):
+    if bitstream_obj.file_type == ".rbt":
+        for i in range(len(bitstream_obj.rbt_cfg_content_pre)):
             # 连续的MASK CTL1才需要修改
-            if bitsteam_obj.rbt_cfg_content_pre[i].cmd_name == "MASK" and i < len(bitsteam_obj.rbt_cfg_content_pre)-1 and bitsteam_obj.rbt_cfg_content_pre[i+1].cmd_name == "CTL1":
+            if bitstream_obj.rbt_cfg_content_pre[i].cmd_name == "MASK" and i < len(bitstream_obj.rbt_cfg_content_pre)-1 and bitstream_obj.rbt_cfg_content_pre[i+1].cmd_name == "CTL1":
                 # 对 MASK 的低12位做修改，从 0 -> 1
-                new_line = bitsteam_obj.rbt_cfg_content_pre[i].get_data_from_index(1)[:-13] + "1" + bitsteam_obj.rbt_cfg_content_pre[i].get_data_from_index(1)[-12:]
-                bitsteam_obj.rbt_cfg_content_pre[i].set_data_to_index(1, new_line)
+                new_line = bitstream_obj.rbt_cfg_content_pre[i].get_data_from_index(1)[:-13] + "1" + bitstream_obj.rbt_cfg_content_pre[i].get_data_from_index(1)[-12:]
+                bitstream_obj.rbt_cfg_content_pre[i].set_data_to_index(1, new_line)
                 # 对 CTL1 的低12位做修改，从 0 -> 1
-                new_line = bitsteam_obj.rbt_cfg_content_pre[i+1].get_data_from_index(1)[:-13] + "1" + bitsteam_obj.rbt_cfg_content_pre[i+1].get_data_from_index(1)[-12:]
-                bitsteam_obj.rbt_cfg_content_pre[i+1].set_data_to_index(1, new_line)
-    elif bitsteam_obj.file_type == ".bit" or bitsteam_obj.file_type == ".bin":
-        for i in range(len(bitsteam_obj.bit_cfg_content_pre)):
-            if bitsteam_obj.bit_cfg_content_pre[i].cmd_name == "MASK" and i < len(bitsteam_obj.bit_cfg_content_pre)-1 and bitsteam_obj.bit_cfg_content_pre[i+1].cmd_name == "CTL1":
-                word = utils.bytes_to_binary(bitsteam_obj.bit_cfg_content_pre[i].get_data_from_index(1))
+                new_line = bitstream_obj.rbt_cfg_content_pre[i+1].get_data_from_index(1)[:-13] + "1" + bitstream_obj.rbt_cfg_content_pre[i+1].get_data_from_index(1)[-12:]
+                bitstream_obj.rbt_cfg_content_pre[i+1].set_data_to_index(1, new_line)
+    elif bitstream_obj.file_type == ".bit" or bitstream_obj.file_type == ".bin":
+        for i in range(len(bitstream_obj.bit_cfg_content_pre)):
+            if bitstream_obj.bit_cfg_content_pre[i].cmd_name == "MASK" and i < len(bitstream_obj.bit_cfg_content_pre)-1 and bitstream_obj.bit_cfg_content_pre[i+1].cmd_name == "CTL1":
+                word = utils.bytes_to_binary(bitstream_obj.bit_cfg_content_pre[i].get_data_from_index(1))
                 word = word[:-13] + "1" + word[-12:]
-                bitsteam_obj.bit_cfg_content_pre[i].set_data_to_index(1, utils.binary_str_to_bytes(word))
-                word = utils.bytes_to_binary(bitsteam_obj.bit_cfg_content_pre[i+1].get_data_from_index(1))
+                bitstream_obj.bit_cfg_content_pre[i].set_data_to_index(1, utils.binary_str_to_bytes(word))
+                word = utils.bytes_to_binary(bitstream_obj.bit_cfg_content_pre[i+1].get_data_from_index(1))
                 word = word[:-13] + "1" + word[-12:]
-                bitsteam_obj.bit_cfg_content_pre[i+1].set_data_to_index(1, utils.binary_str_to_bytes(word))
+                bitstream_obj.bit_cfg_content_pre[i+1].set_data_to_index(1, utils.binary_str_to_bytes(word))
     
         # 拿到数据帧之后的寄存器
-    if bitsteam_obj.file_type == ".rbt":
+    if bitstream_obj.file_type == ".rbt":
         cur_index = 0
-        while cur_index < len(bitsteam_obj.rbt_cfg_content_after):
+        while cur_index < len(bitstream_obj.rbt_cfg_content_after):
             # CMD 且 command:DGHIGH/LFRM 时，做插入
-            if bitsteam_obj.rbt_cfg_content_after[cur_index].cmd_name == "CMD" \
-                and bitsteam_obj.rbt_cfg_content_after[cur_index].data_len == 2 \
-                and bitsteam_obj.rbt_cfg_content_after[cur_index].get_data_from_index(1)[-2:] == "11":
+            if bitstream_obj.rbt_cfg_content_after[cur_index].cmd_name == "CMD" \
+                and bitstream_obj.rbt_cfg_content_after[cur_index].data_len == 2 \
+                and bitstream_obj.rbt_cfg_content_after[cur_index].get_data_from_index(1)[-2:] == "11":
                         
                 # 此时需要在 cur_index+1位置插入两个 Item MASK CTL1
                 # MASK
-                item = bitsteam_obj.PacketItem("MASK")
+                item = bitstream_obj.PacketItem("MASK")
                 item.set_opcode(0)
                 item.append_data("00000000000000000001000000000000")
-                bitsteam_obj.rbt_cfg_content_after.insert(cur_index+1, item)
+                bitstream_obj.rbt_cfg_content_after.insert(cur_index+1, item)
                 
                 # CTL1
-                item = bitsteam_obj.PacketItem("CTL1")
+                item = bitstream_obj.PacketItem("CTL1")
                 item.set_opcode(0)
                 item.append_data("00000000000000000000000000000000")
-                bitsteam_obj.rbt_cfg_content_after.insert(cur_index+2, item)
+                bitstream_obj.rbt_cfg_content_after.insert(cur_index+2, item)
                 
                 cur_index += 2  # 跳过插入的元素
             cur_index += 1
-    elif bitsteam_obj.file_type == ".bit" or bitsteam_obj.file_type == ".bin":
+    elif bitstream_obj.file_type == ".bit" or bitstream_obj.file_type == ".bin":
         cur_index = 0
-        while cur_index < len(bitsteam_obj.bit_cfg_content_after):
+        while cur_index < len(bitstream_obj.bit_cfg_content_after):
             # CMD 且 command:DGHIGH/LFRM 时，做插入
-            if bitsteam_obj.bit_cfg_content_after[cur_index].cmd_name == "CMD" \
-                and bitsteam_obj.bit_cfg_content_after[cur_index].data_len == 2 \
-                and bitsteam_obj.bit_cfg_content_after[cur_index].get_data_from_index(1)[-1:] == b"\x03":
+            if bitstream_obj.bit_cfg_content_after[cur_index].cmd_name == "CMD" \
+                and bitstream_obj.bit_cfg_content_after[cur_index].data_len == 2 \
+                and bitstream_obj.bit_cfg_content_after[cur_index].get_data_from_index(1)[-1:] == b"\x03":
                     
                 # 此时需要在 cur_index+1位置插入两个 Item MASK CTL1
                 # MASK
-                item = bitsteam_obj.PacketItem("MASK")
+                item = bitstream_obj.PacketItem("MASK")
                 item.set_opcode(0)
                 item.append_data(b"\x00\x00\x10\x00")
-                bitsteam_obj.bit_cfg_content_after.insert(cur_index+1, item)
+                bitstream_obj.bit_cfg_content_after.insert(cur_index+1, item)
                 
                 # CTL1
-                item = bitsteam_obj.PacketItem("CTL1")
+                item = bitstream_obj.PacketItem("CTL1")
                 item.set_opcode(0)
                 item.append_data(b"\x00\x00\x00\x00")
-                bitsteam_obj.bit_cfg_content_after.insert(cur_index+2, item)
+                bitstream_obj.bit_cfg_content_after.insert(cur_index+2, item)
                 
                 cur_index += 2  # 跳过插入的元素
             cur_index += 1
     
     # ================================= 构造压缩位流寄存器部分 结束 =========================================
     
-    if bitsteam_obj.file_type == ".rbt":
-        bitsteam_obj.rbt_data_content = new_data_frame
-        for i in range(len(bitsteam_obj.rbt_cfg_content_pre)-1, 0, -1):
-            if bitsteam_obj.rbt_cfg_content_pre[i].cmd_name == "FAR":
-                bitsteam_obj.rbt_cfg_content_pre = bitsteam_obj.rbt_cfg_content_pre[:i]
+    if bitstream_obj.file_type == ".rbt":
+        bitstream_obj.rbt_data_content = new_data_frame
+        for i in range(len(bitstream_obj.rbt_cfg_content_pre)-1, 0, -1):
+            if bitstream_obj.rbt_cfg_content_pre[i].cmd_name == "FAR":
+                bitstream_obj.rbt_cfg_content_pre = bitstream_obj.rbt_cfg_content_pre[:i]
                 break
         else:
             raise ValueError("配置寄存器存在问题")
-    elif bitsteam_obj.file_type == ".bit" or bitsteam_obj.file_type == ".bin":
-        bitsteam_obj.bit_data_content = new_data_frame
-        for i in range(len(bitsteam_obj.bit_cfg_content_pre)-1, 0, -1):
-            if bitsteam_obj.bit_cfg_content_pre[i].cmd_name == "FAR":
-                bitsteam_obj.bit_cfg_content_pre = bitsteam_obj.bit_cfg_content_pre[:i]
+    elif bitstream_obj.file_type == ".bit" or bitstream_obj.file_type == ".bin":
+        bitstream_obj.bit_data_content = new_data_frame
+        for i in range(len(bitstream_obj.bit_cfg_content_pre)-1, 0, -1):
+            if bitstream_obj.bit_cfg_content_pre[i].cmd_name == "FAR":
+                bitstream_obj.bit_cfg_content_pre = bitstream_obj.bit_cfg_content_pre[:i]
                 break
         else:
             raise ValueError("配置寄存器存在问题")

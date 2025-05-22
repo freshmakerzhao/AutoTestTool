@@ -6,7 +6,7 @@ import COMMON.utils as utils
 from GUI.COMPONENT.thread_utils import run_in_thread
 from CORE.process_runner import run_task
 
-class PageB(ttk.Frame):
+class PageBRefresh(ttk.Frame):
     """B 组：定时刷新 & 回读刷新 双抽屉设置界面"""
 
     def __init__(self, master, app_ctx, **kw):
@@ -258,7 +258,6 @@ class PageB(ttk.Frame):
         
     
     def on_run(self):
-        
         # 禁用，防止重复点
         self.run_btn.config(state="disabled")
         

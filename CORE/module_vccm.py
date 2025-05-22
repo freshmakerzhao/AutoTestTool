@@ -6,216 +6,69 @@ import COMMON.config as config
 import COMMON.utils as utils
 from collections import defaultdict
 
-# 设置定时刷新
-def timer_refresh(bitsteam_obj, RHBD_DATA_STR="00000000000000000000000000000000"):
-    # 长度必须是 32
-    if len(RHBD_DATA_STR) != 32:
-        raise ValueError("RHBD_DATA_STR 长度不合法，必须为 32 位")
-
-    # 只能包含 0 或 1
-    if not set(RHBD_DATA_STR) <= {"0", "1"}:
-        raise ValueError("RHBD_DATA_STR 只能是二进制字符串，包含 0 或 1")
-
+def process_vccm(bitstream_obj, vccm_value=105):
     # 拿到数据帧之前的寄存器
-    if bitsteam_obj.file_type == ".rbt":
-        cur_index = 0
-        while cur_index < len(bitsteam_obj.rbt_cfg_content_pre):
-            if bitsteam_obj.rbt_cfg_content_pre[cur_index].cmd_name == "COR0":
-                # 更新COR0
-                cur_cor_reg  = bitsteam_obj.rbt_cfg_content_pre[cur_index].get_data_from_index(0)
-                cur_cor_data = bitsteam_obj.rbt_cfg_content_pre[cur_index].get_data_from_index(1)
-                new_cor_data = utils.update_data_by_index(cur_cor_data,[30,29,28],["0","1","0"])
-                bitsteam_obj.rbt_cfg_content_pre[cur_index].set_data_to_index(1, new_cor_data)
-                
-                # ============ 插入noop * 2 ============ 
-                for _ in range(2):
-                    item = bitsteam_obj.PacketItem("NOOP")
-                    item.set_opcode(-1)
-                    item.append_data(config.NOOP_STR)
-                    bitsteam_obj.rbt_cfg_content_pre.insert(cur_index+1, item)
-                    cur_index += 1
-                # ============ 插入noop * 2 ============ 
-                
-                # ============ 插入RHBD ============ 
-                item = bitsteam_obj.PacketItem("RHBD")
-                item.set_opcode(-1)
-                item.append_data(config.RHBD_REG_STR)
-                line = config.ZERO_DATA_STR
-                new_line = utils.update_data_by_index(line,[4],["1"])
-                item.append_data(new_line)
-                bitsteam_obj.rbt_cfg_content_pre.insert(cur_index+1, item)
-                cur_index += 1
-                # ============ 插入RHBD ============ 
-                
-                # ============ 插入noop * 2 ============ 
-                for _ in range(2):
-                    item = bitsteam_obj.PacketItem("NOOP")
-                    item.set_opcode(-1)
-                    item.append_data(config.NOOP_STR)
-                    bitsteam_obj.rbt_cfg_content_pre.insert(cur_index+1, item)
-                    cur_index += 1
-                # ============ 插入noop * 2 ============ 
-                
-                # ============ 插入COR0  ============ 
-                new_cor_data = utils.update_data_by_index(cur_cor_data,[30,29,28],["0","0","1"])
-                item = bitsteam_obj.PacketItem("COR0")
-                item.set_opcode(2)
-                item.append_data(cur_cor_reg)
-                item.append_data(new_cor_data)
-                bitsteam_obj.rbt_cfg_content_pre.insert(cur_index+1, item)
-                cur_index += 1
-                # ============ 插入COR0  ============ 
-                
-                # ============ 插入noop * 2 ============ 
-                for _ in range(2):
-                    item = bitsteam_obj.PacketItem("NOOP")
-                    item.set_opcode(-1)
-                    item.append_data(config.NOOP_STR)
-                    bitsteam_obj.rbt_cfg_content_pre.insert(cur_index+1, item)
-                    cur_index += 1
-                # ============ 插入noop * 2 ============ 
-                
-                # ============ 插入RHBD ============ 
-                item = bitsteam_obj.PacketItem("RHBD")
-                item.set_opcode(-1)
-                item.append_data(config.RHBD_REG_STR)
-                item.append_data(RHBD_DATA_STR)
-                bitsteam_obj.rbt_cfg_content_pre.insert(cur_index+1, item)
-                cur_index += 1
-                # ============ 插入RHBD ============ 
-                
-                # ============ 插入noop * 2 ============ 
-                for _ in range(2):
-                    item = bitsteam_obj.PacketItem("NOOP")
-                    item.set_opcode(-1)
-                    item.append_data(config.NOOP_STR)
-                    bitsteam_obj.rbt_cfg_content_pre.insert(cur_index+1, item)
-                    cur_index += 1
-                # ============ 插入noop * 2 ============ 
+    if bitstream_obj.file_type == ".rbt":
+        for i in range(len(bitstream_obj.rbt_cfg_content_pre)):
+            if bitstream_obj.rbt_cfg_content_pre[i].cmd_name == "COR1":
+                cor1_data = bitstream_obj.rbt_cfg_content_pre[i].get_data_from_index(1)
+                cor1_data = utils.update_data_by_index(cor1_data,[12,10],["1","1"])
+                bitstream_obj.rbt_cfg_content_pre[i].set_data_to_index(1, cor1_data)
+                bitstream_obj.rbt_cfg_content_pre[i].append_data(config.CMD_MASK_01_STR)
+                bitstream_obj.rbt_cfg_content_pre[i].append_data(config.CMD_MASK_03_STR)
+                bitstream_obj.rbt_cfg_content_pre[i].append_data(config.CMD_TRIM_01_STR)
+                if vccm_value == 105:
+                    bitstream_obj.rbt_cfg_content_pre[i].append_data(config.VCCM_DATA_105_STR)
+                elif vccm_value == 106:
+                    bitstream_obj.rbt_cfg_content_pre[i].append_data(config.VCCM_DATA_106_STR)
+                elif vccm_value == 107:
+                    bitstream_obj.rbt_cfg_content_pre[i].append_data(config.VCCM_DATA_107_STR)
+                elif vccm_value == 108:
+                    bitstream_obj.rbt_cfg_content_pre[i].append_data(config.VCCM_DATA_108_STR)
+                elif vccm_value == 109:
+                    bitstream_obj.rbt_cfg_content_pre[i].append_data(config.VCCM_DATA_109_STR)
+                elif vccm_value == 110:
+                    bitstream_obj.rbt_cfg_content_pre[i].append_data(config.VCCM_DATA_110_STR)
+                elif vccm_value == 111:
+                    bitstream_obj.rbt_cfg_content_pre[i].append_data(config.VCCM_DATA_111_STR)
+                elif vccm_value == 112:
+                    bitstream_obj.rbt_cfg_content_pre[i].append_data(config.VCCM_DATA_112_STR)
+                else:
+                    raise ValueError("vccm_value 配置错误")
                 break
-            cur_index += 1
-    elif bitsteam_obj.file_type == ".bit" or bitsteam_obj.file_type == ".bin":         
-                # word = utils.bytes_to_binary(bitsteam_obj.bit_cfg_content_pre[i].get_data_from_index(1))
-        while cur_index < len(bitsteam_obj.bit_cfg_content_pre):
-            if bitsteam_obj.bit_cfg_content_pre[cur_index].cmd_name == "COR0":
-                # 更新COR0
-                cor_data = utils.bytes_to_binary(bitsteam_obj.bit_cfg_content_pre[cur_index].get_data_from_index(1))
-                new_cor_data = utils.update_data_by_index(cor_data,[30,29,28],["0","1","0"])
-                bitsteam_obj.bit_cfg_content_pre[cur_index].set_data_to_index(1, utils.binary_str_to_bytes(new_cor_data))
-                
-                # ============ 插入noop * 2 ============ 
-                for _ in range(2):
-                    item = bitsteam_obj.PacketItem("NOOP")
-                    item.set_opcode(-1)
-                    item.append_data(config.NOOP_BYTE)
-                    bitsteam_obj.bit_cfg_content_pre.insert(cur_index+1, item)
-                    cur_index += 1
-                # ============ 插入noop * 2 ============ 
-                
-                
-                # ============ 插入RHBD ============ 
-                item = bitsteam_obj.PacketItem("RHBD")
-                item.set_opcode(-1)
-                item.append_data(config.RHBD_REG_BYTE)
-                item.append_data(utils.binary_str_to_bytes(RHBD_DATA_STR))
-                bitsteam_obj.bit_cfg_content_pre.insert(cur_index+1, item)
-                cur_index += 1
-                # ============ 插入RHBD ============ 
-                
-                # ============ 插入noop * 2 ============ 
-                for _ in range(2):
-                    item = bitsteam_obj.PacketItem("NOOP")
-                    item.set_opcode(-1)
-                    item.append_data(config.NOOP_BYTE)
-                    bitsteam_obj.bit_cfg_content_pre.insert(cur_index+1, item)
-                    cur_index += 1
-                # ============ 插入noop * 2 ============ 
-                break
-            cur_index += 1
+    elif bitstream_obj.file_type == ".bit" or bitstream_obj.file_type == ".bin":
+        for i in range(len(bitstream_obj.bit_cfg_content_pre)):
+            if bitstream_obj.bit_cfg_content_pre[i].cmd_name == "COR1":
+                word = utils.bytes_to_binary(bitstream_obj.bit_cfg_content_pre[i].get_data_from_index(1))
+                word = word[:-13] + "1" + word[-12:]
+                bitstream_obj.bit_cfg_content_pre[i].set_data_to_index(1, utils.binary_str_to_bytes(word))
+                bitstream_obj.bit_cfg_content_pre[i].append_data(config.CMD_MASK_01_BYTE)
+                bitstream_obj.bit_cfg_content_pre[i].append_data(config.CMD_MASK_02_BYTE)
+                bitstream_obj.bit_cfg_content_pre[i].append_data(config.CMD_TRIM_01_BYTE)
+                bitstream_obj.bit_cfg_content_pre[i].append_data(config.CMD_TRIM_02_BYTE)
     
-# 设置回读刷新
-def readback_refresh(bitsteam_obj, RHBD_DATA_STR="00000000000000000000000000000000"):
-    # 长度必须是 32
-    if len(RHBD_DATA_STR) != 32:
-        raise ValueError("RHBD_DATA_STR 长度不合法，必须为 32 位")
-
-    # 只能包含 0 或 1
-    if not set(RHBD_DATA_STR) <= {"0", "1"}:
-        raise ValueError("RHBD_DATA_STR 只能是二进制字符串，包含 0 或 1")
-
-    # 拿到数据帧之前的寄存器
-    if bitsteam_obj.file_type == ".rbt":
-        cur_index = 0
-        while cur_index < len(bitsteam_obj.rbt_cfg_content_pre):
-            if bitsteam_obj.rbt_cfg_content_pre[cur_index].cmd_name == "COR0":
-                # 更新COR0
-                cor_data = bitsteam_obj.rbt_cfg_content_pre[cur_index].get_data_from_index(1)
-                new_cor_data = utils.update_data_by_index(cor_data,[30,29,28],["0","1","0"])
-                bitsteam_obj.rbt_cfg_content_pre[cur_index].set_data_to_index(1, new_cor_data)
-                
-                # ============ 插入noop * 2 ============ 
-                for _ in range(2):
-                    item = bitsteam_obj.PacketItem("NOOP")
-                    item.set_opcode(-1)
-                    item.append_data(config.NOOP_STR)
-                    bitsteam_obj.rbt_cfg_content_pre.insert(cur_index+1, item)
-                    cur_index += 1
-                # ============ 插入noop * 2 ============ 
-                
-                # ============ 插入RHBD ============ 
-                item = bitsteam_obj.PacketItem("RHBD")
-                item.set_opcode(-1)
-                item.append_data(config.RHBD_REG_STR)
-                item.append_data(RHBD_DATA_STR)
-                bitsteam_obj.rbt_cfg_content_pre.insert(cur_index+1, item)
-                cur_index += 1
-                # ============ 插入RHBD ============ 
-                
-                # ============ 插入noop * 2 ============ 
-                for _ in range(2):
-                    item = bitsteam_obj.PacketItem("NOOP")
-                    item.set_opcode(-1)
-                    item.append_data(config.NOOP_STR)
-                    bitsteam_obj.rbt_cfg_content_pre.insert(cur_index+1, item)
-                    cur_index += 1
-                # ============ 插入noop * 2 ============ 
+                cor1_data = utils.bytes_to_binary(bitstream_obj.bit_cfg_content_pre[i].get_data_from_index(1))
+                cor1_data = utils.update_data_by_index(cor1_data,[12,10],["1","1"])
+                bitstream_obj.bit_cfg_content_pre[i].set_data_to_index(1, utils.binary_str_to_bytes(cor1_data))
+                bitstream_obj.bit_cfg_content_pre[i].append_data(config.CMD_MASK_01_BYTE)
+                bitstream_obj.bit_cfg_content_pre[i].append_data(config.CMD_MASK_03_BYTE)
+                bitstream_obj.bit_cfg_content_pre[i].append_data(config.CMD_TRIM_01_BYTE)
+                if vccm_value == 105:
+                    bitstream_obj.bit_cfg_content_pre[i].append_data(config.VCCM_DATA_105_BYTE)
+                elif vccm_value == 106:
+                    bitstream_obj.bit_cfg_content_pre[i].append_data(config.VCCM_DATA_106_BYTE)
+                elif vccm_value == 107:
+                    bitstream_obj.bit_cfg_content_pre[i].append_data(config.VCCM_DATA_107_BYTE)
+                elif vccm_value == 108:
+                    bitstream_obj.bit_cfg_content_pre[i].append_data(config.VCCM_DATA_108_BYTE)
+                elif vccm_value == 109:
+                    bitstream_obj.bit_cfg_content_pre[i].append_data(config.VCCM_DATA_109_BYTE)
+                elif vccm_value == 110:
+                    bitstream_obj.bit_cfg_content_pre[i].append_data(config.VCCM_DATA_110_BYTE)
+                elif vccm_value == 111:
+                    bitstream_obj.bit_cfg_content_pre[i].append_data(config.VCCM_DATA_111_BYTE)
+                elif vccm_value == 112:
+                    bitstream_obj.bit_cfg_content_pre[i].append_data(config.VCCM_DATA_112_BYTE)
+                else:
+                    raise ValueError("vccm_value 配置错误")
                 break
-            cur_index += 1
-    elif bitsteam_obj.file_type == ".bit" or bitsteam_obj.file_type == ".bin":         
-                # word = utils.bytes_to_binary(bitsteam_obj.bit_cfg_content_pre[i].get_data_from_index(1))
-        while cur_index < len(bitsteam_obj.bit_cfg_content_pre):
-            if bitsteam_obj.bit_cfg_content_pre[cur_index].cmd_name == "COR0":
-                # 更新COR0
-                cor_data = utils.bytes_to_binary(bitsteam_obj.bit_cfg_content_pre[cur_index].get_data_from_index(1))
-                new_cor_data = utils.update_data_by_index(cor_data,[30,29,28],["0","1","0"])
-                bitsteam_obj.bit_cfg_content_pre[cur_index].set_data_to_index(1, utils.binary_str_to_bytes(new_cor_data))
-                
-                # ============ 插入noop * 2 ============ 
-                for _ in range(2):
-                    item = bitsteam_obj.PacketItem("NOOP")
-                    item.set_opcode(-1)
-                    item.append_data(config.NOOP_BYTE)
-                    bitsteam_obj.bit_cfg_content_pre.insert(cur_index+1, item)
-                    cur_index += 1
-                # ============ 插入noop * 2 ============ 
-                
-                
-                # ============ 插入RHBD ============ 
-                item = bitsteam_obj.PacketItem("RHBD")
-                item.set_opcode(-1)
-                item.append_data(config.RHBD_REG_BYTE)
-                item.append_data(utils.binary_str_to_bytes(RHBD_DATA_STR))
-                bitsteam_obj.bit_cfg_content_pre.insert(cur_index+1, item)
-                cur_index += 1
-                # ============ 插入RHBD ============ 
-                
-                # ============ 插入noop * 2 ============ 
-                for _ in range(2):
-                    item = bitsteam_obj.PacketItem("NOOP")
-                    item.set_opcode(-1)
-                    item.append_data(config.NOOP_BYTE)
-                    bitsteam_obj.bit_cfg_content_pre.insert(cur_index+1, item)
-                    cur_index += 1
-                # ============ 插入noop * 2 ============ 
-                break
-            cur_index += 1

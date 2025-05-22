@@ -74,13 +74,51 @@
             "args": [
                 "--file",
                 "E:\\workspace\\parse_bitstream\\data\\刷新\\top.rbt",
-                "--readback_refresh"
+                "--readback_refresh",
+                "00000000011223311000000000000000"
             ],
             "env": {
                 // 把根目录塞进 PYTHONPATH，省去 import 麻烦
                 "PYTHONPATH": "${workspaceFolder}"
             },
-            "program": "E:\\workspace\\parse_bitstream\\CLI\\parse_bitstream_cli.py",
+            "program": "E:\\workspace\\parse_bitstream\\CLI\\main_cli.py",
+            "console": "integratedTerminal",
+            "justMyCode": false
+        },
+        {
+            "name": "定时刷新",
+            "type": "debugpy",
+            "request": "launch",
+            "args": [
+                "--file",
+                "E:\\workspace\\parse_bitstream\\data\\刷新\\top.rbt",
+                "--timer_refresh",
+                "00000000011101011000000000000000"
+            ],
+            "env": {
+                // 把根目录塞进 PYTHONPATH，省去 import 麻烦
+                "PYTHONPATH": "${workspaceFolder}"
+            },
+            "program": "E:\\workspace\\parse_bitstream\\CLI\\main_cli.py",
+            "console": "integratedTerminal",
+            "justMyCode": false
+        },
+        {
+            "name": "vccm",
+            "type": "debugpy",
+            "request": "launch",
+            "args": [
+                "--process_vccm_project",
+                "C:\\Users\\DELL\\Desktop\\test_workspace\\vccm\\ECO_TEST",
+                "--vccm_values",
+                "105",
+                "106"
+            ],
+            "env": {
+                // 把根目录塞进 PYTHONPATH，省去 import 麻烦
+                "PYTHONPATH": "${workspaceFolder}"
+            },
+            "program": "E:\\workspace\\parse_bitstream\\CLI\\main_cli.py",
             "console": "integratedTerminal",
             "justMyCode": false
         },
