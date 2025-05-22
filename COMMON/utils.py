@@ -3,6 +3,7 @@ import logging
 import os 
 import struct
 import hashlib
+import sys
 
 def log_debug_with_description(value: int, format_spec: str = '', description: str = ''):
     if format_spec:
@@ -88,3 +89,49 @@ def get_feature(content:list, content_type = "int"):
         return feature_hash
     else:
         raise ValueError("Unsupported content_type. Use 'str' or 'int'.")
+    
+# 修改指定位置
+def update_data_by_index(
+    data_content,
+    index = [0],
+    data = ["0"]
+):
+    if len(index) != len(data):
+        raise ValueError("index 和 data 长度必须一致")
+    if not all(d in {"0", "1"} for d in data):
+        raise ValueError("data 中只能包含字符 '0' 或 '1'")
+    bits = list(data_content)
+    for idx, bit_val in zip(index, data):
+        if not (0 <= idx < 32):
+            raise IndexError("bit 索引超出 [0, 31] 范围")
+        bits[31 - idx] = bit_val
+    return "".join(bits)
+
+# 根据value转换字符串，默认32位
+def int_to_bin_str(value: int, length: int = 32) -> str:
+    if length <= 0:
+        raise ValueError("length 必须是正整数")
+
+    # ---------- 范围检查 ----------
+    max_val = (1 << length) - 1
+    if not (0 <= value <= max_val):
+        raise ValueError(f"value={value} 超出 {length} 位可表示范围 0~{max_val}")
+    # ---------- 转二进制并前导补零 ----------
+    return format(value, f'0{length}b')
+
+# 判断输入内容是否符合十进制或十六进制格式
+def is_dec(P: str) -> bool:
+    """允许空串或纯 0-9"""
+    return P == "" or P.isdigit()
+HEX_CHARS = set("0123456789abcdefABCDEF")
+def is_hex(P: str) -> bool:
+    """允许空串或 0-9a-fA-F"""
+    return P == "" or all(ch in HEX_CHARS for ch in P)
+
+def resource_path(relative_path):
+    """返回资源文件在打包状态或开发状态下的绝对路径"""
+    if getattr(sys, 'frozen', False):
+        base_path = sys._MEIPASS
+    else:
+        base_path = os.path.abspath(".")
+    return os.path.join(base_path, relative_path)

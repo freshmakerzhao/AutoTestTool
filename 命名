@@ -1,0 +1,12 @@
+[0] disable_load_data
+[1] disable_rdbkcrc_en
+[2] enable_sel_reload
+[3] 保留
+[4] enable_sel_refresh（also need disable_rdbkcrc_en=0）
+[5] enable_refresh_t1
+[6] sel_correct_mode
+[7] sel_rdbk_addr
+[13:8] 保留
+[16:14] clk_div_value
+[30:17] ecc_err_tank
+[31] 保留
