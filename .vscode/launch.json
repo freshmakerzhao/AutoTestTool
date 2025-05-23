@@ -108,11 +108,31 @@
             "type": "debugpy",
             "request": "launch",
             "args": [
-                "--process_vccm_project",
+                "vccm",
+                "--project",
                 "C:\\Users\\DELL\\Desktop\\test_workspace\\vccm\\ECO_TEST",
                 "--vccm_values",
                 "105",
                 "106"
+            ],
+            "env": {
+                // 把根目录塞进 PYTHONPATH，省去 import 麻烦
+                "PYTHONPATH": "${workspaceFolder}"
+            },
+            "program": "E:\\workspace\\parse_bitstream\\CLI\\main_cli.py",
+            "console": "integratedTerminal",
+            "justMyCode": false
+        },
+        {
+            "name": "convert",
+            "type": "debugpy",
+            "request": "launch",
+            "args": [
+                "convert",
+                "--file",
+                "C:\\Users\\DELL\\Desktop\\test_workspace\\vccm\\ECO_TEST\\BLOCK_BRAM\\vccm_1p05\\bram_36e1_18_wf_0_b_vccm_1p05.rbt",
+                "--to_fmt",
+                "bit"
             ],
             "env": {
                 // 把根目录塞进 PYTHONPATH，省去 import 麻烦

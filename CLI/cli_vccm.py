@@ -1,5 +1,5 @@
 import logging
-from CORE.process_runner import run_vccm, run_vccm_project
+from CORE.process_runner import run_vccm_task, run_vccm_project
 
 def run_vccm_cli(args):
     if args.vccm_values:
@@ -9,7 +9,7 @@ def run_vccm_cli(args):
 
     if args.file:
         try:
-            stats = run_vccm(args.file, vccm_values=args.vccm_values)
+            stats = run_vccm_task(args.file, vccm_values=args.vccm_values)
             if not stats:
                 logging.error("[VCCM ERROR] 文件路径无效或处理失败")
             elif stats["success_count"] == 0:

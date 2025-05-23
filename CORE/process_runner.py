@@ -1,13 +1,13 @@
 import logging
 import COMMON.config as config
 from CORE.bitstream_parser import BitstreamParser
-from CORE import module_base, module_crc, module_refresh, module_vccm
+from CORE import module_base, module_crc, module_refresh, module_vccm, module_convert
 import os,copy, traceback
 from typing import List, Dict
 
 FILE_ENDWITH = "_new"
 
-def run_task(
+def run_base_task(
     file, 
     device = "MC1P110", 
     file_suffix = FILE_ENDWITH,
@@ -66,7 +66,7 @@ VCCM_VALUES_LIST = [
 ]
 
 # vccm_values 可选
-def run_vccm(file_path: str, vccm_values: List[int] = None):
+def run_vccm_task(file_path: str, vccm_values: List[int] = None):
     vccm_items = _filter_vccm_items(vccm_values)
     stats = None
     # 单个文件时
@@ -99,7 +99,7 @@ def run_vccm_project(project_root: str, vccm_values: List[int] = None):
     for sub in subdirs:
         sub_path = os.path.join(project_root, sub)
         logging.info(f"[VCCM INFO] ▶ 开始处理子目录：{sub}")
-        stats = run_vccm(sub_path, vccm_values=vccm_values)
+        stats = run_vccm_task(sub_path, vccm_values=vccm_values)
         if stats:
             project_total += stats["total_files"]
             project_success += stats["success_count"]
@@ -203,3 +203,17 @@ def _filter_vccm_items(selected_values: None):
         return VCCM_VALUES_LIST
     # 仅支持列出来的值
     return [item for item in VCCM_VALUES_LIST if item["vccm_value"] in selected_values]
+
+def run_convert_task(file_path: str, to_fmt: str, output_path: str = None):
+    try:
+        logging.info(f"[CONVERT INFO] 正在处理文件：{file_path}")
+        bitstream_obj = BitstreamParser("MC1P110", file_path, False)
+
+        stats = module_convert.process_convert(bitstream_obj, to_fmt)
+        if stats.get("code",400) == 400:
+            logging.error(f"[CONVERT ERROR] {stats['msg']}")
+            return stats
+
+    except Exception as e:
+        logging.error(f"[CONVERT ERROR] {e}")
+    

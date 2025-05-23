@@ -34,8 +34,8 @@ def main():
     # convert 模块
     convert_parser = subparsers.add_parser("convert", help="码流格式转换")
     convert_parser.add_argument('--file', required=True)
-    convert_parser.add_argument('--from_fmt', required=True, choices=["bit", "rbt", "bin"])
     convert_parser.add_argument('--to_fmt', required=True, choices=["bit", "rbt", "bin"])
+    convert_parser.add_argument('--output', help="指定输出文件路径")
     convert_parser.set_defaults(func=run_convert_cli)
 
     # 解析参数并分发

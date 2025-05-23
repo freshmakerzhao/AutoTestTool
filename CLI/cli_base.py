@@ -1,9 +1,9 @@
 import logging
-from CORE.process_runner import run_task
+from CORE.process_runner import run_base_task
 
 def run_base_cli(args):
     try:
-        out_path = run_task(
+        out_path = run_base_task(
             file=args.file,
             device=args.device,
             file_suffix=args.file_suffix,

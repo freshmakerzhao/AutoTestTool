@@ -19,6 +19,14 @@ def bytes_to_binary(byte_data):
         byte_data = byte_data.rjust(4, b'\x00')  # 用 0 补齐到 4 字节
     return ''.join(f'{byte:08b}' for byte in byte_data)
 
+def binary_to_bytes(binary_str):
+    try:
+        # 转换为十六进制
+        return f"{int(binary_str, 2):X}"
+    except ValueError as e:
+        logging.error(f"Error: {e}")
+        return None
+
 def show_ascii_content(content):
     print_content = ""
     for byte in content:

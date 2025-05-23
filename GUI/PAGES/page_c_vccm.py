@@ -2,7 +2,7 @@
 from tkinter import ttk
 import os, threading, tkinter as tk
 from tkinter import ttk, filedialog, messagebox
-from CORE.process_runner import run_vccm, run_vccm_project
+from CORE.process_runner import run_vccm_task, run_vccm_project
 from GUI.COMPONENT.thread_utils import run_in_thread
 import logging
 
@@ -134,7 +134,7 @@ class PageCVCCM(ttk.Frame):
             if process_mode == "process_vccm_project":
                 stats = run_vccm_project(file_path, vccm_values=vccm_values)
             else:
-                stats = run_vccm(file_path, vccm_values=vccm_values)
+                stats = run_vccm_task(file_path, vccm_values=vccm_values)
         except Exception as e:
             logging.error("[VCCM ERROR] %s", e)
             messagebox.showerror("处理失败", str(e))

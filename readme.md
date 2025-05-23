@@ -1,4 +1,12 @@
-参数说明：
+项目说明：
+
+eda_tools_cli.exe 和 eda_tools_ui.exe
+
+- eda_tools_cli.exe
+
+
+
+
 
 --file，        指定要处理的文件所在路径，必选
 --file_suffix， 指定处理完毕后生成文件的后缀，默认为'_HybrdChip'，可选
