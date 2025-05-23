@@ -39,14 +39,6 @@ def process_vccm(bitstream_obj, vccm_value=105):
     elif bitstream_obj.file_type == ".bit" or bitstream_obj.file_type == ".bin":
         for i in range(len(bitstream_obj.bit_cfg_content_pre)):
             if bitstream_obj.bit_cfg_content_pre[i].cmd_name == "COR1":
-                word = utils.bytes_to_binary(bitstream_obj.bit_cfg_content_pre[i].get_data_from_index(1))
-                word = word[:-13] + "1" + word[-12:]
-                bitstream_obj.bit_cfg_content_pre[i].set_data_to_index(1, utils.binary_str_to_bytes(word))
-                bitstream_obj.bit_cfg_content_pre[i].append_data(config.CMD_MASK_01_BYTE)
-                bitstream_obj.bit_cfg_content_pre[i].append_data(config.CMD_MASK_02_BYTE)
-                bitstream_obj.bit_cfg_content_pre[i].append_data(config.CMD_TRIM_01_BYTE)
-                bitstream_obj.bit_cfg_content_pre[i].append_data(config.CMD_TRIM_02_BYTE)
-    
                 cor1_data = utils.bytes_to_binary(bitstream_obj.bit_cfg_content_pre[i].get_data_from_index(1))
                 cor1_data = utils.update_data_by_index(cor1_data,[12,10],["1","1"])
                 bitstream_obj.bit_cfg_content_pre[i].set_data_to_index(1, utils.binary_str_to_bytes(cor1_data))

@@ -72,8 +72,11 @@ def run_vccm_task(file_path: str, vccm_values: List[int] = None):
     # 单个文件时
     if os.path.isfile(file_path):
         try:
-            _process_one_file(file_path, os.path.dirname(file_path), vccm_items)
-            stats = {"total_files": 1, "success_count": 1, "fail_count": 0, "error_log_path": None}
+            isSuccuss = _process_one_file(file_path, os.path.dirname(file_path), vccm_items)
+            if isSuccuss:
+                stats = {"total_files": 1, "success_count": 1, "fail_count": 0, "error_log_path": None}
+            else:
+                stats = {"total_files": 1, "success_count": 0, "fail_count": 1, "error_log_path": os.path.join(os.path.dirname(file_path), "vccm_error.log")}
         except Exception:
             stats = {"total_files": 1, "success_count": 0, "fail_count": 1, "error_log_path": os.path.join(os.path.dirname(file_path), "vccm_error.log")}
     # 文件夹时

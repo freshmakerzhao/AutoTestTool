@@ -5817,9 +5817,13 @@ class ConfigurationPacket:
         UNKNOWN_20 = 20
         UNKNOWN_21 = 21
         BOOTSTS = 22
+        UNKNOWN_23 = 23
         CTL1 = 24
+        UNKNOWN_25 = 25
+        UNKNOWN_26 = 26
         TRIM = 27
         RHBD = 28
+        UNKNOWN_29 = 29
         UNKNOWN_30 = 30 #if next packet is Type2 and bcout_cnt(ib) = 0, set bocut_flag(ib) <= '1' and bout_cnt(ib) <= word count
         BSPI = 31
     @enum.unique

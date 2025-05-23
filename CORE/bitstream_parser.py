@@ -44,7 +44,7 @@ class BitstreamParser:
         self.own_crc_is_enable = False # 码流本身是否开启CRC
         
         self.device = device # 器件类型
-        
+        self.is_compress = False # 是否压缩，默认非压缩
         # 位流中的CRC内容
         self.crc_own_01 = "-1"
         self.crc_own_02 = "-1"
@@ -63,6 +63,8 @@ class BitstreamParser:
         self.bit_cfg_content_pre = []
         # 存储码流主体内容
         self.bit_data_content = []
+        # 存储压缩码流主体内容
+        self.bit_compress_data_content = []
         # 存储后续配置信息
         self.bit_cfg_content_after = []
         # ======================= bit =====================     
@@ -82,6 +84,8 @@ class BitstreamParser:
         self.rbt_cfg_content_pre = []
         # 存储码流主体内容
         self.rbt_data_content = []
+        # 存储压缩码流主体内容
+        self.rbt_compress_data_content = []
         # 存储后续配置信息
         self.rbt_cfg_content_after = []
         # ======================= rbt =====================     
@@ -119,16 +123,18 @@ class BitstreamParser:
         # self.word_count 为 接下来有多少个 word
         # 1个word为4字节，1字节为8位
         # ============================================ cfg content pre ============================================
-          
+        
         # ============================================ data frame ============================================
         # 从 FDRI data word 1 开始
-        self.parse_rbt_data_content()
+        if self.is_compress == False:
+            self.parse_rbt_data_content()
         # 到 FDRI data word XXXX 结束，其中 XXXX 指的是 parse_rbt_cfg_content_pre 解析出来的 self.word_count
         # ============================================ data frame ============================================
         
         # ============================================ cfg content after ============================================
         # 对于没有关闭CRC的位流，此处从 30000001 开始
-        self.parse_rbt_cfg_content_aft()
+        if self.is_compress == False:
+            self.parse_rbt_cfg_content_aft()
         # 到 码流末尾 结束
         # 这里构造完成后，以如下形式存在：
         # [
@@ -149,14 +155,15 @@ class BitstreamParser:
         # ============================================ cfg content after ============================================
         
         # ============================================ debug ============================================
-        utils.log_debug_with_description(len(self.rbt_annotation_content), description="头部注释信息行数")
-        utils.log_debug_with_description(len(self.rbt_cfg_content_pre), description="数据帧之前的寄存器行数")
-        utils.log_debug_with_description(len(self.rbt_data_content), description="数据行数")
-        cur_group_len = 0
-        for item in self.rbt_cfg_content_after:
-            cur_group_len += item.get_data_len()
-        utils.log_debug_with_description(cur_group_len, description="数据帧之后的寄存器行数")
-        utils.log_debug_with_description(len(self.rbt_annotation_content) + len(self.rbt_cfg_content_pre) + len(self.rbt_data_content) + cur_group_len, description="总行数")
+        if self.is_compress == False:
+            utils.log_debug_with_description(len(self.rbt_annotation_content), description="头部注释信息行数")
+            utils.log_debug_with_description(len(self.rbt_cfg_content_pre), description="数据帧之前的寄存器行数")
+            utils.log_debug_with_description(len(self.rbt_data_content), description="数据行数")
+            cur_group_len = 0
+            for item in self.rbt_cfg_content_after:
+                cur_group_len += item.get_data_len()
+            utils.log_debug_with_description(cur_group_len, description="数据帧之后的寄存器行数")
+            utils.log_debug_with_description(len(self.rbt_annotation_content) + len(self.rbt_cfg_content_pre) + len(self.rbt_data_content) + cur_group_len, description="总行数")
         # ============================================ debug ============================================
           
     # 解析cfg，读取数据帧
@@ -183,6 +190,7 @@ class BitstreamParser:
     # 解析rbt，读取cfg内容
     def parse_rbt_cfg_content_pre(self) -> None: 
         index = self.rbt_content_cur_loc
+        rbt_cfg_content_pre_len = 0
         while index < self.rbt_content_len:
             line = self.rbt_content[index]
             word_type = self.cfg_obj.get_packet_type(line, "str")
@@ -225,15 +233,37 @@ class BitstreamParser:
             index += 1
             self.rbt_cfg_content_pre.append(item)
             
-            if line == config.FDRI_STR:
+            rbt_cfg_content_pre_len += 1
+            if rbt_cfg_content_pre_len > 1 \
+                and self.rbt_cfg_content_pre[rbt_cfg_content_pre_len-1].cmd_name == "CTL1" \
+                and self.rbt_cfg_content_pre[rbt_cfg_content_pre_len-2].cmd_name == "MASK":
+                # 连续，data[12]为1，表示压缩位流
+                ctl1_data = self.rbt_cfg_content_pre[rbt_cfg_content_pre_len-1].get_data_from_index(1)
+                mask_data = self.rbt_cfg_content_pre[rbt_cfg_content_pre_len-2].get_data_from_index(1)
+                if ctl1_data[-13] == "1" and mask_data[-13] == "1":
+                    self.is_compress = True
+            
+            # 对于普通位流，当 FDRI 时
+            if packet_content.get("header_type", -1) == 1 \
+                and packet_content.get("opcode", self.cfg_obj.OpCode.UNKNOWN) == self.cfg_obj.OpCode.WRITE \
+                and packet_content.get("address", self.cfg_obj.Address.UNKNOWN) == self.cfg_obj.Address.FDRI \
+                and self.is_compress == False:
                 word_content = self.rbt_content[index]
                 item = self.PacketItem("WORD_COUNT")
                 item.set_opcode(-1)
                 item.append_data(word_content)
                 self.rbt_cfg_content_pre.append(item)
+                rbt_cfg_content_pre_len += 1
                 self.word_count = self.cfg_obj.get_type_2_packet_content(word_content,"str").get("word_count",0)
                 self.rbt_content_cur_loc = index+1
                 break
+            # 对于压缩位流，当 FDRI 时，将后续所有内容放入 rbt_compress_data_content,临时解决
+            if packet_content.get("header_type", -1) == 1 \
+                and packet_content.get("opcode", self.cfg_obj.OpCode.UNKNOWN) == self.cfg_obj.OpCode.WRITE \
+                and packet_content.get("address", self.cfg_obj.Address.UNKNOWN) == self.cfg_obj.Address.FDRI \
+                and self.is_compress == True:
+                    self.rbt_compress_data_content.extend(self.rbt_content[index:])
+                    break
         else:
             raise ValueError("文件格式错误")
         
@@ -373,6 +403,7 @@ class BitstreamParser:
     
     # 解析位流，读取cfg内容
     def parse_bit_cfg_content_pre(self) -> None: 
+        bit_cfg_content_pre_len = 0
         while True:
             word = self.read_bit_bytes(4)
             utils.log_debug_with_description(utils.bytes_to_binary(word))
@@ -419,22 +450,43 @@ class BitstreamParser:
             for i in range(word_count):
                 item.append_data(self.read_bit_bytes(4))
                 
-            self.bit_cfg_content_pre.append(item)            
+            self.bit_cfg_content_pre.append(item)      
+            bit_cfg_content_pre_len += 1      
             
+            if bit_cfg_content_pre_len > 1 \
+                and self.bit_cfg_content_pre[bit_cfg_content_pre_len-1].cmd_name == "CTL1" \
+                and self.bit_cfg_content_pre[bit_cfg_content_pre_len-2].cmd_name == "MASK":
+                # 连续，data[12]为1，表示压缩位流
+                ctl1_data = utils.bytes_to_binary(self.bit_cfg_content_pre[bit_cfg_content_pre_len-1].get_data_from_index(1))
+                mask_data = utils.bytes_to_binary(self.bit_cfg_content_pre[bit_cfg_content_pre_len-2].get_data_from_index(1))
+                if ctl1_data[-13] == "1" and mask_data[-13] == "1":
+                    self.is_compress = True
+                    
             # 读取到 FDRI 后，读取结束 30004000
             if packet_content.get("header_type", -1) == 1 \
                 and packet_content.get("opcode", self.cfg_obj.OpCode.UNKNOWN) == self.cfg_obj.OpCode.WRITE \
-                and packet_content.get("address", self.cfg_obj.Address.UNKNOWN) == self.cfg_obj.Address.FDRI:
+                and packet_content.get("address", self.cfg_obj.Address.UNKNOWN) == self.cfg_obj.Address.FDRI \
+                and self.is_compress == False:
                     word = self.read_bit_bytes(4)
                     item = self.PacketItem("WORD_COUNT")
                     item.set_opcode(-1)
                     item.append_data(word)
                     self.bit_cfg_content_pre.append(item)
+                    bit_cfg_content_pre_len += 1
                     word_content = struct.unpack('>I', word)[0] # 转无符号整型
                     # 拿到 word_count，其单位是word，换成字节*4
                     self.word_count = self.cfg_obj.get_type_2_packet_content(word_content, "int").get("word_count",0)
                     self.bit_data_content_byte_count = self.word_count * 4
                     break
+                
+            # 对于压缩位流，当 FDRI 时，将后续所有内容放入 bit_compress_data_content,临时解决
+            if packet_content.get("header_type", -1) == 1 \
+                and packet_content.get("opcode", self.cfg_obj.OpCode.UNKNOWN) == self.cfg_obj.OpCode.WRITE \
+                and packet_content.get("address", self.cfg_obj.Address.UNKNOWN) == self.cfg_obj.Address.FDRI \
+                and self.is_compress == True:
+                    for i in range(self.bit_byte_content_cur_loc, self.bit_byte_content_len, 4):
+                        word = self.read_bit_bytes(4)
+                        self.bit_compress_data_content.append(word)
         
     # 解析位流，读取cfg内容
     def parse_bit_cfg_content_aft(self) -> None: 
@@ -515,13 +567,15 @@ class BitstreamParser:
                 
         # ============================================ data frame ============================================
         # 从 FDRI data word 1 开始
-        self.parse_bit_data_content()
+        if self.is_compress == False:
+            self.parse_bit_data_content()
         # 到 FDRI data word XXXX 结束，其中 XXXX 指的是 parse_bit_cfg_content_pre 解析出来的 self.word_count
         # ============================================ data frame ============================================
         
         # ============================================ cfg content after ============================================
         # 对于没有关闭CRC的位流，此处从 30000001 开始
-        self.parse_bit_cfg_content_aft()
+        if self.is_compress == False:
+            self.parse_bit_cfg_content_aft()
         # 到 码流末尾 结束
         # ============================================ cfg content after ============================================
         
@@ -531,20 +585,21 @@ class BitstreamParser:
         # len(self.bit_data_content)) 数据帧所占word数，*4为字节数
         # len(self.bit_cfg_content_after)) 数据帧之后的寄存器所占word数，*4为字节数
         
-        # 四个字节数相加为整段位流长度
-        utils.log_debug_with_description(len(self.bit_head_byte_content), 'X', '头部信息字节数')
-        
-        bit_cfg_content_pre_len = 0
-        for item in self.bit_cfg_content_pre:
-            bit_cfg_content_pre_len += item.get_data_len()
-        utils.log_debug_with_description(bit_cfg_content_pre_len*4, 'X', '数据帧之前的寄存器字节数')
-        utils.log_debug_with_description(len(self.bit_data_content)*4, 'X', '数据帧字节数')
-        
-        bit_cfg_content_after_len = 0
-        for item in self.bit_cfg_content_after:
-            bit_cfg_content_after_len += item.get_data_len()
-        utils.log_debug_with_description(bit_cfg_content_after_len*4, 'X', '数据帧之后的寄存器字节数')
-        utils.log_debug_with_description(bit_cfg_content_after_len*4 + len(self.bit_data_content)*4 + bit_cfg_content_pre_len*4 + len(self.bit_head_byte_content), 'X', '总字节数')
+        if self.is_compress == False:
+            # 四个字节数相加为整段位流长度
+            utils.log_debug_with_description(len(self.bit_head_byte_content), 'X', '头部信息字节数')
+            
+            bit_cfg_content_pre_len = 0
+            for item in self.bit_cfg_content_pre:
+                bit_cfg_content_pre_len += item.get_data_len()
+            utils.log_debug_with_description(bit_cfg_content_pre_len*4, 'X', '数据帧之前的寄存器字节数')
+            utils.log_debug_with_description(len(self.bit_data_content)*4, 'X', '数据帧字节数')
+            
+            bit_cfg_content_after_len = 0
+            for item in self.bit_cfg_content_after:
+                bit_cfg_content_after_len += item.get_data_len()
+            utils.log_debug_with_description(bit_cfg_content_after_len*4, 'X', '数据帧之后的寄存器字节数')
+            utils.log_debug_with_description(bit_cfg_content_after_len*4 + len(self.bit_data_content)*4 + bit_cfg_content_pre_len*4 + len(self.bit_head_byte_content), 'X', '总字节数')
         # ============================================ debug ============================================
           
     def set_data_with_frame_word_bit(self, data, frame, word, bit):
@@ -655,54 +710,95 @@ class BitstreamParser:
             new_file_path = self.file_path_except_type + file_suffix + self.file_type
         else:
             new_file_path = output_file_path + self.file_type
-        if self.file_type == ".rbt":
-            # 计算长度
-            byte_nums = len(self.rbt_data_content)
-            for item in self.rbt_cfg_content_pre:
-                byte_nums += item.get_data_len()
-            for item in self.rbt_cfg_content_after:
-                byte_nums += item.get_data_len()
-            byte_nums = byte_nums * 32
             
-            with open(new_file_path, 'w') as f:
-                bits_flag = True
-                for line in self.rbt_annotation_content:
-                    if bits_flag and BITS_CMD in line:
-                        bits_flag = False
-                        line = f"Bits:        	{byte_nums}"
-                    f.write(line + '\n')
+        # 为压缩位流临时做一个存储方法
+        if self.is_compress == True:
+            if self.file_type == ".rbt":
+                # 计算长度
+                byte_nums = len(self.rbt_compress_data_content)
                 for item in self.rbt_cfg_content_pre:
-                    values = item.get_all_data()
-                    for line in values:
+                    byte_nums += item.get_data_len()
+                byte_nums = byte_nums * 32
+                with open(new_file_path, 'w') as f:
+                    bits_flag = True
+                    for line in self.rbt_annotation_content:
+                        if bits_flag and BITS_CMD in line:
+                            bits_flag = False
+                            line = f"Bits:        	{byte_nums}"
                         f.write(line + '\n')
-                for line in self.rbt_data_content:
-                    f.write(line + '\n')
-                for item in self.rbt_cfg_content_after:
-                    values = item.get_all_data()
-                    for line in values:
+                    for item in self.rbt_cfg_content_pre:
+                        values = item.get_all_data()
+                        for line in values:
+                            f.write(line + '\n')
+                    for line in self.rbt_compress_data_content:
                         f.write(line + '\n')
-        elif self.file_type == ".bit" or self.file_type == ".bin":
-            with open(new_file_path, 'wb') as file:
-                # 重新计算长度
-                bit_len = len(self.bit_data_content)
-                for item in self.bit_cfg_content_pre:
-                    bit_len += item.get_data_len()
-                for item in self.bit_cfg_content_after:
-                    bit_len += item.get_data_len()
-                bit_len = bit_len * 4
-                length_bytes_struct = struct.pack('>I', bit_len)
-                self.bit_head_byte_content = self.bit_head_byte_content[:-4] + length_bytes_struct
-                file.write(self.bit_head_byte_content)
-                for item in self.bit_cfg_content_pre:
-                    values = item.get_all_data()
-                    for word in values:
-                        file.write(word)
-                for byte_elem in self.bit_data_content:
-                    file.write(byte_elem)
-                for item in self.bit_cfg_content_after:
-                    values = item.get_all_data()
-                    for word in values:
-                        file.write(word)
+            elif self.file_type == ".bit" or self.file_type == ".bin":
+                with open(new_file_path, 'wb') as file:  
+                    # 计算长度
+                    bit_len = len(self.bit_compress_data_content)
+                    for item in self.bit_cfg_content_pre:
+                        bit_len += item.get_data_len()
+                    bit_len = bit_len * 4
+                    length_bytes_struct = struct.pack('>I', bit_len)
+                    self.bit_head_byte_content = self.bit_head_byte_content[:-4] + length_bytes_struct
+                    file.write(self.bit_head_byte_content)
+                    for item in self.bit_cfg_content_pre:
+                        values = item.get_all_data()
+                        for word in values:
+                            file.write(word)
+                    for byte_elem in self.bit_compress_data_content:
+                        file.write(byte_elem)
+            else:
+                raise ValueError("文件格式错误")
         else:
-            raise ValueError("文件格式错误")
+            if self.file_type == ".rbt":
+                # 计算长度
+                byte_nums = len(self.rbt_data_content)
+                for item in self.rbt_cfg_content_pre:
+                    byte_nums += item.get_data_len()
+                for item in self.rbt_cfg_content_after:
+                    byte_nums += item.get_data_len()
+                byte_nums = byte_nums * 32
+                
+                with open(new_file_path, 'w') as f:
+                    bits_flag = True
+                    for line in self.rbt_annotation_content:
+                        if bits_flag and BITS_CMD in line:
+                            bits_flag = False
+                            line = f"Bits:        	{byte_nums}"
+                        f.write(line + '\n')
+                    for item in self.rbt_cfg_content_pre:
+                        values = item.get_all_data()
+                        for line in values:
+                            f.write(line + '\n')
+                    for line in self.rbt_data_content:
+                        f.write(line + '\n')
+                    for item in self.rbt_cfg_content_after:
+                        values = item.get_all_data()
+                        for line in values:
+                            f.write(line + '\n')
+            elif self.file_type == ".bit" or self.file_type == ".bin":
+                with open(new_file_path, 'wb') as file:
+                    # 重新计算长度
+                    bit_len = len(self.bit_data_content)
+                    for item in self.bit_cfg_content_pre:
+                        bit_len += item.get_data_len()
+                    for item in self.bit_cfg_content_after:
+                        bit_len += item.get_data_len()
+                    bit_len = bit_len * 4
+                    length_bytes_struct = struct.pack('>I', bit_len)
+                    self.bit_head_byte_content = self.bit_head_byte_content[:-4] + length_bytes_struct
+                    file.write(self.bit_head_byte_content)
+                    for item in self.bit_cfg_content_pre:
+                        values = item.get_all_data()
+                        for word in values:
+                            file.write(word)
+                    for byte_elem in self.bit_data_content:
+                        file.write(byte_elem)
+                    for item in self.bit_cfg_content_after:
+                        values = item.get_all_data()
+                        for word in values:
+                            file.write(word)
+            else:
+                raise ValueError("文件格式错误")
         return new_file_path
