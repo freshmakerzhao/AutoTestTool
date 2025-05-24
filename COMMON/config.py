@@ -5832,6 +5832,7 @@ class ConfigurationPacket:
         NOOP = 0
         READ = 1
         WRITE = 2
+        Reserved = 3
     
     def get_cmd_name(self, key):
         return self.cmd_name_map.get(key, self.Address.UNKNOWN)

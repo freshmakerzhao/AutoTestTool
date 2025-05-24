@@ -129,6 +129,7 @@ def _process_one_file(file_path: str, root_folder: str, vccm_items:List[Dict], e
 
         file_name = os.path.basename(file_path)
         file_name_no_type = os.path.splitext(file_name)[0]  # 去掉扩展名
+        parent_dir = os.path.basename(os.path.dirname(file_path)) # 获取上一级文件夹名称
 
         all_failed = True  # 记录是否所有电压值都失败
 
@@ -141,7 +142,10 @@ def _process_one_file(file_path: str, root_folder: str, vccm_items:List[Dict], e
                 output_dir = os.path.join(root_folder, item["file_suffix"])
                 os.makedirs(output_dir, exist_ok=True)
                 # 不带文件类型的path
-                out_path = os.path.join(output_dir, f"{file_name_no_type}_{item['file_suffix']}")
+                out_path = os.path.join(
+                    output_dir,
+                    f"{parent_dir}_{file_name_no_type}_{item['file_suffix']}"
+                )
                 # 关闭crc
                 module_crc.disable_crc(new_obj)
                 new_obj.save_file(output_file_path=out_path)
