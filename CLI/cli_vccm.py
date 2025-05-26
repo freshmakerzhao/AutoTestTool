@@ -4,8 +4,8 @@ from CORE.process_runner import run_vccm_task, run_vccm_project
 def run_vccm_cli(args):
     if args.vccm_values:
         for v in args.vccm_values:
-            if v < 105 or v > 112:
-                raise ValueError(f"非法电压值: {v}，仅支持 105~112")
+            if v < 105 or v > 115:
+                raise ValueError(f"非法电压值: {v}，仅支持 105~115")
 
     if args.file:
         try:

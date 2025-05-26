@@ -55,7 +55,7 @@ class PageCVCCM(ttk.Frame):
         # --------------------- 电压选择 开始 ---------------------
         volt_frame = ttk.LabelFrame(self, text="选择电压 (VCCM)"); volt_frame.grid(row=2, column=0, sticky="ew", padx=4, pady=4)
         self.vccm_vars = {}
-        for idx, v in enumerate(range(105, 113)):
+        for idx, v in enumerate(list(range(105, 113)) + [115]):
             row, col = divmod(idx, 4)
             label = f"1.{str(v)[-2:]}"
             var = tk.BooleanVar()

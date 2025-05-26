@@ -63,6 +63,7 @@ VCCM_VALUES_LIST = [
     {"vccm_value": 110, "file_suffix": "vccm_1p10"},
     {"vccm_value": 111, "file_suffix": "vccm_1p11"},
     {"vccm_value": 112, "file_suffix": "vccm_1p12"},
+    {"vccm_value": 115, "file_suffix": "vccm_1p15"},
 ]
 
 # vccm_values 可选
@@ -136,7 +137,11 @@ def _process_one_file(file_path: str, root_folder: str, vccm_items:List[Dict], e
         for item in vccm_items:
             try:
                 new_obj = copy.deepcopy(bitstream_obj)
-                module_vccm.process_vccm(new_obj, item["vccm_value"])
+                # item["vccm_value"] 表示传入电压值，大于112时，使用adv
+                if item["vccm_value"] > 112:
+                    module_vccm.process_vccm_adv(new_obj, item["vccm_value"])
+                else:
+                    module_vccm.process_vccm(new_obj, item["vccm_value"])
 
                 # 输出目录为 root_folder/vccm_1pXX/
                 output_dir = os.path.join(root_folder, item["file_suffix"])
