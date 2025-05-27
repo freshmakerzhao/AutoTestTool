@@ -63,7 +63,7 @@ VCCM_VALUES_LIST = [
     {"vccm_value": 110, "file_suffix": "vccm_1p10"},
     {"vccm_value": 111, "file_suffix": "vccm_1p11"},
     {"vccm_value": 112, "file_suffix": "vccm_1p12"},
-    {"vccm_value": 115, "file_suffix": "vccm_1p15"},
+    {"vccm_value": 115, "file_suffix": "vccm_1p15_1p1"},
 ]
 
 # vccm_values 可选

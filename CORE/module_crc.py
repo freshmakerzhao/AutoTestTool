@@ -27,6 +27,8 @@ def disable_crc(bitstream_obj):
         if bitstream_obj.file_type == ".rbt":
             compress_data_content_len = len(bitstream_obj.rbt_compress_data_content)
             for index in range(compress_data_content_len-1,-1,-1):
+                if compress_data_content_len - index > 600:
+                    break
                 line = bitstream_obj.rbt_compress_data_content[index]
                 word_type = bitstream_obj.cfg_obj.get_packet_type(line, "str")
                 
@@ -52,6 +54,17 @@ def disable_crc(bitstream_obj):
                     else:
                         loc_crc_2 = index
                         break
+                
+                if index > 0 \
+                    and bitstream_obj.rbt_compress_data_content[index] == config.CMD_RCRC_02_STR \
+                    and bitstream_obj.rbt_compress_data_content[index-1] == config.CMD_RCRC_01_STR:
+                    if loc_crc_1 == -1:
+                        # 找到第一个crc
+                        loc_crc_1 = index-1
+                    else:
+                        loc_crc_2 = index-1
+                        break
+                    
             if loc_crc_1 != -1:
                 bitstream_obj.rbt_compress_data_content[loc_crc_1] = config.CMD_RCRC_01_STR
                 bitstream_obj.rbt_compress_data_content[loc_crc_1+1] = config.CMD_RCRC_02_STR
@@ -62,6 +75,8 @@ def disable_crc(bitstream_obj):
         elif bitstream_obj.file_type == ".bit" or bitstream_obj.file_type == ".bin":
             compress_data_content_len = len(bitstream_obj.bit_compress_data_content)
             for index in range(compress_data_content_len-1,-1,-1):
+                if compress_data_content_len - index > 600:
+                    break
                 line = bitstream_obj.bit_compress_data_content[index]
                 word_content = struct.unpack('>I', line)[0] # 转无符号整型
                 word_type = bitstream_obj.cfg_obj.get_packet_type(word_content, "int")
@@ -88,6 +103,17 @@ def disable_crc(bitstream_obj):
                     else:
                         loc_crc_2 = index
                         break
+                    
+                if index > 0 \
+                    and bitstream_obj.bit_compress_data_content[index] == config.CMD_RCRC_02_BYTE \
+                    and bitstream_obj.bit_compress_data_content[index-1] == config.CMD_RCRC_01_BYTE:
+                    if loc_crc_1 == -1:
+                        # 找到第一个crc
+                        loc_crc_1 = index-1
+                    else:
+                        loc_crc_2 = index-1
+                        break
+                    
             if loc_crc_1 != -1:
                 bitstream_obj.bit_compress_data_content[loc_crc_1] = config.CMD_RCRC_01_BYTE
                 bitstream_obj.bit_compress_data_content[loc_crc_1+1] = config.CMD_RCRC_02_BYTE

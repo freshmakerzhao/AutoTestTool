@@ -142,4 +142,6 @@ def resource_path(relative_path):
         base_path = sys._MEIPASS
     else:
         base_path = os.path.abspath(".")
+        # 开发模式：获取当前文件所在目录
+        # base_path = os.path.dirname(os.path.abspath(__file__))
     return os.path.join(base_path, relative_path)

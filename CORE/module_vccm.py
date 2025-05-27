@@ -66,7 +66,6 @@ def process_vccm(bitstream_obj, vccm_value=105):
                     raise ValueError("vccm_value 配置错误")
                 break
 
-
 # 这里处理特殊电压，目前为115
 def process_vccm_adv(bitstream_obj, vccm_value=115):
     # 拿到数据帧之前的寄存器
@@ -92,6 +91,14 @@ def process_vccm_adv(bitstream_obj, vccm_value=115):
                 bitstream_obj.rbt_cfg_content_pre[i].append_data(config.SPECIFIC_115_04_STR)
                 bitstream_obj.rbt_cfg_content_pre[i].append_data(config.SPECIFIC_115_05_STR)
                 bitstream_obj.rbt_cfg_content_pre[i].append_data(config.SPECIFIC_115_06_STR)
+                
+                # 新增 VS_WL 6行
+                bitstream_obj.rbt_cfg_content_pre[i].append_data(config.SPECIFIC_VS_WL_01_STR)
+                bitstream_obj.rbt_cfg_content_pre[i].append_data(config.SPECIFIC_VS_WL_02_STR)
+                bitstream_obj.rbt_cfg_content_pre[i].append_data(config.SPECIFIC_VS_WL_03_STR)
+                bitstream_obj.rbt_cfg_content_pre[i].append_data(config.SPECIFIC_VS_WL_04_STR)
+                bitstream_obj.rbt_cfg_content_pre[i].append_data(config.SPECIFIC_VS_WL_05_STR)
+                bitstream_obj.rbt_cfg_content_pre[i].append_data(config.SPECIFIC_VS_WL_06_STR)
             
             # 找连续的MASK+CTL1做修改，且仅改第一次
             if i < len(bitstream_obj.rbt_cfg_content_pre)-1 \
@@ -125,6 +132,13 @@ def process_vccm_adv(bitstream_obj, vccm_value=115):
                 bitstream_obj.bit_cfg_content_pre[i].append_data(config.SPECIFIC_115_05_BYTE)
                 bitstream_obj.bit_cfg_content_pre[i].append_data(config.SPECIFIC_115_06_BYTE)
 
+                # 新增 VS_WL 6行
+                bitstream_obj.bit_cfg_content_pre[i].append_data(config.SPECIFIC_VS_WL_01_BYTE)
+                bitstream_obj.bit_cfg_content_pre[i].append_data(config.SPECIFIC_VS_WL_02_BYTE)
+                bitstream_obj.bit_cfg_content_pre[i].append_data(config.SPECIFIC_VS_WL_03_BYTE)
+                bitstream_obj.bit_cfg_content_pre[i].append_data(config.SPECIFIC_VS_WL_04_BYTE)
+                bitstream_obj.bit_cfg_content_pre[i].append_data(config.SPECIFIC_VS_WL_05_BYTE)
+                bitstream_obj.bit_cfg_content_pre[i].append_data(config.SPECIFIC_VS_WL_06_BYTE)
             # 找连续的MASK+CTL1做修改，且仅改第一次
             if i < len(bitstream_obj.bit_cfg_content_pre)-1 \
                 and bitstream_obj.bit_cfg_content_pre[i].cmd_name == "MASK"\

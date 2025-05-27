@@ -1,3 +1,5 @@
+# program.tcl - 一个参数，码流文件路径，烧写码流
+
 # Argument check
 if {$argc != 1} {
     puts "Usage error: Please provide the path to a .bit or .rbt file"
@@ -33,7 +35,8 @@ set_property FULL_PROBES.FILE {} $devices
 
 # Start programming
 puts "Programming bitstream to FPGA..."
-program_hw_devices $devices
+# ug835 page1208
+program_hw_devices $devices -disable_eos_check
 refresh_hw_device [lindex $devices 0]
 
 puts "Programming completed!"
