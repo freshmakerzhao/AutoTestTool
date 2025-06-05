@@ -1,0 +1,161 @@
+{
+    // Use IntelliSense to learn about possible attributes.
+    // Hover to view descriptions of existing attributes.
+    // For more information, visit: https://go.microsoft.com/fwlink/?linkid=830387
+    "version": "0.2.0",
+    "configurations": [
+        {
+            "name": "parse_bitstream",
+            "type": "debugpy",
+            "request": "launch",
+            "args": [
+                "--file",
+                "E:\\workspace\\parse_bitstream\\parse_bitstream\\data\\system_wrapper_1_原版.rbt",
+                "--GTP",
+                "--PCIE",
+            ],
+            "program": "E:\\workspace\\parse_bitstream\\parse_bitstream\\parse_bitstream.py",
+            "console": "integratedTerminal"
+        },
+        {
+            "name": "parse_bitstream_v2",
+            "type": "debugpy",
+            "request": "launch",
+            "args": [
+                "--file",
+                "E:\\workspace\\parse_bitstream\\parse_bitstream\\压缩位流相关知识\\compress\\test\\zy\\origin.rbt",
+                "--COMPRESS"
+            ],
+            "program": "E:\\workspace\\parse_bitstream\\parse_bitstream\\parse_bitstream_v2.py",
+            "console": "integratedTerminal"
+        },
+        {
+            "name": "parse_bitstream_compress",
+            "type": "debugpy",
+            "request": "launch",
+            "args": [
+                "--file",
+                "E:\\workspace\\parse_bitstream\\parse_bitstream\\compress_data\\compress\\test\\zy\\origin.rbt",
+                "--COMPRESS"
+            ],
+            "program": "E:\\workspace\\parse_bitstream\\parse_bitstream\\parse_bitstream.py",
+            "console": "integratedTerminal"
+        },
+        {
+            "name": "parse_bitstream_get_frame",
+            "type": "debugpy",
+            "request": "launch",
+            "args": [
+                "--file",
+                "E:\\workspace\\parse_bitstream\\parse_bitstream\\compress_data\\compress\\test\\zy\\origin.rbt",
+                "--specific_loc",
+                "33,1"
+            ],
+            "program": "E:\\workspace\\parse_bitstream\\parse_bitstream\\parse_bitstream.py",
+            "console": "integratedTerminal"
+        },
+        {
+            "name": "CRC2",
+            "type": "debugpy",
+            "request": "launch",
+            "args": [
+                "--file",
+                "E:\\workspace\\parse_bitstream\\data\\top_refresh.rbt",
+                "--CRC"
+            ],
+            "program": "E:\\workspace\\parse_bitstream\\parse_bitstream.py",
+            "console": "integratedTerminal",
+            "justMyCode": false
+        },
+        {
+            "name": "回读刷新",
+            "type": "debugpy",
+            "request": "launch",
+            "args": [
+                "--file",
+                "E:\\workspace\\parse_bitstream\\data\\刷新\\top.rbt",
+                "--readback_refresh",
+                "00000000011223311000000000000000"
+            ],
+            "env": {
+                // 把根目录塞进 PYTHONPATH，省去 import 麻烦
+                "PYTHONPATH": "${workspaceFolder}"
+            },
+            "program": "E:\\workspace\\parse_bitstream\\CLI\\main_cli.py",
+            "console": "integratedTerminal",
+            "justMyCode": false
+        },
+        {
+            "name": "定时刷新",
+            "type": "debugpy",
+            "request": "launch",
+            "args": [
+                "--file",
+                "E:\\workspace\\parse_bitstream\\data\\刷新\\top.rbt",
+                "--timer_refresh",
+                "00000000011101011000000000000000"
+            ],
+            "env": {
+                // 把根目录塞进 PYTHONPATH，省去 import 麻烦
+                "PYTHONPATH": "${workspaceFolder}"
+            },
+            "program": "E:\\workspace\\parse_bitstream\\CLI\\main_cli.py",
+            "console": "integratedTerminal",
+            "justMyCode": false
+        },
+        {
+            "name": "vccm",
+            "type": "debugpy",
+            "request": "launch",
+            "args": [
+                "vccm",
+                "--project",
+                "C:\\Users\\DELL\\Desktop\\test_workspace\\vccm\\ECO_TEST",
+                "--vccm_values",
+                "105",
+                "106"
+            ],
+            "env": {
+                // 把根目录塞进 PYTHONPATH，省去 import 麻烦
+                "PYTHONPATH": "${workspaceFolder}"
+            },
+            "program": "E:\\workspace\\parse_bitstream\\CLI\\main_cli.py",
+            "console": "integratedTerminal",
+            "justMyCode": false
+        },
+        {
+            "name": "convert",
+            "type": "debugpy",
+            "request": "launch",
+            "args": [
+                "convert",
+                "--file",
+                "C:\\Users\\DELL\\Desktop\\test_workspace\\vccm\\ECO_TEST\\BLOCK_BRAM\\vccm_1p05\\bram_36e1_18_wf_0_b_vccm_1p05.rbt",
+                "--to_fmt",
+                "bit"
+            ],
+            "env": {
+                // 把根目录塞进 PYTHONPATH，省去 import 麻烦
+                "PYTHONPATH": "${workspaceFolder}"
+            },
+            "program": "E:\\workspace\\parse_bitstream\\CLI\\main_cli.py",
+            "console": "integratedTerminal",
+            "justMyCode": false
+        },
+        {
+            "name": "测试UI",
+            "type": "debugpy",
+            "request": "launch",
+            "args": [
+            ],
+            "env": {
+                // 把根目录塞进 PYTHONPATH，省去 import 麻烦
+                "PYTHONPATH": "${workspaceFolder}"
+            },
+            "cwd": "${workspaceFolder}",
+            "program": "E:\\workspace\\parse_bitstream\\GUI\\app.py",
+            "console": "integratedTerminal",
+            "justMyCode": false
+        }
+    ]
+}
