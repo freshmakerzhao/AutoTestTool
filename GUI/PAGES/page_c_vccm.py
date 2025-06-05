@@ -2,7 +2,7 @@
 from tkinter import ttk
 import os, threading, tkinter as tk
 from tkinter import ttk, filedialog, messagebox
-from CORE.process_runner import run_vccm, run_vccm_project
+from CORE.process_runner import run_vccm_task, run_vccm_project
 from GUI.COMPONENT.thread_utils import run_in_thread
 import logging
 
@@ -53,10 +53,11 @@ class PageCVCCM(ttk.Frame):
         # --------------------- 路径选择 结束 ---------------------
 
         # --------------------- 电压选择 开始 ---------------------
-        volt_frame = ttk.LabelFrame(self, text="选择电压 (VCCM)"); volt_frame.grid(row=2, column=0, sticky="ew", padx=4, pady=4)
+        volt_frame = ttk.LabelFrame(self, text="选择电压 (VCCM)")
+        volt_frame.grid(row=2, column=0, sticky="ew", padx=4, pady=4)
         self.vccm_vars = {}
-        for idx, v in enumerate(range(105, 113)):
-            row, col = divmod(idx, 4)
+        for idx, v in enumerate(list(range(105, 113)) + [115]):
+            row, col = divmod(idx, 6)
             label = f"1.{str(v)[-2:]}"
             var = tk.BooleanVar()
             self.vccm_vars[v] = var
@@ -64,9 +65,23 @@ class PageCVCCM(ttk.Frame):
                 .grid(row=row, column=col, sticky="w", padx=6, pady=2)
         # --------------------- 电压选择 结束 ---------------------
 
+        # --------------------- VS_WL选择（单选） 开始 ---------------------
+        vswl_frame = ttk.LabelFrame(self, text="选择电压 (VS_WL)")
+        vswl_frame.grid(row=3, column=0, sticky="ew", padx=4, pady=4)
+
+        self.vswl_var = tk.IntVar(value=0)  # 默认值为0，表示未选择
+        
+        vswl_values = [110, 115, 120, 125, 130, 135, 140, 145, 150]
+        for idx, v in enumerate(vswl_values):
+            row, col = divmod(idx, 6)
+            label = f"1.{str(v)[-2:]}"
+            ttk.Radiobutton(vswl_frame, text=label, value=v, variable=self.vswl_var)\
+                .grid(row=row, column=col, sticky="w", padx=6, pady=2)
+        # --------------------- VS_WL选择（单选） 结束 ---------------------
+
         # --- 执行按钮 ---
         button_row = ttk.Frame(self)
-        button_row.grid(row=3, column=0, pady=10)
+        button_row.grid(row=4, column=0, pady=10)
 
         self.run_btn = ttk.Button(button_row, text="开始处理", command=self.on_run)
         self.run_btn.pack(side="left", padx=6)
@@ -76,8 +91,8 @@ class PageCVCCM(ttk.Frame):
 
         # --- 日志输出区 ---
         self.log_text = tk.Text(self, height=10, state="disabled")
-        self.log_text.grid(row=4, column=0, sticky="nsew")
-        self.rowconfigure(4, weight=1)
+        self.log_text.grid(row=5, column=0, sticky="nsew")
+        self.rowconfigure(5, weight=1)
 
     def browse_path(self):
         # 获得用户选择的模式
@@ -108,6 +123,10 @@ class PageCVCCM(ttk.Frame):
         cur_mode = self.mode_var.get()
         vccm_values = [v for v, var in self.vccm_vars.items() if var.get()]
 
+        vswl_selected = self.vswl_var.get()
+        if vswl_selected == 0:
+            pass
+
         if not os.path.exists(file_path):
             messagebox.showerror("错误", "路径无效！")
             self.run_btn.config(state="normal")
@@ -117,7 +136,7 @@ class PageCVCCM(ttk.Frame):
             self.run_btn.config(state="normal")
             return
 
-        kwargs = dict(file_path=file_path, vccm_values=vccm_values, process_mode=cur_mode)
+        kwargs = dict(file_path=file_path, vccm_values=vccm_values, vswl_selected=vswl_selected, process_mode=cur_mode)
         
         run_in_thread(
             self,
@@ -128,13 +147,13 @@ class PageCVCCM(ttk.Frame):
             **kwargs
         )
 
-    def _run_thread(self, *, file_path, vccm_values, process_mode):
+    def _run_thread(self, *, file_path, vccm_values, vswl_selected, process_mode):
         stats = None
         try:
             if process_mode == "process_vccm_project":
-                stats = run_vccm_project(file_path, vccm_values=vccm_values)
+                stats = run_vccm_project(file_path, vccm_values=vccm_values, vswl_selected=vswl_selected)
             else:
-                stats = run_vccm(file_path, vccm_values=vccm_values)
+                stats = run_vccm_task(file_path, vccm_values=vccm_values, vswl_selected=vswl_selected)
         except Exception as e:
             logging.error("[VCCM ERROR] %s", e)
             messagebox.showerror("处理失败", str(e))
@@ -144,6 +163,9 @@ class PageCVCCM(ttk.Frame):
         self.path_var.set("")
         for var in self.vccm_vars.values():
             var.set(False)
+        # 清空 VS_WL 单选
+        self.vswl_var.set(0)
+        
         self.log_text.config(state="normal")
         self.log_text.delete(1.0, "end")
         self.log_text.config(state="disabled")

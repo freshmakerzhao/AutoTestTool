@@ -473,7 +473,7 @@ def process_compress(bitstream_obj):
     
     # ================================= 构造压缩位流寄存器部分 开始 =========================================
     
-        # 拿到数据帧之前的寄存器
+    # 拿到数据帧之前的寄存器
     if bitstream_obj.file_type == ".rbt":
         for i in range(len(bitstream_obj.rbt_cfg_content_pre)):
             # 连续的MASK CTL1才需要修改

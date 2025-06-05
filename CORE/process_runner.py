@@ -1,13 +1,13 @@
 import logging
 import COMMON.config as config
 from CORE.bitstream_parser import BitstreamParser
-from CORE import module_base, module_crc, module_refresh, module_vccm
+from CORE import module_base, module_crc, module_refresh, module_vccm, module_convert
 import os,copy, traceback
 from typing import List, Dict
 
 FILE_ENDWITH = "_new"
 
-def run_task(
+def run_base_task(
     file, 
     device = "MC1P110", 
     file_suffix = FILE_ENDWITH,
@@ -63,27 +63,43 @@ VCCM_VALUES_LIST = [
     {"vccm_value": 110, "file_suffix": "vccm_1p10"},
     {"vccm_value": 111, "file_suffix": "vccm_1p11"},
     {"vccm_value": 112, "file_suffix": "vccm_1p12"},
+    {"vccm_value": 115, "file_suffix": "vccm_1p15"},
 ]
 
+VSWL_FILE_SUFFIX_MAP = {
+    "110": "wl_1p10",
+    "115": "wl_1p15",
+    "120": "wl_1p20",
+    "125": "wl_1p25",
+    "130": "wl_1p30",
+    "135": "wl_1p35",
+    "140": "wl_1p40",
+    "145": "wl_1p45",
+    "150": "wl_1p50",
+}
+
 # vccm_values 可选
-def run_vccm(file_path: str, vccm_values: List[int] = None):
+def run_vccm_task(file_path: str, vccm_values: List[int] = None, vswl_selected: int = 0):
     vccm_items = _filter_vccm_items(vccm_values)
     stats = None
     # 单个文件时
     if os.path.isfile(file_path):
         try:
-            _process_one_file(file_path, os.path.dirname(file_path), vccm_items)
-            stats = {"total_files": 1, "success_count": 1, "fail_count": 0, "error_log_path": None}
+            isSuccuss = _process_one_file(file_path, os.path.dirname(file_path), vccm_items, error_log_path=None, vswl_selected=vswl_selected)
+            if isSuccuss:
+                stats = {"total_files": 1, "success_count": 1, "fail_count": 0, "error_log_path": None}
+            else:
+                stats = {"total_files": 1, "success_count": 0, "fail_count": 1, "error_log_path": os.path.join(os.path.dirname(file_path), "vccm_error.log")}
         except Exception:
             stats = {"total_files": 1, "success_count": 0, "fail_count": 1, "error_log_path": os.path.join(os.path.dirname(file_path), "vccm_error.log")}
     # 文件夹时
     elif os.path.isdir(file_path):
-        stats = _process_folder(file_path, vccm_items)
+        stats = _process_folder(file_path, vccm_items, vswl_selected=vswl_selected)
     else:
         logging.error(f"[VCCM ERROR] 无效路径：{file_path}")
     return stats
 
-def run_vccm_project(project_root: str, vccm_values: List[int] = None):
+def run_vccm_project(project_root: str, vccm_values: List[int] = None, vswl_selected: int = 0):
     if not os.path.isdir(project_root):
         logging.error(f"[VCCM ERROR] 非法目录：{project_root}")
         return
@@ -99,7 +115,7 @@ def run_vccm_project(project_root: str, vccm_values: List[int] = None):
     for sub in subdirs:
         sub_path = os.path.join(project_root, sub)
         logging.info(f"[VCCM INFO] ▶ 开始处理子目录：{sub}")
-        stats = run_vccm(sub_path, vccm_values=vccm_values)
+        stats = run_vccm_task(sub_path, vccm_values=vccm_values, vswl_selected=vswl_selected)
         if stats:
             project_total += stats["total_files"]
             project_success += stats["success_count"]
@@ -119,26 +135,33 @@ def run_vccm_project(project_root: str, vccm_values: List[int] = None):
     return project_stats
 
 # 处理单个文件，error_log_path为None时，错误日志与file_path同级
-def _process_one_file(file_path: str, root_folder: str, vccm_items:List[Dict], error_log_path=None):
+def _process_one_file(file_path: str, root_folder: str, vccm_items:List[Dict], error_log_path=None, vswl_selected: int = 0):
     try:
         bitstream_obj = BitstreamParser("MC1P110", file_path, False)
         logging.info(f"[VCCM INFO] 正在处理：{file_path}")
 
         file_name = os.path.basename(file_path)
         file_name_no_type = os.path.splitext(file_name)[0]  # 去掉扩展名
+        parent_dir = os.path.basename(os.path.dirname(file_path)) # 获取上一级文件夹名称
 
         all_failed = True  # 记录是否所有电压值都失败
 
         for item in vccm_items:
             try:
                 new_obj = copy.deepcopy(bitstream_obj)
-                module_vccm.process_vccm(new_obj, item["vccm_value"])
+                module_vccm.process_vccm_and_vswl(new_obj, item["vccm_value"], vswl_selected)
 
                 # 输出目录为 root_folder/vccm_1pXX/
-                output_dir = os.path.join(root_folder, item["file_suffix"])
+                file_suffix = item["file_suffix"]
+                if str(vswl_selected) in VSWL_FILE_SUFFIX_MAP:
+                    file_suffix = f"{file_suffix}_{VSWL_FILE_SUFFIX_MAP[str(vswl_selected)]}"
+                output_dir = os.path.join(root_folder, file_suffix)
                 os.makedirs(output_dir, exist_ok=True)
                 # 不带文件类型的path
-                out_path = os.path.join(output_dir, f"{file_name_no_type}_{item['file_suffix']}")
+                out_path = os.path.join(
+                    output_dir,
+                    f"{parent_dir}_{file_name_no_type}_{file_suffix}"
+                )
                 # 关闭crc
                 module_crc.disable_crc(new_obj)
                 new_obj.save_file(output_file_path=out_path)
@@ -151,7 +174,7 @@ def _process_one_file(file_path: str, root_folder: str, vccm_items:List[Dict], e
         _write_error_log(file_path, None, e, error_log_path)
         return False  # 整个文件一开始就处理失败
 
-def _process_folder(root_folder: str, vccm_items:List[Dict]):
+def _process_folder(root_folder: str, vccm_items:List[Dict], vswl_selected: int = 0):
     logging.info(f"[VCCM INFO] 正在处理目录：{root_folder}")
 
     error_log_path = os.path.join(root_folder, "vccm_error.log")
@@ -172,7 +195,7 @@ def _process_folder(root_folder: str, vccm_items:List[Dict]):
                 full_path = os.path.join(dirpath, fname)
                 total_files += 1
                 
-                ok = _process_one_file(full_path, root_folder, vccm_items, error_log_path)
+                ok = _process_one_file(full_path, root_folder, vccm_items, error_log_path, vswl_selected)
                 if ok:
                     success_count += 1
                 else:
@@ -203,3 +226,17 @@ def _filter_vccm_items(selected_values: None):
         return VCCM_VALUES_LIST
     # 仅支持列出来的值
     return [item for item in VCCM_VALUES_LIST if item["vccm_value"] in selected_values]
+
+def run_convert_task(file_path: str, to_fmt: str, output_path: str = None):
+    try:
+        logging.info(f"[CONVERT INFO] 正在处理文件：{file_path}")
+        bitstream_obj = BitstreamParser("MC1P110", file_path, False)
+
+        stats = module_convert.process_convert(bitstream_obj, to_fmt)
+        if stats.get("code",400) == 400:
+            logging.error(f"[CONVERT ERROR] {stats['msg']}")
+            return stats
+
+    except Exception as e:
+        logging.error(f"[CONVERT ERROR] {e}")
+    

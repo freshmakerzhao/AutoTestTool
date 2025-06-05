@@ -1,6 +1,6 @@
 import pathlib, threading, tkinter as tk
 from tkinter import ttk, filedialog, messagebox
-from CORE.process_runner import run_task,FILE_ENDWITH
+from CORE.process_runner import run_base_task,FILE_ENDWITH
 import logging
 
 class PageABase(ttk.Frame):
@@ -86,7 +86,7 @@ class PageABase(ttk.Frame):
 
     def _run_thread(self, kwargs):
         try:
-            out = run_task(**kwargs)
+            out = run_base_task(**kwargs)
             logging.info("[提示] 输出文件保存至: %s", out)
             messagebox.showinfo("完成", f"输出文件已保存：\n{out}")
         except Exception as e:
