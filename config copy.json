@@ -1,0 +1,30 @@
+{
+    "result_root_path": "C:/Users/DELL/Desktop/test_workspace/vccm/tt",
+    "bit_group": {
+        "00": {
+            "bit_path": "C:/Users/DELL/Desktop/test_workspace/vccm/for_vivado/filter_HEX_VALUE_00_test.bit",
+            "gold_path": "C:/Users/DELL/Desktop/test_workspace/vccm/for_vivado/gold_00.rbt",
+            "msd_path": "C:/Users/DELL/Desktop/test_workspace/vccm/for_vivado/00_55_AA_FF.msd"
+        },
+        "55": {
+            "bit_path": "C:/Users/DELL/Desktop/test_workspace/vccm/for_vivado/filter_HEX_VALUE_55_test.bit",
+            "gold_path": "C:/Users/DELL/Desktop/test_workspace/vccm/for_vivado/gold_55.rbt",
+            "msd_path": "C:/Users/DELL/Desktop/test_workspace/vccm/for_vivado/00_55_AA_FF.msd"
+        },
+        "AA": {
+            "bit_path": "C:/Users/DELL/Desktop/test_workspace/vccm/for_vivado/filter_HEX_VALUE_AA_test.bit",
+            "gold_path": "C:/Users/DELL/Desktop/test_workspace/vccm/for_vivado/gold_AA.rbt",
+            "msd_path": "C:/Users/DELL/Desktop/test_workspace/vccm/for_vivado/00_55_AA_FF.msd"
+        },
+        "FF": {
+            "bit_path": "C:/Users/DELL/Desktop/test_workspace/vccm/for_vivado/filter_HEX_VALUE_FF_test.bit",
+            "gold_path": "C:/Users/DELL/Desktop/test_workspace/vccm/for_vivado/gold_FF.rbt",
+            "msd_path": "C:/Users/DELL/Desktop/test_workspace/vccm/for_vivado/00_55_AA_FF.msd"
+        },
+        "led_run": {
+            "bit_path": "C:/Users/DELL/Desktop/test_workspace/vccm/for_vivado/led_run.bit",
+            "gold_path": "C:/Users/DELL/Desktop/test_workspace/vccm/for_vivado/gold_led_run.rbt",
+            "msd_path": "C:/Users/DELL/Desktop/test_workspace/vccm/for_vivado/led_run.msd"
+        }
+    }
+}
