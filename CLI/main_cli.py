@@ -25,7 +25,7 @@ def main():
     base_parser.set_defaults(func=run_base_cli)
 
     # vccm 模块
-    vccm_parser = subparsers.add_parser("vccm", help="VCCM 电压批处理")
+    vccm_parser = subparsers.add_parser("vccm", help="电压批处理")
     vccm_parser.add_argument('--file', type=str, help="处理单个文件或文件夹")
     vccm_parser.add_argument('--project', type=str, help="处理整个项目路径")
     vccm_parser.add_argument('--vccm_values', type=int, nargs='+', help="电压值，例如 105 106 107")

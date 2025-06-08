@@ -30,15 +30,13 @@ class PageCVCCM(ttk.Frame):
 
         # 单选按钮
         for idx, (txt, val) in enumerate([
-            ("码流文件", "process_vccm_file"), 
-            ("模块目录", "process_vccm_folder"), 
-            ("项目目录", "process_vccm_project")]):
+            ("码流文件", "process_vccm_file")]):
             ttk.Radiobutton(mode_opts, text=txt, variable=self.mode_var, value=val)\
                 .grid(row=0, column=idx, sticky="w", padx=6)
 
         # 问号
-        ttk.Button(mode_opts, text="?", width=2, command=self.show_mode_help)\
-            .grid(row=0, column=3, padx=6)
+        # ttk.Button(mode_opts, text="?", width=2, command=self.show_mode_help)\
+        #     .grid(row=0, column=3, padx=6)
         # --------------------- 模式选择 结束 ---------------------
 
         # --------------------- 路径选择 开始 ---------------------
@@ -53,30 +51,30 @@ class PageCVCCM(ttk.Frame):
         # --------------------- 路径选择 结束 ---------------------
 
         # --------------------- 电压选择 开始 ---------------------
-        volt_frame = ttk.LabelFrame(self, text="选择电压 (VCCM)")
-        volt_frame.grid(row=2, column=0, sticky="ew", padx=4, pady=4)
-        self.vccm_vars = {}
-        for idx, v in enumerate(list(range(105, 113)) + [115]):
-            row, col = divmod(idx, 6)
-            label = f"1.{str(v)[-2:]}"
-            var = tk.BooleanVar()
-            self.vccm_vars[v] = var
-            ttk.Checkbutton(volt_frame, text=label, variable=var)\
-                .grid(row=row, column=col, sticky="w", padx=6, pady=2)
+        # volt_frame = ttk.LabelFrame(self, text="选择电压 (VCCM)")
+        # volt_frame.grid(row=2, column=0, sticky="ew", padx=4, pady=4)
+        # self.vccm_vars = {}
+        # for idx, v in enumerate(list(range(105, 113)) + [115]):
+        #     row, col = divmod(idx, 6)
+        #     label = f"1.{str(v)[-2:]}"
+        #     var = tk.BooleanVar()
+        #     self.vccm_vars[v] = var
+        #     ttk.Checkbutton(volt_frame, text=label, variable=var)\
+        #         .grid(row=row, column=col, sticky="w", padx=6, pady=2)
         # --------------------- 电压选择 结束 ---------------------
 
         # --------------------- VS_WL选择（单选） 开始 ---------------------
-        vswl_frame = ttk.LabelFrame(self, text="选择电压 (VS_WL)")
-        vswl_frame.grid(row=3, column=0, sticky="ew", padx=4, pady=4)
+        # vswl_frame = ttk.LabelFrame(self, text="选择电压 (VS_WL)")
+        # vswl_frame.grid(row=3, column=0, sticky="ew", padx=4, pady=4)
 
-        self.vswl_var = tk.IntVar(value=0)  # 默认值为0，表示未选择
+        # self.vswl_var = tk.IntVar(value=0)  # 默认值为0，表示未选择
         
-        vswl_values = [110, 115, 120, 125, 130, 135, 140, 145, 150]
-        for idx, v in enumerate(vswl_values):
-            row, col = divmod(idx, 6)
-            label = f"1.{str(v)[-2:]}"
-            ttk.Radiobutton(vswl_frame, text=label, value=v, variable=self.vswl_var)\
-                .grid(row=row, column=col, sticky="w", padx=6, pady=2)
+        # vswl_values = [110, 115, 120, 125, 130, 135, 140, 145, 150]
+        # for idx, v in enumerate(vswl_values):
+        #     row, col = divmod(idx, 6)
+        #     label = f"1.{str(v)[-2:]}"
+        #     ttk.Radiobutton(vswl_frame, text=label, value=v, variable=self.vswl_var)\
+        #         .grid(row=row, column=col, sticky="w", padx=6, pady=2)
         # --------------------- VS_WL选择（单选） 结束 ---------------------
 
         # --- 执行按钮 ---
@@ -121,9 +119,9 @@ class PageCVCCM(ttk.Frame):
         
         file_path = self.path_var.get()
         cur_mode = self.mode_var.get()
-        vccm_values = [v for v, var in self.vccm_vars.items() if var.get()]
+        vccm_values = [115]
 
-        vswl_selected = self.vswl_var.get()
+        vswl_selected = 125
         if vswl_selected == 0:
             pass
 
@@ -155,16 +153,16 @@ class PageCVCCM(ttk.Frame):
             else:
                 stats = run_vccm_task(file_path, vccm_values=vccm_values, vswl_selected=vswl_selected)
         except Exception as e:
-            logging.error("[VCCM ERROR] %s", e)
+            logging.error("[ERROR] %s", e)
             messagebox.showerror("处理失败", str(e))
         return stats
     
     def reset(self):
         self.path_var.set("")
-        for var in self.vccm_vars.values():
-            var.set(False)
-        # 清空 VS_WL 单选
-        self.vswl_var.set(0)
+        # for var in self.vccm_vars.values():
+        #     var.set(False)
+        # # 清空 VS_WL 单选
+        # self.vswl_var.set(0)
         
         self.log_text.config(state="normal")
         self.log_text.delete(1.0, "end")
@@ -192,7 +190,7 @@ class PageCVCCM(ttk.Frame):
         
     def _show_project_summary(self, stats: dict):
         summary = (
-            f"VCCM 项目批处理完成\n\n"
+            f"项目处理完成\n\n"
             f"模块数量:    {stats.get('project_subdirs', '1')}\n"
             f"总文件数:    {stats.get('total_files', '-')}\n"
             f"成功处理数:  {stats.get('success_count', '-')}\n"

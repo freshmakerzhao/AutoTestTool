@@ -96,25 +96,25 @@ def run_vccm_task(file_path: str, vccm_values: List[int] = None, vswl_selected: 
     elif os.path.isdir(file_path):
         stats = _process_folder(file_path, vccm_items, vswl_selected=vswl_selected)
     else:
-        logging.error(f"[VCCM ERROR] 无效路径：{file_path}")
+        logging.error(f"[ERROR] 无效路径：{file_path}")
     return stats
 
 def run_vccm_project(project_root: str, vccm_values: List[int] = None, vswl_selected: int = 0):
     if not os.path.isdir(project_root):
-        logging.error(f"[VCCM ERROR] 非法目录：{project_root}")
+        logging.error(f"[ERROR] 非法目录：{project_root}")
         return
 
     # 这里只向下找一级
     subdirs = [d for d in os.listdir(project_root)
                if os.path.isdir(os.path.join(project_root, d))]
 
-    logging.info(f"[VCCM INFO] 扫描子模块目录：{len(subdirs)} 个")
+    logging.info(f"[INFO] 扫描子模块目录：{len(subdirs)} 个")
 
     project_total, project_success, project_fail = 0, 0, 0
     project_stats = {}
     for sub in subdirs:
         sub_path = os.path.join(project_root, sub)
-        logging.info(f"[VCCM INFO] ▶ 开始处理子目录：{sub}")
+        logging.info(f"[INFO] ▶ 开始处理子目录：{sub}")
         stats = run_vccm_task(sub_path, vccm_values=vccm_values, vswl_selected=vswl_selected)
         if stats:
             project_total += stats["total_files"]
@@ -125,7 +125,7 @@ def run_vccm_project(project_root: str, vccm_values: List[int] = None, vswl_sele
     project_stats["success_count"] = project_success
     project_stats["fail_count"] = project_fail
     summary = (
-        f"[VCCM 批处理完成]\n"
+        f"[批处理完成]\n"
         f"共处理模块目录: {len(subdirs)}\n"
         f"总文件数:   {project_total}\n"
         f"成功处理:   {project_success}\n"
@@ -138,7 +138,7 @@ def run_vccm_project(project_root: str, vccm_values: List[int] = None, vswl_sele
 def _process_one_file(file_path: str, root_folder: str, vccm_items:List[Dict], error_log_path=None, vswl_selected: int = 0):
     try:
         bitstream_obj = BitstreamParser("MC1P110", file_path, False)
-        logging.info(f"[VCCM INFO] 正在处理：{file_path}")
+        logging.info(f"[INFO] 正在处理：{file_path}")
 
         file_name = os.path.basename(file_path)
         file_name_no_type = os.path.splitext(file_name)[0]  # 去掉扩展名
@@ -155,17 +155,17 @@ def _process_one_file(file_path: str, root_folder: str, vccm_items:List[Dict], e
                 file_suffix = item["file_suffix"]
                 if str(vswl_selected) in VSWL_FILE_SUFFIX_MAP:
                     file_suffix = f"{file_suffix}_{VSWL_FILE_SUFFIX_MAP[str(vswl_selected)]}"
-                output_dir = os.path.join(root_folder, file_suffix)
+                output_dir = os.path.join(root_folder, "new_bitstream")
                 os.makedirs(output_dir, exist_ok=True)
                 # 不带文件类型的path
                 out_path = os.path.join(
                     output_dir,
-                    f"{parent_dir}_{file_name_no_type}_{file_suffix}"
+                    f"{parent_dir}_{file_name_no_type}_new"
                 )
                 # 关闭crc
                 module_crc.disable_crc(new_obj)
                 new_obj.save_file(output_file_path=out_path)
-                logging.info(f"[VCCM INFO] {out_path} OK")
+                logging.info(f"[INFO] {out_path} OK")
                 all_failed = False
             except Exception as ve:
                 _write_error_log(file_path, item["vccm_value"], ve, error_log_path)
@@ -175,12 +175,12 @@ def _process_one_file(file_path: str, root_folder: str, vccm_items:List[Dict], e
         return False  # 整个文件一开始就处理失败
 
 def _process_folder(root_folder: str, vccm_items:List[Dict], vswl_selected: int = 0):
-    logging.info(f"[VCCM INFO] 正在处理目录：{root_folder}")
+    logging.info(f"[INFO] 正在处理目录：{root_folder}")
 
     error_log_path = os.path.join(root_folder, "vccm_error.log")
     if os.path.exists(error_log_path):
         os.remove(error_log_path)
-        logging.warning(f"[VCCM WARNING] 已清理旧日志：{error_log_path}")
+        logging.warning(f"[WARNING] 已清理旧日志：{error_log_path}")
 
     # 初始化计数器
     total_files = 0
@@ -211,14 +211,14 @@ def _process_folder(root_folder: str, vccm_items:List[Dict], vswl_selected: int 
 def _write_error_log(file_path: str, vccm_value, exception_obj, log_file_path=None):
     log_file = log_file_path or os.path.join(os.path.dirname(file_path), "vccm_error.log")
     with open(log_file, "a", encoding="utf-8") as f:
-        f.write(f"\n[VCCM ERROR] file: {file_path}\n")
+        f.write(f"\n[ERROR] file: {file_path}\n")
         if vccm_value:
             f.write(f"  ➤ vccm_value: {vccm_value}\n")
         f.write(f"  ➤ error: {str(exception_obj)}\n")
         import traceback
         f.write(traceback.format_exc())
         f.write("-" * 60 + "\n")
-    logging.warning(f"[VCCM WARNING] 处理出错：{file_path}（已记录）")
+    logging.warning(f"[WARNING] 处理出错：{file_path}（已记录）")
 
 def _filter_vccm_items(selected_values: None):
     # 如果没有传入值，则使用所有电压

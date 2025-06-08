@@ -21,22 +21,22 @@ class MainApp(tk.Tk):
         self.nb = ttk.Notebook(self)
         self.nb.pack(fill="both", expand=True)
         self.ctx = {}
-        self.page_a = PageABase(self.nb, self.ctx)
-        self.page_b = PageBRefresh(self.nb, self.ctx)
+        # self.page_a = PageABase(self.nb, self.ctx)
+        # self.page_b = PageBRefresh(self.nb, self.ctx)
         self.page_c = PageCVCCM(self.nb, self.ctx)
-        self.page_d = PageDVivadoRDCheck(self.nb, self.ctx)
+        # self.page_d = PageDVivadoRDCheck(self.nb, self.ctx)
 
 
-        self.nb.add(self.page_a, text="  基础功能  ")
-        self.nb.add(self.page_b, text="  自刷新  ")
-        self.nb.add(self.page_c, text="  VCCM设置  ")
-        self.nb.add(self.page_d, text="  Vivado回读校验  ")
+        # self.nb.add(self.page_a, text="  基础功能  ")
+        # self.nb.add(self.page_b, text="  自刷新  ")
+        self.nb.add(self.page_c, text="  bitstream设置  ")
+        # self.nb.add(self.page_d, text="  Vivado回读校验  ")
 
         # 绑定切换事件
         self.nb.bind("<<NotebookTabChanged>>", self._on_tab_changed)
 
         # 默认先绑定第一个页面的日志区
-        update_log_target(self.page_a.log_text)
+        update_log_target(self.page_c.log_text)
 
     def _on_tab_changed(self, event):
         page = self.nb.nametowidget(self.nb.select())

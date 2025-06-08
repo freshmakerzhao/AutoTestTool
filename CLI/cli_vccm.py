@@ -11,19 +11,19 @@ def run_vccm_cli(args):
         try:
             stats = run_vccm_task(args.file, vccm_values=args.vccm_values)
             if not stats:
-                logging.error("[VCCM ERROR] 文件路径无效或处理失败")
+                logging.error("[ERROR] 文件路径无效或处理失败")
             elif stats["success_count"] == 0:
-                logging.error(f"[VCCM ERROR] 所有文件均处理失败，详情见日志文件：{stats['log_path']}")
+                logging.error(f"[ERROR] 所有文件均处理失败，详情见日志文件：{stats['log_path']}")
             else:
-                logging.info("[VCCM INFO] VCCM 处理成功")
+                logging.info("[INFO] 处理成功")
         except Exception as exc:
-            logging.error("[VCCM ERROR] %s", exc)
+            logging.error("[ERROR] %s", exc)
 
     elif args.project:
         stats = run_vccm_project(args.project, vccm_values=args.vccm_values)
         if stats:
             summary = (
-                f"[VCCM 项目处理完成]\n"
+                f"[项目处理完成]\n"
                 f"模块目录数: {stats['project_subdirs']}\n"
                 f"总文件数:   {stats['total_files']}\n"
                 f"成功处理数: {stats['success_count']}\n"
@@ -31,5 +31,5 @@ def run_vccm_cli(args):
             )
             logging.info(summary)
     else:
-        logging.warning("[VCCM WARNING] 未提供 --file 或 --project 参数")
+        logging.warning("[WARNING] 未提供 --file 或 --project 参数")
 

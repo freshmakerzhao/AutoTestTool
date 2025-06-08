@@ -406,7 +406,6 @@ class BitstreamParser:
         bit_cfg_content_pre_len = 0
         while True:
             word = self.read_bit_bytes(4)
-            utils.log_debug_with_description(utils.bytes_to_binary(word))
             if not word:
                 break  # 到达文件末尾，停止读取
             if len(word) < 4:
