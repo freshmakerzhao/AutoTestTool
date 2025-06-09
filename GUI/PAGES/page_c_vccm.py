@@ -71,10 +71,30 @@ class PageCVCCM(ttk.Frame):
 
         self.vswl_var = tk.IntVar(value=0)  # 默认值为0，表示未选择
         
-        vswl_values = [110, 115, 120, 125, 130, 135, 140, 145, 150]
+        vswl_values = [
+            1050,
+            1075,
+            1100,
+            1125,
+            1150,
+            1175,
+            1200,
+            1225,
+            1250,
+            1275,
+            1300,
+            1325,
+            1350,
+            1375,
+            1400,
+            1425,
+            1450,
+            1475,
+            1500
+        ]
         for idx, v in enumerate(vswl_values):
             row, col = divmod(idx, 6)
-            label = f"1.{str(v)[-2:]}"
+            label = f"1.{str(v)[-3:]}"
             ttk.Radiobutton(vswl_frame, text=label, value=v, variable=self.vswl_var)\
                 .grid(row=row, column=col, sticky="w", padx=6, pady=2)
         # --------------------- VS_WL选择（单选） 结束 ---------------------
@@ -124,8 +144,6 @@ class PageCVCCM(ttk.Frame):
         vccm_values = [v for v, var in self.vccm_vars.items() if var.get()]
 
         vswl_selected = self.vswl_var.get()
-        if vswl_selected == 0:
-            pass
 
         if not os.path.exists(file_path):
             messagebox.showerror("错误", "路径无效！")
@@ -164,7 +182,7 @@ class PageCVCCM(ttk.Frame):
         for var in self.vccm_vars.values():
             var.set(False)
         # 清空 VS_WL 单选
-        self.vswl_var.set(0)
+        self.vswl_var.set(1050)
         
         self.log_text.config(state="normal")
         self.log_text.delete(1.0, "end")

@@ -67,19 +67,28 @@ VCCM_VALUES_LIST = [
 ]
 
 VSWL_FILE_SUFFIX_MAP = {
-    "110": "wl_1p10",
-    "115": "wl_1p15",
-    "120": "wl_1p20",
-    "125": "wl_1p25",
-    "130": "wl_1p30",
-    "135": "wl_1p35",
-    "140": "wl_1p40",
-    "145": "wl_1p45",
-    "150": "wl_1p50",
+    "1075": "wl_1p075",
+    "1100": "wl_1p100",
+    "1125": "wl_1p125",
+    "1150": "wl_1p150",
+    "1175": "wl_1p175",
+    "1200": "wl_1p200",
+    "1225": "wl_1p225",
+    "1250": "wl_1p250",
+    "1275": "wl_1p275",
+    "1300": "wl_1p300",
+    "1325": "wl_1p325",
+    "1350": "wl_1p350",
+    "1375": "wl_1p375",
+    "1400": "wl_1p400",
+    "1425": "wl_1p425",
+    "1450": "wl_1p450",
+    "1475": "wl_1p475",
+    "1500": "wl_1p500",
 }
 
 # vccm_values 可选
-def run_vccm_task(file_path: str, vccm_values: List[int] = None, vswl_selected: int = 0):
+def run_vccm_task(file_path: str, vccm_values: List[int] = None, vswl_selected: int = 1050):
     vccm_items = _filter_vccm_items(vccm_values)
     stats = None
     # 单个文件时
@@ -99,7 +108,7 @@ def run_vccm_task(file_path: str, vccm_values: List[int] = None, vswl_selected: 
         logging.error(f"[VCCM ERROR] 无效路径：{file_path}")
     return stats
 
-def run_vccm_project(project_root: str, vccm_values: List[int] = None, vswl_selected: int = 0):
+def run_vccm_project(project_root: str, vccm_values: List[int] = None, vswl_selected: int = 1050):
     if not os.path.isdir(project_root):
         logging.error(f"[VCCM ERROR] 非法目录：{project_root}")
         return
@@ -135,7 +144,7 @@ def run_vccm_project(project_root: str, vccm_values: List[int] = None, vswl_sele
     return project_stats
 
 # 处理单个文件，error_log_path为None时，错误日志与file_path同级
-def _process_one_file(file_path: str, root_folder: str, vccm_items:List[Dict], error_log_path=None, vswl_selected: int = 0):
+def _process_one_file(file_path: str, root_folder: str, vccm_items:List[Dict], error_log_path=None, vswl_selected: int = 1050):
     try:
         bitstream_obj = BitstreamParser("MC1P110", file_path, False)
         logging.info(f"[VCCM INFO] 正在处理：{file_path}")
@@ -174,7 +183,7 @@ def _process_one_file(file_path: str, root_folder: str, vccm_items:List[Dict], e
         _write_error_log(file_path, None, e, error_log_path)
         return False  # 整个文件一开始就处理失败
 
-def _process_folder(root_folder: str, vccm_items:List[Dict], vswl_selected: int = 0):
+def _process_folder(root_folder: str, vccm_items:List[Dict], vswl_selected: int = 1050):
     logging.info(f"[VCCM INFO] 正在处理目录：{root_folder}")
 
     error_log_path = os.path.join(root_folder, "vccm_error.log")
