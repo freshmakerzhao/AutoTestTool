@@ -5,6 +5,7 @@ from GUI.PAGES.page_a_base import PageABase
 from GUI.PAGES.page_b_refesh import PageBRefresh
 from GUI.PAGES.page_c_vccm import PageCVCCM
 from GUI.PAGES.page_d_vivado_rd_check import PageDVivadoRDCheck
+from GUI.PAGES.page_f_ibert import PageFIbertTest
 import logging
 from GUI.logger import setup_logger, text_handler, update_log_target
 
@@ -25,12 +26,14 @@ class MainApp(tk.Tk):
         self.page_b = PageBRefresh(self.nb, self.ctx)
         self.page_c = PageCVCCM(self.nb, self.ctx)
         self.page_d = PageDVivadoRDCheck(self.nb, self.ctx)
+        self.page_f = PageFIbertTest(self.nb, self.ctx)
 
 
         self.nb.add(self.page_a, text="  基础功能  ")
         self.nb.add(self.page_b, text="  自刷新  ")
         self.nb.add(self.page_c, text="  VCCM设置  ")
         self.nb.add(self.page_d, text="  Vivado回读校验  ")
+        self.nb.add(self.page_f, text="  Ibert测试  ")
 
         # 绑定切换事件
         self.nb.bind("<<NotebookTabChanged>>", self._on_tab_changed)
