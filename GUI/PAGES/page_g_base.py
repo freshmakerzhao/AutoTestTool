@@ -3,7 +3,7 @@ from tkinter import ttk, filedialog, messagebox
 from CORE.process_runner import run_base_task,FILE_ENDWITH
 import logging
 
-class PageABase(ttk.Frame):
+class PageGBase(ttk.Frame):
     """A 组：Bitstream 解析功能"""
 
     def __init__(self, master, app_ctx, **kw):
