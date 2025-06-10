@@ -91,18 +91,27 @@ vccm_data_byte_map = {
 }
 
 vswl_data_str_map = {
-    110: config.VS_WL_110_STR,
-    115: config.VS_WL_115_STR,
-    120: config.VS_WL_120_STR,
-    125: config.VS_WL_125_STR,
-    130: config.VS_WL_130_STR,
-    135: config.VS_WL_135_STR,
-    140: config.VS_WL_140_STR,
-    145: config.VS_WL_145_STR,
-    150: config.VS_WL_150_STR
+    1075: config.VS_WL_1075_STR,
+    1100: config.VS_WL_1100_STR,
+    1125: config.VS_WL_1125_STR,
+    1150: config.VS_WL_1150_STR,
+    1175: config.VS_WL_1175_STR,
+    1200: config.VS_WL_1200_STR,
+    1225: config.VS_WL_1225_STR,
+    1250: config.VS_WL_1250_STR,
+    1275: config.VS_WL_1275_STR,
+    1300: config.VS_WL_1300_STR,
+    1325: config.VS_WL_1325_STR,
+    1350: config.VS_WL_1350_STR,
+    1375: config.VS_WL_1375_STR,
+    1400: config.VS_WL_1400_STR,
+    1425: config.VS_WL_1425_STR,
+    1450: config.VS_WL_1450_STR,
+    1475: config.VS_WL_1475_STR,
+    1500: config.VS_WL_1500_STR,
 }
 
-def process_vccm_and_vswl(bitstream_obj, vccm_value=105, vswl_selected: int = 0):
+def process_vccm_and_vswl(bitstream_obj, vccm_value=105, vswl_selected: int = 1050):
     # 拿到数据帧之前的寄存器
     is_modiy_flag = False
     if bitstream_obj.file_type == ".rbt":
@@ -191,89 +200,6 @@ def process_vccm_and_vswl(bitstream_obj, vccm_value=105, vswl_selected: int = 0)
             # 找连续的MASK+CTL1做修改，且仅改第一次
             if vccm_value == 115 \
                 and i < len(bitstream_obj.bit_cfg_content_pre)-1 \
-                and bitstream_obj.bit_cfg_content_pre[i].cmd_name == "MASK"\
-                and bitstream_obj.bit_cfg_content_pre[i+1].cmd_name == "CTL1"\
-                and not is_modiy_flag:
-                is_modiy_flag = True
-                mask_data = utils.bytes_to_binary(bitstream_obj.bit_cfg_content_pre[i].get_data_from_index(1))
-                mask_data = utils.update_data_by_index(mask_data,[17,16,15,14,13,10,9,8,7,6],["1","1","1","1","1","1","1","1","1","1"])
-                bitstream_obj.bit_cfg_content_pre[i].set_data_to_index(1, utils.binary_str_to_bytes(mask_data))
-
-# 这里处理特殊电压，目前为115
-def process_vccm_adv(bitstream_obj, vccm_value=115):
-    # 拿到数据帧之前的寄存器
-    is_modiy_flag = False
-    if bitstream_obj.file_type == ".rbt":
-        for i in range(len(bitstream_obj.rbt_cfg_content_pre)):
-            if bitstream_obj.rbt_cfg_content_pre[i].cmd_name == "COR1":
-                cor1_data = bitstream_obj.rbt_cfg_content_pre[i].get_data_from_index(1)
-                cor1_data = utils.update_data_by_index(cor1_data,[12,11,10],["1","0","1"])
-                bitstream_obj.rbt_cfg_content_pre[i].set_data_to_index(1, cor1_data)
-                bitstream_obj.rbt_cfg_content_pre[i].append_data(config.CMD_MASK_01_STR)
-                bitstream_obj.rbt_cfg_content_pre[i].append_data(config.CMD_MASK_03_STR)
-                bitstream_obj.rbt_cfg_content_pre[i].append_data(config.CMD_TRIM_01_STR)
-                if vccm_value == 115:
-                    bitstream_obj.rbt_cfg_content_pre[i].append_data(config.VCCM_DATA_115_STR)
-                else:
-                    raise ValueError("vccm_value 配置错误")
-                
-                # 新增6行
-                bitstream_obj.rbt_cfg_content_pre[i].append_data(config.SPECIFIC_115_01_STR)
-                bitstream_obj.rbt_cfg_content_pre[i].append_data(config.SPECIFIC_115_02_STR)
-                bitstream_obj.rbt_cfg_content_pre[i].append_data(config.SPECIFIC_115_03_STR)
-                bitstream_obj.rbt_cfg_content_pre[i].append_data(config.SPECIFIC_115_04_STR)
-                bitstream_obj.rbt_cfg_content_pre[i].append_data(config.SPECIFIC_115_05_STR)
-                bitstream_obj.rbt_cfg_content_pre[i].append_data(config.SPECIFIC_115_06_STR)
-                
-                # 新增 VS_WL 6行
-                bitstream_obj.rbt_cfg_content_pre[i].append_data(config.SPECIFIC_VS_WL_01_STR)
-                bitstream_obj.rbt_cfg_content_pre[i].append_data(config.SPECIFIC_VS_WL_02_STR)
-                bitstream_obj.rbt_cfg_content_pre[i].append_data(config.SPECIFIC_VS_WL_03_STR)
-                bitstream_obj.rbt_cfg_content_pre[i].append_data(config.SPECIFIC_VS_WL_04_STR)
-                bitstream_obj.rbt_cfg_content_pre[i].append_data(config.SPECIFIC_VS_WL_05_STR)
-                bitstream_obj.rbt_cfg_content_pre[i].append_data(config.SPECIFIC_VS_WL_06_STR)
-            
-            # 找连续的MASK+CTL1做修改，且仅改第一次
-            if i < len(bitstream_obj.rbt_cfg_content_pre)-1 \
-                and bitstream_obj.rbt_cfg_content_pre[i].cmd_name == "MASK"\
-                and bitstream_obj.rbt_cfg_content_pre[i+1].cmd_name == "CTL1"\
-                and not is_modiy_flag:
-                is_modiy_flag = True
-                mask_data = bitstream_obj.rbt_cfg_content_pre[i].get_data_from_index(1)
-                mask_data = utils.update_data_by_index(mask_data,[17,16,15,14,13,10,9,8,7,6],["1","1","1","1","1","1","1","1","1","1"])
-                bitstream_obj.rbt_cfg_content_pre[i].set_data_to_index(1, mask_data)
-                
-    elif bitstream_obj.file_type == ".bit" or bitstream_obj.file_type == ".bin":
-        for i in range(len(bitstream_obj.bit_cfg_content_pre)):
-            if bitstream_obj.bit_cfg_content_pre[i].cmd_name == "COR1":
-                cor1_data = utils.bytes_to_binary(bitstream_obj.bit_cfg_content_pre[i].get_data_from_index(1))
-                cor1_data = utils.update_data_by_index(cor1_data,[12,11,10],["1","0","1"])
-                bitstream_obj.bit_cfg_content_pre[i].set_data_to_index(1, utils.binary_str_to_bytes(cor1_data))
-                bitstream_obj.bit_cfg_content_pre[i].append_data(config.CMD_MASK_01_BYTE)
-                bitstream_obj.bit_cfg_content_pre[i].append_data(config.CMD_MASK_03_BYTE)
-                bitstream_obj.bit_cfg_content_pre[i].append_data(config.CMD_TRIM_01_BYTE)
-                if vccm_value == 115:
-                    bitstream_obj.bit_cfg_content_pre[i].append_data(config.VCCM_DATA_115_BYTE)
-                else:
-                    raise ValueError("vccm_value 配置错误")
-                
-                # 新增6行
-                bitstream_obj.bit_cfg_content_pre[i].append_data(config.SPECIFIC_115_01_BYTE)
-                bitstream_obj.bit_cfg_content_pre[i].append_data(config.SPECIFIC_115_02_BYTE)
-                bitstream_obj.bit_cfg_content_pre[i].append_data(config.SPECIFIC_115_03_BYTE)
-                bitstream_obj.bit_cfg_content_pre[i].append_data(config.SPECIFIC_115_04_BYTE)
-                bitstream_obj.bit_cfg_content_pre[i].append_data(config.SPECIFIC_115_05_BYTE)
-                bitstream_obj.bit_cfg_content_pre[i].append_data(config.SPECIFIC_115_06_BYTE)
-
-                # 新增 VS_WL 6行
-                bitstream_obj.bit_cfg_content_pre[i].append_data(config.SPECIFIC_VS_WL_01_BYTE)
-                bitstream_obj.bit_cfg_content_pre[i].append_data(config.SPECIFIC_VS_WL_02_BYTE)
-                bitstream_obj.bit_cfg_content_pre[i].append_data(config.SPECIFIC_VS_WL_03_BYTE)
-                bitstream_obj.bit_cfg_content_pre[i].append_data(config.SPECIFIC_VS_WL_04_BYTE)
-                bitstream_obj.bit_cfg_content_pre[i].append_data(config.SPECIFIC_VS_WL_05_BYTE)
-                bitstream_obj.bit_cfg_content_pre[i].append_data(config.SPECIFIC_VS_WL_06_BYTE)
-            # 找连续的MASK+CTL1做修改，且仅改第一次
-            if i < len(bitstream_obj.bit_cfg_content_pre)-1 \
                 and bitstream_obj.bit_cfg_content_pre[i].cmd_name == "MASK"\
                 and bitstream_obj.bit_cfg_content_pre[i+1].cmd_name == "CTL1"\
                 and not is_modiy_flag:
