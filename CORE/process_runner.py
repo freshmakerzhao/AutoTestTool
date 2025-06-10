@@ -49,8 +49,6 @@ def run_base_task(
     if compress:
         module_base.process_compress(bitstream_obj)
         
-    if compress:
-        module_base.process_compress(bitstream_obj)
 
     return bitstream_obj.save_file(file_suffix)
 
