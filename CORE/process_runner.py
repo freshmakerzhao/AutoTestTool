@@ -79,13 +79,13 @@ VSWL_FILE_SUFFIX_MAP = {
 }
 
 # vccm_values 可选
-def run_vccm_task(file_path: str, vccm_values: List[int] = None, vswl_selected: int = 0):
+def run_vccm_task(file_path: str, vccm_values: List[int] = None, vswl_selected: int = 0, output_path=""):
     vccm_items = _filter_vccm_items(vccm_values)
     stats = None
     # 单个文件时
     if os.path.isfile(file_path):
         try:
-            isSuccuss = _process_one_file(file_path, os.path.dirname(file_path), vccm_items, error_log_path=None, vswl_selected=vswl_selected)
+            isSuccuss = _process_one_file(file_path, os.path.dirname(file_path), vccm_items, error_log_path=None, vswl_selected=vswl_selected, output_path=output_path)
             if isSuccuss:
                 stats = {"total_files": 1, "success_count": 1, "fail_count": 0, "error_log_path": None}
             else:
@@ -94,12 +94,12 @@ def run_vccm_task(file_path: str, vccm_values: List[int] = None, vswl_selected: 
             stats = {"total_files": 1, "success_count": 0, "fail_count": 1, "error_log_path": os.path.join(os.path.dirname(file_path), "vccm_error.log")}
     # 文件夹时
     elif os.path.isdir(file_path):
-        stats = _process_folder(file_path, vccm_items, vswl_selected=vswl_selected)
+        stats = _process_folder(file_path, vccm_items, vswl_selected=vswl_selected, output_path=output_path)
     else:
         logging.error(f"[ERROR] 无效路径：{file_path}")
     return stats
 
-def run_vccm_project(project_root: str, vccm_values: List[int] = None, vswl_selected: int = 0):
+def run_vccm_project(project_root: str, vccm_values: List[int] = None, vswl_selected: int = 0, output_path=""):
     if not os.path.isdir(project_root):
         logging.error(f"[ERROR] 非法目录：{project_root}")
         return
@@ -115,7 +115,7 @@ def run_vccm_project(project_root: str, vccm_values: List[int] = None, vswl_sele
     for sub in subdirs:
         sub_path = os.path.join(project_root, sub)
         logging.info(f"[INFO] ▶ 开始处理子目录：{sub}")
-        stats = run_vccm_task(sub_path, vccm_values=vccm_values, vswl_selected=vswl_selected)
+        stats = run_vccm_task(sub_path, vccm_values=vccm_values, vswl_selected=vswl_selected,output_path=output_path)
         if stats:
             project_total += stats["total_files"]
             project_success += stats["success_count"]
@@ -135,7 +135,7 @@ def run_vccm_project(project_root: str, vccm_values: List[int] = None, vswl_sele
     return project_stats
 
 # 处理单个文件，error_log_path为None时，错误日志与file_path同级
-def _process_one_file(file_path: str, root_folder: str, vccm_items:List[Dict], error_log_path=None, vswl_selected: int = 0):
+def _process_one_file(file_path: str, root_folder: str, vccm_items:List[Dict], error_log_path=None, vswl_selected: int = 0, output_path=""):
     try:
         bitstream_obj = BitstreamParser("MC1P110", file_path, False)
         logging.info(f"[INFO] 正在处理：{file_path}")
@@ -151,11 +151,13 @@ def _process_one_file(file_path: str, root_folder: str, vccm_items:List[Dict], e
                 new_obj = copy.deepcopy(bitstream_obj)
                 module_vccm.process_vccm_and_vswl(new_obj, item["vccm_value"], vswl_selected)
 
-                # 输出目录为 root_folder/vccm_1pXX/
-                file_suffix = item["file_suffix"]
-                if str(vswl_selected) in VSWL_FILE_SUFFIX_MAP:
-                    file_suffix = f"{file_suffix}_{VSWL_FILE_SUFFIX_MAP[str(vswl_selected)]}"
-                output_dir = os.path.join(root_folder, "new_bitstream")
+                if output_path == "":
+                    # 输出目录为 root_folder/new_bitstream/
+                    output_dir = os.path.join(root_folder, "new_bitstream")
+                else:
+                    # 输出目录为 用户输入目录
+                    output_dir = output_path
+
                 os.makedirs(output_dir, exist_ok=True)
                 # 不带文件类型的path
                 out_path = os.path.join(
@@ -174,7 +176,7 @@ def _process_one_file(file_path: str, root_folder: str, vccm_items:List[Dict], e
         _write_error_log(file_path, None, e, error_log_path)
         return False  # 整个文件一开始就处理失败
 
-def _process_folder(root_folder: str, vccm_items:List[Dict], vswl_selected: int = 0):
+def _process_folder(root_folder: str, vccm_items:List[Dict], vswl_selected: int = 0,output_path=""):
     logging.info(f"[INFO] 正在处理目录：{root_folder}")
 
     error_log_path = os.path.join(root_folder, "vccm_error.log")
@@ -189,13 +191,14 @@ def _process_folder(root_folder: str, vccm_items:List[Dict], vswl_selected: int 
 
     for dirpath, dirnames, filenames in os.walk(root_folder):
         # 跳过以 vccm_ 开头的子目录
-        dirnames[:] = [d for d in dirnames if not d.startswith("vccm_")]
+        dirnames[:] = [d for d in dirnames if not (d.startswith("vccm_") or d.startswith("new_bitstream"))]
+
         for fname in filenames:
             if fname.endswith((".bit", ".bin", ".rbt")):
                 full_path = os.path.join(dirpath, fname)
                 total_files += 1
                 
-                ok = _process_one_file(full_path, root_folder, vccm_items, error_log_path, vswl_selected)
+                ok = _process_one_file(full_path, root_folder, vccm_items, error_log_path, vswl_selected, output_path=output_path)
                 if ok:
                     success_count += 1
                 else:

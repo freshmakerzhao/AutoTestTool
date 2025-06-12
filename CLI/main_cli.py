@@ -1,9 +1,9 @@
 # main_cli.py
 import argparse
 import logging
-from cli_base import run_base_cli
-from cli_vccm import run_vccm_cli
-from cli_convert import run_convert_cli
+from CLI.cli_base import run_base_cli
+from CLI.cli_vccm import run_vccm_cli
+from CLI.cli_convert import run_convert_cli
 
 def main():
     parser = argparse.ArgumentParser(prog="bitcli", description="Bitstream Tool CLI")

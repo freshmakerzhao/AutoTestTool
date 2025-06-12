@@ -156,6 +156,25 @@
             "program": "E:\\workspace\\parse_bitstream\\GUI\\app.py",
             "console": "integratedTerminal",
             "justMyCode": false
-        }
+        },
+        {
+            "name": "vccm and vswl",
+            "type": "debugpy",
+            "request": "launch",
+            "args": [
+                "--project",
+                "C:\\Users\\DELL\\Desktop\\test_workspace\\vccm\\待删",
+                "--output_spath",
+                "C:\\Users\\DELL\\Desktop\\test_workspace\\vccm"
+                
+            ],
+            "env": {
+                // 把根目录塞进 PYTHONPATH，省去 import 麻烦
+                "PYTHONPATH": "${workspaceFolder}"
+            },
+            "program": "E:\\workspace\\AutoTestTool\\CLI\\vccm_cli.py",
+            "console": "integratedTerminal",
+            "justMyCode": false
+        },
     ]
 }

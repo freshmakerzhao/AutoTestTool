@@ -2,14 +2,17 @@ import logging
 from CORE.process_runner import run_vccm_task, run_vccm_project
 
 def run_vccm_cli(args):
-    if args.vccm_values:
-        for v in args.vccm_values:
-            if v < 105 or v > 115:
-                raise ValueError(f"非法电压值: {v}，仅支持 105~115")
+    # 如果output_path未传，则为 ""
 
+    if args.output_path is None:
+        args.output_path = ""
+
+    if args.file and args.project:
+        logging.error("[ERROR] file 与 project 参数不能同时存在")
+        return
     if args.file:
         try:
-            stats = run_vccm_task(args.file, vccm_values=args.vccm_values)
+            stats = run_vccm_task(args.file, vccm_values=[115], vswl_selected=125, output_path=args.output_path)
             if not stats:
                 logging.error("[ERROR] 文件路径无效或处理失败")
             elif stats["success_count"] == 0:
@@ -20,16 +23,15 @@ def run_vccm_cli(args):
             logging.error("[ERROR] %s", exc)
 
     elif args.project:
-        stats = run_vccm_project(args.project, vccm_values=args.vccm_values)
+        stats = run_vccm_task(args.project, vccm_values=[115], vswl_selected=125, output_path=args.output_path)
         if stats:
             summary = (
-                f"[项目处理完成]\n"
-                f"模块目录数: {stats['project_subdirs']}\n"
+                f"[目录处理完成]\n"
                 f"总文件数:   {stats['total_files']}\n"
                 f"成功处理数: {stats['success_count']}\n"
-                f"失败跳过数: {stats['fail_count']}"
+                f"失败跳过数: {stats['fail_count']}\n"
+                f"错误日志: {stats['error_log_path']}"
             )
             logging.info(summary)
     else:
         logging.warning("[WARNING] 未提供 --file 或 --project 参数")
-
