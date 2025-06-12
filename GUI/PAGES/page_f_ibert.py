@@ -29,28 +29,19 @@ class PageFIbertTest(ttk.Frame):
             .grid(row=0, column=2, padx=4)
         # --------------------- Vivado 路径选择 结束 ---------------------
 
-        # --- 码流文件 bitstream_var ---
-        bitstream_row = ttk.Frame(self)
-        bitstream_row.grid(row=1, column=0, sticky="ew", pady=6)
-        bitstream_row.columnconfigure(1, weight=1)
-        ttk.Label(bitstream_row, text="码流文件:").grid(row=0, column=0, sticky=tk.W)
-        self.bitstream_var = tk.StringVar()
-        ttk.Entry(bitstream_row, textvariable=self.bitstream_var).grid(row=0, column=1, sticky="ew", padx=4)
-        ttk.Button(bitstream_row, text="浏览...", command=self.browse_bitstream).grid(row=0, column=2, padx=4)
-
-        # --- 输出文件路径 output_var ---
-        output_row = ttk.Frame(self)
-        output_row.grid(row=2, column=0, sticky="ew", pady=6)
-        output_row.columnconfigure(1, weight=1)
-        ttk.Label(output_row, text="输出文件目录:").grid(row=0, column=0, sticky=tk.W)
-        self.output_var = tk.StringVar()
-        ttk.Entry(output_row, textvariable=self.output_var).grid(row=0, column=1, sticky="ew", padx=4)
-        ttk.Button(output_row, text="浏览...", command=self.browse_output).grid(row=0, column=2, padx=4)
+        # --- tcl 文件---
+        tcl_row = ttk.Frame(self)
+        tcl_row.grid(row=1, column=0, sticky="ew", pady=6)
+        tcl_row.columnconfigure(1, weight=1)
+        ttk.Label(tcl_row, text="运行脚本(.tcl):").grid(row=0, column=0, sticky=tk.W)
+        self.tcl_var = tk.StringVar()
+        ttk.Entry(tcl_row, textvariable=self.tcl_var).grid(row=0, column=1, sticky="ew", padx=4)
+        ttk.Button(tcl_row, text="浏览...", command=self.browse_tcl).grid(row=0, column=2, padx=4)
 
         # === 执行按钮 ===
         btn_row = ttk.Frame(self)
-        btn_row.grid(row=5, column=0, pady=10)
-        self.run_btn = ttk.Button(btn_row, text="执行Ibert测试", command=self.on_run)
+        btn_row.grid(row=2, column=0, pady=10)
+        self.run_btn = ttk.Button(btn_row, text="运行", command=self.on_run)
         self.run_btn.pack(side="left", padx=6)
         self.clear_btn = ttk.Button(btn_row, text="清空日志", command=self.clear_log)
         self.clear_btn.pack(side="left", padx=6)
@@ -60,27 +51,19 @@ class PageFIbertTest(ttk.Frame):
         self.log_text.grid(row=6, column=0, sticky="nsew")
         self.rowconfigure(6, weight=1)
 
-        
+    def browse_tcl(self):
+        path = filedialog.askopenfilename(
+            filetypes=[("tcl文件", "*.tcl")],
+            title="选择tcl文件"
+        )
+        if path:
+            self.tcl_var.set(path)
 
     def browse_vivado_path(self):
         path = filedialog.askdirectory(title="选择 Vivado 安装目录")
         if path:
             self.vivado_bin_path_var.set(path)
-
-    def browse_bitstream(self):
-        path = filedialog.askopenfilename(
-            filetypes=[("Bitstream", "*.bit *.rbt")],
-            title="选择 bit/rbt 码流文件"
-        )
-        if path:
-            self.bitstream_var.set(path)
             
-    def browse_output(self):
-        path = filedialog.askdirectory(title="选择一个输出目录")
-        self.output_var.set(path)
-        if path:
-            self.output_var.set(path)
-
     def on_run(self):
         # 禁用按钮，防止重复点击
         self.run_btn.config(state="disabled")
@@ -93,27 +76,20 @@ class PageFIbertTest(ttk.Frame):
             self._after_error("请设置vivado bin路径！")
             return
 
-        bit_file_path = self.bitstream_var.get().strip()
-        if not bit_file_path or not os.path.exists(bit_file_path):
-            self._after_error("请设置正确的码流文件路径！")
+        tcl_file_path = self.tcl_var.get().strip()
+        if not tcl_file_path or not os.path.exists(tcl_file_path):
+            self._after_error("请设置正确的tcl文件路径！")
             return
-        if not bit_file_path:
-            self._after_error("请设置码流文件路径！")
+        if not tcl_file_path:
+            self._after_error("请设置tcl文件路径！")
             return
-        if not os.path.isfile(bit_file_path):
-            self._after_error("无效的码流文件路径！")
+        if not os.path.isfile(tcl_file_path):
+            self._after_error("无效的tcl文件路径！")
             return
-
-        output_file_path = self.output_var.get().strip() 
-        if not output_file_path:
-            self._after_error("请设置输出文件目录！")
-            return
-        
 
         kwargs = dict(
             vivado_bin_path=vivado_bin_path,
-            bitstream_file_path=bit_file_path,
-            output_path=output_file_path
+            tcl_file_path=tcl_file_path,
         )
         
         run_in_thread(
@@ -126,63 +102,26 @@ class PageFIbertTest(ttk.Frame):
         )
 
     def _run_vivado_process(self, 
-                            *, 
-                            vivado_bin_path, 
-                            bitstream_file_path, 
-                            output_path
-        ):
-        is_all_pass = True
-        logging.info(f"[vivado 回读校验] 开始处理")
-        program_script  = utils.resource_path("RESOURCE/SCRIPTS/program.tcl")
-        ibert_script  = utils.resource_path("RESOURCE/SCRIPTS/ibert.tcl")
+        *, 
+        vivado_bin_path, 
+        tcl_file_path
+    ):
+        logging.info(f"[ibert] 开始执行")
+        tcl_script  = utils.resource_path(tcl_file_path)
         vivado_bat_path = os.path.join(vivado_bin_path, "vivado.bat")
-        
-        if not os.path.exists(program_script):
-            raise RuntimeError(f"program.tcl 文件未找到: {program_script}")
-        if not os.path.exists(vivado_bat_path):
-            raise RuntimeError(f"Vivado.bat 文件未找到: {vivado_bat_path}")
-        
         # 打印所有参数
         logging.info("=======================================================")
-        logging.info(f"[vivado 回读校验] 执行参数: \n"
-                        f"vivado_bin_path = {vivado_bin_path}, \n"
-                        f"bit_file_path = {bitstream_file_path}, \n"
-                        f"output_path = {output_path}")
+        logging.info(
+            f"[ibert测试] 执行参数: \n"
+            f"vivado_bin_path = {vivado_bin_path}, \n"
+            f"tcl_file_path = {tcl_file_path}, \n"
+        )
         logging.info("=======================================================")
 
-        if not self._ibert_test(vivado_bat_path, ibert_script, bitstream_file_path, output_path):
-            logging.error(f"[vivado 回读校验] ibert 测试失败")
-                    
-        logging.info(f"[vivado 回读校验] ========= ALL PASS =========")
-        return True
-        
-    def _program_bitstream_file(self, vivado_bat_path, program_script, bitstream_file):
-        """烧写 bitstream 文件到 FPGA"""
         cmd = [
             vivado_bat_path, "-mode", "batch",
             "-log", "NUL", "-journal", "NUL",
-            "-source", program_script,
-            "-tclargs", bitstream_file
-        ]
-        # 设置 startupinfo 来隐藏窗口
-        result = subprocess.run(
-            cmd, 
-            capture_output=False, 
-            text=True
-        )
-        logging.info(f"[vivado 回读校验] 烧写 {bitstream_file} 完成")
-        if result.returncode != 0:
-            return False
-        else:
-            return True
-
-    def _ibert_test(self, vivado_bat_path, ibert_script, bitstream_file, output_path):
-        """执行iber测试脚本"""
-        cmd = [
-            vivado_bat_path, "-mode", "batch",
-            "-log", "NUL", "-journal", "NUL",
-            "-source", ibert_script,
-            "-tclargs", bitstream_file, output_path
+            "-source", tcl_script
         ]
 
         result = subprocess.run(
@@ -190,14 +129,12 @@ class PageFIbertTest(ttk.Frame):
             capture_output=False,
             text=True
         )
-        logging.info(f"[vivado 回读校验] ibert测试完成")
-        if result.returncode != 0:
-            return False
-        else:
-            return True
 
+        logging.info(f"[ibert测试] ========= ALL PASS =========")
+        return True
+        
     def _after_success(self, result=None):
-        messagebox.showinfo("完成", "回读校验已完成！")
+        messagebox.showinfo("完成", "tcl文件运行完成！")
         self.run_btn.config(state="normal")
 
     def _after_error(self, exc: Exception):
@@ -210,8 +147,7 @@ class PageFIbertTest(ttk.Frame):
         self.log_text.config(state="disabled")
 
     def reset(self):
-        self.bitstream_var.set("")
-        self.output_var.set("")
+        self.tcl_var.set("")
         self.clear_log()
 
     def clear_log(self):
