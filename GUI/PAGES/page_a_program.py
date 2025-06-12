@@ -31,15 +31,6 @@ class PageAProgram(ttk.Frame):
         ttk.Button(vivado_row, text="浏览...", command=self.browse_vivado_path)\
             .grid(row=0, column=2, padx=4)
 
-        # --- 码流选择 ---
-        program_flash_row = ttk.Frame(self)
-        program_flash_row.grid(row=1, column=0, sticky="ew", pady=6)
-        program_flash_row.columnconfigure(1, weight=1)
-        ttk.Label(program_flash_row, text="码流文件(.bin .bit .rbt)").grid(row=0, column=0, sticky=tk.W)
-        self.bitstream_var = tk.StringVar()
-        ttk.Entry(program_flash_row, textvariable=self.bitstream_var) .grid(row=0, column=1, sticky="ew", padx=4)
-        ttk.Button(program_flash_row, text="浏览...", command=self.browse_bitstream).grid(row=0, column=2, padx=4)
-        
         # === 模式选择 ===
         mode_row = ttk.Frame(self); mode_row.grid(row=2, column=0, sticky="w", pady=6)
         ttk.Label(mode_row, text="执行模式：").grid(row=1, column=0, sticky=tk.W)
@@ -47,6 +38,12 @@ class PageAProgram(ttk.Frame):
         for idx, (txt, val) in enumerate([("直接烧写", "program"), ("烧写到flash", "program_flash")]):
             ttk.Radiobutton(mode_row, text=txt, variable=self.mode_var, value=val, command=self.update_mode)\
                 .grid(row=1, column=idx+1, padx=6, sticky="w")
+
+        # --- 直接烧录 ----
+        self.program_frame = ttk.Frame(self)
+        self.program_frame.grid(row=3, column=0, sticky="ew", pady=6)
+        self.program_frame.columnconfigure(0, weight=1)
+        self._build_program_mode()
 
         # --- flash码流烧写 ----
         self.program_flash_frame = ttk.Frame(self)
@@ -68,6 +65,17 @@ class PageAProgram(ttk.Frame):
 
         self.update_mode()
 
+    def _build_program_mode(self):
+        # --- 直接烧写 -----
+        bitstream_row = ttk.Frame(self.program_frame)
+        bitstream_row.grid(row=0, column=0, sticky="ew", pady=6)
+        bitstream_row.columnconfigure(1, weight=1)
+        ttk.Label(bitstream_row, text="码流文件(.bin .bit .rbt)：").grid(row=0, column=0, sticky=tk.W)
+        self.bitstream_var = tk.StringVar()
+        ttk.Entry(bitstream_row, textvariable=self.bitstream_var) .grid(row=0, column=1, sticky="ew", padx=4)
+        ttk.Button(bitstream_row, text="浏览...", command=self.browse_bitstream).grid(row=0, column=2, padx=4)
+        
+
     def _build_program_flash_mode(self):
         # --- flash 选择 ----
         part_row = ttk.Frame(self.program_flash_frame); part_row.grid(row=0, column=0, sticky="ew", pady=6)
@@ -88,6 +96,14 @@ class PageAProgram(ttk.Frame):
             width=20,
             state="readonly"
         ).grid(row=0, column=1, sticky=tk.W, padx=4)
+        #--- 烧录文件 ----
+        program_flash_row = ttk.Frame(self.program_flash_frame)
+        program_flash_row.grid(row=1, column=0, sticky="ew", pady=6)
+        program_flash_row.columnconfigure(1, weight=1)
+        ttk.Label(program_flash_row, text="码流文件(.bin .mcs)：").grid(row=0, column=0, sticky=tk.W)
+        self.flash_bitstream_var = tk.StringVar()
+        ttk.Entry(program_flash_row, textvariable=self.flash_bitstream_var) .grid(row=0, column=1, sticky="ew", padx=4)
+        ttk.Button(program_flash_row, text="浏览...", command=self.browse_flash_bitstream).grid(row=0, column=2, padx=4)
 
     def browse_vivado_path(self):
         path = filedialog.askdirectory(title="选择 Vivado 安装目录")
@@ -102,6 +118,14 @@ class PageAProgram(ttk.Frame):
         if path:
             self.bitstream_var.set(path)
 
+    def browse_flash_bitstream(self):
+        path = filedialog.askopenfilename(
+            filetypes=[("Bitstream", "*.bin *.mcs")],
+            title="选择 bit/mcs 码流文件"
+        )
+        if path:
+            self.flash_bitstream_var.set(path)
+
     def on_run(self):
         # 禁用按钮，防止重复点击
         self.run_btn.config(state="disabled")
@@ -115,12 +139,12 @@ class PageAProgram(ttk.Frame):
             self._after_error("请设置vivado bin路径！")
             return
 
-        bit_file_path = self.bitstream_var.get().strip()
-        if not os.path.isfile(bit_file_path):
-            self._after_error("无效的码流文件路径！")
-            return
-        
         if cur_mode == "program":
+            bit_file_path = self.bitstream_var.get().strip()
+            if not os.path.isfile(bit_file_path):
+                self._after_error("无效的码流文件路径！")
+                return
+        
             kwargs = dict(
                 vivado_bin_path=vivado_bin_path,
                 bitstream_file=bit_file_path,
@@ -135,6 +159,11 @@ class PageAProgram(ttk.Frame):
                 **kwargs
             )
         elif cur_mode == "program_flash":
+            bit_file_path = self.flash_bitstream_var.get().strip()
+            if not os.path.isfile(bit_file_path):
+                self._after_error("无效的码流文件路径！")
+                return
+
             kwargs = dict(
                 vivado_bin_path=vivado_bin_path,
                 bitstream_file=bit_file_path,
@@ -237,8 +266,11 @@ class PageAProgram(ttk.Frame):
     def update_mode(self):
         mode = self.mode_var.get()
         self.program_flash_frame.grid_remove()
+        self.program_frame.grid_remove()
         if mode == "program_flash":
             self.program_flash_frame .grid()
+        elif mode == "program":
+            self.program_frame.grid()
 
     def _after_success(self, result=None):
         messagebox.showinfo("完成", "码流烧写完成")
