@@ -1,4 +1,3 @@
-#!/usr/bin/env python3
 # CLI/cli_moni.py
 
 import os
@@ -18,14 +17,14 @@ from CORE.serial_api import (
     create_serial_monitor
 )
 
-if __name__ == "__main__":
-    print("串口监视器后端模块测试")
-    ports = get_available_ports()
-    print(f"可用串口: {len(ports)} 个")
-    for p in ports:
-        print(f"  {p['device']} - {p['description']}")
+# if __name__ == "__main__":
+#     print("串口监视器后端模块测试")
+#     ports = get_available_ports()
+#     print(f"可用串口: {len(ports)} 个")
+#     for p in ports:
+#         print(f"  {p['device']} - {p['description']}")
 
-    if ports:
-        test_port = ports[0]['device']
-        res = test_serial_connection(test_port)
-        print(f"连接测试结果: {res}")
+#     if ports:
+#         test_port = ports[0]['device']
+#         res = test_serial_connection(test_port)
+#         print(f"连接测试结果: {res}")

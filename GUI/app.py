@@ -6,7 +6,7 @@ from GUI.PAGES.page_c_vccm import PageCVCCM
 from GUI.PAGES.page_d_vivado_rd_check import PageDVivadoRDCheck
 # 添加串口监视器页面导入
 from GUI.PAGES.page_e_serial_monitor import PageESerialMonitor
-from PAGES.page_f_voltage_monitor import PageFVoltageMonitor
+from GUI.PAGES.page_f_voltage_monitor import PageFVoltageMonitor
 
 import logging
 from GUI.logger import setup_logger, text_handler, update_log_target
