@@ -1,4 +1,5 @@
 # GUI/PAGES/page_f_voltage_monitor.py
+import time
 import tkinter as tk
 from tkinter import ttk, messagebox
 from CLI.cli_voltage import VoltageClient
@@ -21,6 +22,7 @@ VOLTAGE_SPECS = [
 class PageFVoltageMonitor(ttk.Frame):
     def __init__(self, parent, serial_core):
         super().__init__(parent)
+        self.serial_core = serial_core
         self.client = VoltageClient(serial_core)
         self.entries = {}
         self._build_ui()
@@ -51,13 +53,17 @@ class PageFVoltageMonitor(ttk.Frame):
         info = "说明：电压单位为 mV，<1600mV 步进为 5mV，>=1600mV 步进为 10mV"
         ttk.Label(frm, text=info, foreground="gray").grid(row=14, column=0, columnspan=2, pady=5)
 
-    def _on_show(self):
+    def _on_show(self, show_info=True):
         try:
             data = self.client.get_voltage()
             for key, _, _ in VOLTAGE_SPECS:
                 self.entries[key].set(str(data[key]))
             self.vccadc_var.set(data["VCCADC"])
             self.vccref_var.set(data["VCCREF"])
+
+            if show_info:
+                messagebox.showinfo("获取成功", "成功读取电压数据。")
+
         except Exception as e:
             messagebox.showerror("Voltage Show Failed", str(e))
 
@@ -82,7 +88,13 @@ class PageFVoltageMonitor(ttk.Frame):
 
             adc_en = self.vccadc_var.get()
             ref_en = self.vccref_var.get()
-            self.client.set_voltage(values, adc_en, ref_en)
-            self._on_show()
+            
+            success = self.client.set_voltage(values, adc_en, ref_en)
+            if success:
+                messagebox.showinfo("设置成功", "电压设置命令已发送。")
+                time.sleep(0.1)  # ⏳ 等待设备稳定
+                self._on_show()
+            else:
+                messagebox.showerror("设置失败", "串口未连接或发送失败。")
         except Exception as e:
             messagebox.showerror("Voltage Set Failed", str(e))

@@ -26,9 +26,12 @@ class VoltageClient:
         self._last_ref  = enable_ref
 
         cmd = build_vol_set_command(vals, enable_adc, enable_ref)
-        self.serial.send_text(cmd + '\n')
+        return self.serial.send_text(cmd + '\n')
 
     def get_voltage(self, timeout: float = 2.0) -> dict:
+        self.serial.flush_input()  # 清理可能的粘包数据
+        time.sleep(0.05)           # 稍等 MCU 回应准备好    
+        
         # 构造带载荷的 GET 命令
         cmd = build_vol_get_command(self._last_vals, self._last_adc, self._last_ref)
         self.serial.send_text(cmd + '\n')

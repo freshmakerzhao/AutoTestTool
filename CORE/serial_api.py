@@ -262,7 +262,10 @@ class SerialCore:
         except: pass
         self.log_manager.stop_logging()
         self._notify('on_connection_changed', False)
-
+    def flush_input(self):
+        """清空串口接收缓冲区"""
+        if self.is_connected and self.serial_conn:
+            self.serial_conn.reset_input_buffer()  
     def _recv_worker(self):
         while self.is_connected and self.serial_conn and self.serial_conn.is_open:
             try:

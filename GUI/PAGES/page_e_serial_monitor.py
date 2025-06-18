@@ -108,7 +108,7 @@ class PageESerialMonitor(ttk.Frame):
     def show_import_error(self):
         """显示导入错误"""
         error_label = ttk.Label(self, text="错误: 无法加载串口监视器模块\n请检查 CLI/cli_moni.py 文件是否存在", 
-                               foreground="red", font=("Arial", 12))
+                               foreground="red", font=("Microsoft YaHei", 12))
         error_label.pack(expand=True)
         
     def build_ui(self):
@@ -144,14 +144,14 @@ class PageESerialMonitor(ttk.Frame):
         row1_1 = ttk.Frame(config_inner)
         row1_1.pack(fill=tk.X, pady=1)
         
-        ttk.Label(row1_1, text="端口:", font=("Arial", 8)).pack(side=tk.LEFT)
+        ttk.Label(row1_1, text="端口:", font=("Microsoft YaHei", 8)).pack(side=tk.LEFT)
         self.port_var = tk.StringVar(value=self.serial_core.config.port)
-        self.port_combo = ttk.Combobox(row1_1, textvariable=self.port_var, width=10, font=("Arial", 8))
+        self.port_combo = ttk.Combobox(row1_1, textvariable=self.port_var, width=10, font=("Microsoft YaHei", 8))
         self.port_combo.pack(side=tk.LEFT, padx=2)
         
-        ttk.Label(row1_1, text="波特率:", font=("Arial", 8)).pack(side=tk.LEFT, padx=(10, 0))
+        ttk.Label(row1_1, text="波特率:", font=("Microsoft YaHei", 8)).pack(side=tk.LEFT, padx=(10, 0))
         self.baud_var = tk.StringVar(value=str(self.serial_core.config.baudrate))
-        baud_combo = ttk.Combobox(row1_1, textvariable=self.baud_var, width=8, font=("Arial", 8))
+        baud_combo = ttk.Combobox(row1_1, textvariable=self.baud_var, width=8, font=("Microsoft YaHei", 8))
         baud_combo['values'] = ('9600', '19200', '38400', '57600', '115200', '230400')
         baud_combo.pack(side=tk.LEFT, padx=2)
         
@@ -159,21 +159,21 @@ class PageESerialMonitor(ttk.Frame):
         row1_2 = ttk.Frame(config_inner)
         row1_2.pack(fill=tk.X, pady=1)
         
-        ttk.Label(row1_2, text="数据位:", font=("Arial", 8)).pack(side=tk.LEFT)
+        ttk.Label(row1_2, text="数据位:", font=("Microsoft YaHei", 8)).pack(side=tk.LEFT)
         self.databits_var = tk.StringVar(value=str(self.serial_core.config.databits))
-        databits_combo = ttk.Combobox(row1_2, textvariable=self.databits_var, width=6, font=("Arial", 8))
+        databits_combo = ttk.Combobox(row1_2, textvariable=self.databits_var, width=6, font=("Microsoft YaHei", 8))
         databits_combo['values'] = ('5', '6', '7', '8')
         databits_combo.pack(side=tk.LEFT, padx=2)
         
-        ttk.Label(row1_2, text="停止位:", font=("Arial", 8)).pack(side=tk.LEFT, padx=(5, 0))
+        ttk.Label(row1_2, text="停止位:", font=("Microsoft YaHei", 8)).pack(side=tk.LEFT, padx=(5, 0))
         self.stopbits_var = tk.StringVar(value=str(self.serial_core.config.stopbits))
-        stopbits_combo = ttk.Combobox(row1_2, textvariable=self.stopbits_var, width=6, font=("Arial", 8))
+        stopbits_combo = ttk.Combobox(row1_2, textvariable=self.stopbits_var, width=6, font=("Microsoft YaHei", 8))
         stopbits_combo['values'] = ('1', '1.5', '2')
         stopbits_combo.pack(side=tk.LEFT, padx=2)
         
-        ttk.Label(row1_2, text="校验位:", font=("Arial", 8)).pack(side=tk.LEFT, padx=(5, 0))
+        ttk.Label(row1_2, text="校验位:", font=("Microsoft YaHei", 8)).pack(side=tk.LEFT, padx=(5, 0))
         self.parity_var = tk.StringVar(value=self.serial_core.config.parity)
-        parity_combo = ttk.Combobox(row1_2, textvariable=self.parity_var, width=6, font=("Arial", 8))
+        parity_combo = ttk.Combobox(row1_2, textvariable=self.parity_var, width=6, font=("Microsoft YaHei", 8))
         parity_combo['values'] = ('N', 'E', 'O', 'M', 'S')
         parity_combo.pack(side=tk.LEFT, padx=2)
         
@@ -207,7 +207,7 @@ class PageESerialMonitor(ttk.Frame):
         text_frame = ttk.Frame(send_group)
         text_frame.pack(fill=tk.X, pady=1)
         
-        ttk.Label(text_frame, text="文本:", font=("Arial", 8)).pack(side=tk.LEFT)
+        ttk.Label(text_frame, text="文本:", font=("Microsoft YaHei", 8)).pack(side=tk.LEFT)
         self.send_text_var = tk.StringVar()
         send_entry = ttk.Entry(text_frame, textvariable=self.send_text_var, font=("Consolas", 9))
         send_entry.pack(side=tk.LEFT, fill=tk.X, expand=True, padx=(5,5))
@@ -226,7 +226,7 @@ class PageESerialMonitor(ttk.Frame):
         hex_frame = ttk.Frame(send_group)
         hex_frame.pack(fill=tk.X, pady=1)
         
-        ttk.Label(hex_frame, text="HEX:", font=("Arial", 8)).pack(side=tk.LEFT)
+        ttk.Label(hex_frame, text="HEX:", font=("Microsoft YaHei", 8)).pack(side=tk.LEFT)
         self.send_hex_var = tk.StringVar()
         hex_entry = ttk.Entry(hex_frame, textvariable=self.send_hex_var, font=("Consolas", 9))
         hex_entry.pack(side=tk.LEFT, fill=tk.X, expand=True, padx=(5,5))
@@ -291,7 +291,7 @@ class PageESerialMonitor(ttk.Frame):
         log_cb = ttk.Checkbutton(status_frame, text="自动日志记录", variable=self.log_var, command=self.toggle_auto_logging)
         log_cb.grid(row=0, column=0, columnspan=2, sticky=tk.W)
         
-        self.log_status_label = ttk.Label(status_frame, text="日志: 未启用", foreground="gray", font=("Arial", 8))
+        self.log_status_label = ttk.Label(status_frame, text="日志: 未启用", foreground="gray", font=("Microsoft YaHei", 8))
         self.log_status_label.grid(row=1, column=0, columnspan=2, sticky=tk.W)
         
         # 日志控制按钮（手动操作）
@@ -327,20 +327,20 @@ class PageESerialMonitor(ttk.Frame):
         # 统计标签
         self.stats_labels = {}
         
-        ttk.Label(stats_frame, text="状态:", font=("Arial", 8)).pack(side=tk.LEFT)
-        self.stats_labels["状态"] = ttk.Label(stats_frame, text="未连接", font=("Arial", 8), foreground="red")
+        ttk.Label(stats_frame, text="状态:", font=("Microsoft YaHei", 8)).pack(side=tk.LEFT)
+        self.stats_labels["状态"] = ttk.Label(stats_frame, text="未连接", font=("Microsoft YaHei", 8), foreground="red")
         self.stats_labels["状态"].pack(side=tk.LEFT, padx=(2, 10))
         
-        ttk.Label(stats_frame, text="接收:", font=("Arial", 8)).pack(side=tk.LEFT)
-        self.stats_labels["接收"] = ttk.Label(stats_frame, text="0", font=("Arial", 8), foreground="blue")
+        ttk.Label(stats_frame, text="接收:", font=("Microsoft YaHei", 8)).pack(side=tk.LEFT)
+        self.stats_labels["接收"] = ttk.Label(stats_frame, text="0", font=("Microsoft YaHei", 8), foreground="blue")
         self.stats_labels["接收"].pack(side=tk.LEFT, padx=(2, 10))
         
-        ttk.Label(stats_frame, text="包数:", font=("Arial", 8)).pack(side=tk.LEFT)
-        self.stats_labels["包数"] = ttk.Label(stats_frame, text="0", font=("Arial", 8), foreground="blue")
+        ttk.Label(stats_frame, text="包数:", font=("Microsoft YaHei", 8)).pack(side=tk.LEFT)
+        self.stats_labels["包数"] = ttk.Label(stats_frame, text="0", font=("Microsoft YaHei", 8), foreground="blue")
         self.stats_labels["包数"].pack(side=tk.LEFT, padx=(2, 10))
         
-        ttk.Label(stats_frame, text="日志:", font=("Arial", 8)).pack(side=tk.LEFT)
-        self.stats_labels["日志"] = ttk.Label(stats_frame, text="0", font=("Arial", 8), foreground="blue")
+        ttk.Label(stats_frame, text="日志:", font=("Microsoft YaHei", 8)).pack(side=tk.LEFT)
+        self.stats_labels["日志"] = ttk.Label(stats_frame, text="0", font=("Microsoft YaHei", 8), foreground="blue")
         self.stats_labels["日志"].pack(side=tk.LEFT, padx=(2, 10))
         
         # 延迟调用刷新端口
@@ -380,7 +380,7 @@ class PageESerialMonitor(ttk.Frame):
         hex_data_frame = ttk.Frame(hex_paned)
         hex_paned.add(hex_data_frame, weight=3)
         
-        ttk.Label(hex_data_frame, text="十六进制数据", font=("Arial", 8)).pack()
+        ttk.Label(hex_data_frame, text="十六进制数据", font=("Microsoft YaHei", 8)).pack()
         self.hex_text = scrolledtext.ScrolledText(hex_data_frame, wrap=tk.NONE, 
                                                  font=("Consolas", 8))
         self.hex_text.pack(fill=tk.BOTH, expand=True)
@@ -389,7 +389,7 @@ class PageESerialMonitor(ttk.Frame):
         ascii_data_frame = ttk.Frame(hex_paned)
         hex_paned.add(ascii_data_frame, weight=1)
         
-        ttk.Label(ascii_data_frame, text="ASCII", font=("Arial", 8)).pack()
+        ttk.Label(ascii_data_frame, text="ASCII", font=("Microsoft YaHei", 8)).pack()
         self.hex_ascii_text = scrolledtext.ScrolledText(ascii_data_frame, wrap=tk.NONE, 
                                                        font=("Consolas", 8))
         self.hex_ascii_text.pack(fill=tk.BOTH, expand=True)
