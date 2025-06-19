@@ -2,13 +2,13 @@
 
 a = Analysis(
     ['GUI/app.py'],
-    pathex=['.'],
+    pathex=['.','E:/Application_miniconda3/envs/only_install_ui/Lib/site-packages'],
     binaries=[],
     datas=[
         ('RESOURCE/IMAGE/*.png', 'RESOURCE/IMAGE'),
         ('RESOURCE/SCRIPTS/*.tcl', 'RESOURCE/SCRIPTS'),
     ],
-    hiddenimports=[],
+    hiddenimports=['serial'],
     hookspath=[],
     hooksconfig={},
     runtime_hooks=[],

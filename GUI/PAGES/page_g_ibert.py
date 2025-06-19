@@ -6,7 +6,6 @@ from GUI.COMPONENT.thread_utils import run_in_thread
 import logging
 import subprocess
 import COMMON.utils as utils
-import csv
 
 class PageGIbertTest(ttk.Frame):
     """ibert 测试"""

@@ -1,6 +1,6 @@
 # CLI/cli_voltage.py
-from serial_api import SerialCore
-from voltage_api import (
+from CORE.serial_api import SerialCore
+from CORE.voltage_api import (
     build_vol_set_command, 
     build_vol_get_command, 
     parse_vol_response
