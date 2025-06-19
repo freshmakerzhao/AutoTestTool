@@ -3,10 +3,9 @@
 保留所有原有功能，只优化布局结构
 """
 
+from CORE.serial_api import SerialCore, SerialEventHandler, SerialConfig
 import tkinter as tk
 from tkinter import ttk, scrolledtext, filedialog, messagebox
-import threading
-import time
 from datetime import datetime
 import sys
 import os
@@ -17,10 +16,6 @@ project_root = os.path.dirname(os.path.dirname(current_dir))
 core_dir = os.path.join(project_root, 'CORE')
 if core_dir not in sys.path:
     sys.path.insert(0, core_dir)
-
-from serial_api import SerialCore, SerialEventHandler, SerialConfig
-
-import logging
 
 class SerialMonitorEventHandler(SerialEventHandler):
     """串口监视器事件处理器 - 连接后端和前端"""
