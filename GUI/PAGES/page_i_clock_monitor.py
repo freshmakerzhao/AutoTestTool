@@ -359,7 +359,7 @@ class PageIClockMonitor(ttk.Frame):
                "• 自动重试失败的寄存器，直到收到确认\n"
                "• 实时显示真实的确认数量，与串口日志完全一致\n"
                "• 速度较慢但绝对可靠，适合重要的时钟配置")
-        ttk.Label(note_frame, text=note, foreground="blue", font=("Arial", 8), justify=tk.LEFT).pack(anchor=tk.W)
+        ttk.Label(note_frame, text=note, foreground="blue", font=("Microsoft YaHei", 8), justify=tk.LEFT).pack(anchor=tk.W)
 
     def _check_connection(self) -> bool:
         """检查串口连接状态"""
