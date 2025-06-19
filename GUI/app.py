@@ -8,6 +8,7 @@ from GUI.PAGES.page_d_vivado_rd_check import PageDVivadoRDCheck
 # 添加串口监视器页面导入
 from GUI.PAGES.page_e_serial_monitor import PageESerialMonitor
 from GUI.PAGES.page_f_voltage_monitor import PageFVoltageMonitor
+from GUI.PAGES.page_g_ibert import PageGIbertTest
 
 import logging
 from GUI.logger import setup_logger, text_handler, update_log_target
@@ -32,6 +33,7 @@ class MainApp(tk.Tk):
         self.page_d = PageDVivadoRDCheck(self.nb, self.ctx)
         self.page_e = PageESerialMonitor(self.nb, self.ctx)
         self.page_h = PageABase(self.nb, self.ctx)
+        self.page_g = PageGIbertTest(self.nb, self.ctx)
         
         # —— 这里修改 —— 
         # 直接取串口监视器页面的 serial_core
@@ -45,6 +47,7 @@ class MainApp(tk.Tk):
         self.nb.add(self.page_e, text="  串口监视器  ")
         self.nb.add(self.page_f, text="  电压设置查询  ")
         self.nb.add(self.page_h, text="  基础功能  ")
+        self.nb.add(self.page_g, text="  Ibert测试  ")
 
         # 绑定切换事件
         self.nb.bind("<<NotebookTabChanged>>", self._on_tab_changed)
