@@ -9,6 +9,7 @@ from GUI.PAGES.page_d_vivado_rd_check import PageDVivadoRDCheck
 from GUI.PAGES.page_e_serial_monitor import PageESerialMonitor
 from GUI.PAGES.page_f_voltage_monitor import PageFVoltageMonitor
 from GUI.PAGES.page_g_ibert import PageGIbertTest
+from GUI.PAGES.page_i_clock_monitor import PageIClockMonitor
 
 import logging
 from GUI.logger import setup_logger, text_handler, update_log_target
@@ -38,7 +39,8 @@ class MainApp(tk.Tk):
         # 直接取串口监视器页面的 serial_core
         serial_core = self.page_e.serial_core
         self.page_f = PageFVoltageMonitor(self.nb, serial_core)
-
+        self.page_i = PageIClockMonitor(self.nb, self.page_e.serial_core)
+        
         self.nb.add(self.page_a, text="  码流烧写  ")
         self.nb.add(self.page_b, text="  自刷新  ")
         self.nb.add(self.page_c, text="  VCCM设置  ")
@@ -47,7 +49,8 @@ class MainApp(tk.Tk):
         self.nb.add(self.page_f, text="  电压设置查询  ")
         self.nb.add(self.page_g, text="  Ibert测试  ")
         self.nb.add(self.page_h, text="  基础功能  ")
-
+        self.nb.add(self.page_i, text="  Si5344 Clk  ")
+        
         # 绑定切换事件
         self.nb.bind("<<NotebookTabChanged>>", self._on_tab_changed)
 
