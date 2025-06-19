@@ -32,8 +32,6 @@ class SerialConfig:
         self.stopbits = 1
         self.parity = 'N'
         self.timeout = 1.0
-        self.rts = False
-        self.dtr = False
 
     def to_dict(self):
         return {
@@ -42,9 +40,7 @@ class SerialConfig:
             'databits': self.databits,
             'stopbits': self.stopbits,
             'parity': self.parity,
-            'timeout': self.timeout,
-            'rts': self.rts,
-            'dtr': self.dtr
+            'timeout': self.timeout
         }
 
     def from_dict(self, d):
@@ -54,8 +50,6 @@ class SerialConfig:
         self.stopbits = float(d.get('stopbits', self.stopbits))
         self.parity   = d.get('parity', self.parity)
         self.timeout  = float(d.get('timeout', self.timeout))
-        self.rts      = bool(d.get('rts', self.rts))
-        self.dtr      = bool(d.get('dtr', self.dtr))
 
 class SerialDataProcessor:
     """串口数据处理器"""
@@ -177,7 +171,7 @@ class SerialCore:
                 for p in serial.tools.list_ports.comports()
             ]
         except Exception as e:
-            logger.error(f"取端口失败: {e}")
+            logger.error(f"获取端口失败: {e}")
             return []
 
     def test_connection(self, port: str = None, baudrate: int = None) -> dict:
@@ -196,9 +190,6 @@ class SerialCore:
                 'parity': s.parity, 'timeout': s.timeout,
                 'is_open': s.is_open, 'in_waiting': s.in_waiting
             }
-            for sig in ('rts','dtr','cts','dsr'):
-                if hasattr(s, sig):
-                    res['details'][sig] = getattr(s,sig)
             s.close()
             res['success'] = True
             logger.info(f"测试成功: {p}@{b}")
@@ -220,10 +211,7 @@ class SerialCore:
                 parity=self.config.parity,
                 timeout=0.1
             )
-            # RTS/DTR
-            for sig in ('rts','dtr'):
-                if hasattr(self.serial_conn, sig):
-                    setattr(self.serial_conn, sig, getattr(self.config, sig))
+            
             self.is_connected = True
             self.receive_thread = threading.Thread(
                 target=self._recv_worker, daemon=True)
@@ -358,19 +346,6 @@ class SerialCore:
 
     def clear_send_history(self):
         self.send_history.clear()
-
-    def set_control_signals(self, rts=None, dtr=None):
-        if not self.is_connected:
-            return
-        try:
-            if rts is not None and hasattr(self.serial_conn,'rts'):
-                self.serial_conn.rts = rts
-                self.config.rts = rts
-            if dtr is not None and hasattr(self.serial_conn,'dtr'):
-                self.serial_conn.dtr = dtr
-                self.config.dtr = dtr
-        except Exception as e:
-            logger.error(f"信号设置失败: {e}")
 
     def get_statistics(self) -> dict:
         stats = {

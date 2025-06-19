@@ -233,51 +233,35 @@ class PageESerialMonitor(ttk.Frame):
         
         ttk.Button(hex_frame, text="发送HEX", command=self.send_hex_data, width=8).pack(side=tk.RIGHT)
         
-        # === 第三行：控制选项和工具 ===
+        # === 第三行：工具和状态 ===
         row3_frame = ttk.Frame(control_frame)
         row3_frame.pack(fill=tk.X, pady=2)
         
-        # 左侧：控制选项
-        option_group = ttk.LabelFrame(row3_frame, text="显示选项", padding=3)
-        option_group.pack(side=tk.LEFT, padx=(0, 3))
-        
-        opt_frame = ttk.Frame(option_group)
-        opt_frame.pack()
-        
-        # 控制信号
-        self.rts_var = tk.BooleanVar(value=self.serial_core.config.rts)
-        self.rts_cb = ttk.Checkbutton(opt_frame, text="RTS", variable=self.rts_var, 
-                       command=self.update_control_signals)
-        self.rts_cb.grid(row=0, column=0, sticky=tk.W)
-        
-        self.dtr_var = tk.BooleanVar(value=self.serial_core.config.dtr)
-        self.dtr_cb = ttk.Checkbutton(opt_frame, text="DTR", variable=self.dtr_var, 
-                       command=self.update_control_signals)
-        self.dtr_cb.grid(row=0, column=1, sticky=tk.W, padx=5)
-        
-        # 显示选项
-        self.hex_var = tk.BooleanVar(value=self.hex_display)
-        ttk.Checkbutton(opt_frame, text="ASCII终端HEX模式", variable=self.hex_var,
-                       command=self.toggle_hex_display).grid(row=1, column=0, sticky=tk.W)
-        
-        self.scroll_var = tk.BooleanVar(value=self.auto_scroll)
-        ttk.Checkbutton(opt_frame, text="自动滚动", variable=self.scroll_var).grid(row=1, column=1, sticky=tk.W, padx=5)
-        
-        # 中间：工具按钮
+        # 左侧：工具按钮（包含自动滚动）
         tool_group = ttk.LabelFrame(row3_frame, text="工具", padding=3)
-        tool_group.pack(side=tk.LEFT, fill=tk.X, expand=True, padx=3)
+        tool_group.pack(side=tk.LEFT, fill=tk.X, expand=True, padx=(0, 3))
         
         tool_frame = ttk.Frame(tool_group)
-        tool_frame.pack()
+        tool_frame.pack(fill=tk.X)
         
-        ttk.Button(tool_frame, text="清空显示", command=self.clear_display, width=8).pack(side=tk.LEFT, padx=1)
-        ttk.Button(tool_frame, text="复制全部", command=self.copy_all_data, width=8).pack(side=tk.LEFT, padx=1)
-        ttk.Button(tool_frame, text="保存数据", command=self.save_display_data, width=8).pack(side=tk.LEFT, padx=1)
-        ttk.Button(tool_frame, text="发送文件", command=self.send_file, width=8).pack(side=tk.LEFT, padx=1)
+        # 第一行工具按钮
+        tool_row1 = ttk.Frame(tool_frame)
+        tool_row1.pack(fill=tk.X, pady=1)
+        
+        ttk.Button(tool_row1, text="清空显示", command=self.clear_display, width=8).pack(side=tk.LEFT, padx=1)
+        ttk.Button(tool_row1, text="复制全部", command=self.copy_all_data, width=8).pack(side=tk.LEFT, padx=1)
+        ttk.Button(tool_row1, text="保存数据", command=self.save_display_data, width=8).pack(side=tk.LEFT, padx=1)
         
         # 暂停/恢复 终端显示
-        self.pause_btn = ttk.Button(tool_frame, text="暂停显示", command=self.toggle_pause, width=8)
+        self.pause_btn = ttk.Button(tool_row1, text="暂停显示", command=self.toggle_pause, width=8)
         self.pause_btn.pack(side=tk.LEFT, padx=1)
+        
+        # 第二行：自动滚动选项
+        tool_row2 = ttk.Frame(tool_frame)
+        tool_row2.pack(fill=tk.X, pady=1)
+        
+        self.scroll_var = tk.BooleanVar(value=self.auto_scroll)
+        ttk.Checkbutton(tool_row2, text="自动滚动", variable=self.scroll_var).pack(side=tk.LEFT)
                 
         # 右侧：日志和状态
         status_group = ttk.LabelFrame(row3_frame, text="状态", padding=3)
@@ -346,15 +330,10 @@ class PageESerialMonitor(ttk.Frame):
         # 延迟调用刷新端口
         self.root.after(100, self.refresh_ports)
         
-        # 初始化控制信号显示状态
-        self.root.after(200, self.update_control_signals)
-        
     def build_display_area(self, parent):
         """构建显示区域"""
         display_frame = ttk.Frame(parent)
         display_frame.pack(fill=tk.BOTH, expand=True)
-        
-
         
         # 标签页显示区
         self.notebook = ttk.Notebook(display_frame)
@@ -404,18 +383,6 @@ class PageESerialMonitor(ttk.Frame):
         
         # 配置文本框颜色和标签
         self.configure_text_tags()
-        
-        # 配置控制信号状态样式
-        self.configure_control_styles()
-        
-    def configure_control_styles(self):
-        """配置控制信号状态样式"""
-        try:
-            style = ttk.Style()
-            # 创建激活状态的样式
-            style.configure("Active.TCheckbutton", foreground="green")
-        except:
-            pass  # 如果样式配置失败，忽略
         
     def configure_text_tags(self):
         """配置文本显示标签"""
@@ -473,11 +440,6 @@ class PageESerialMonitor(ttk.Frame):
             message += f"停止位: {details['stopbits']}\n"
             message += f"校验位: {details['parity']}\n"
             message += f"输入缓冲区: {details['in_waiting']} 字节\n"
-            
-            if 'rts' in details:
-                message += f"RTS: {details['rts']}\n"
-            if 'dtr' in details:
-                message += f"DTR: {details['dtr']}\n"
                 
             messagebox.showinfo("连接测试", message)
             self.log_message("串口连接测试成功")
@@ -504,9 +466,6 @@ class PageESerialMonitor(ttk.Frame):
             return
             
         self.serial_core.disconnect()
-        
-        # 如果自动日志正在运行，可以选择是否停止（这里选择继续记录）
-        # 这样断开连接不会影响日志记录的连续性
         self.log_message("串口连接已断开")
     
     def update_serial_config(self):
@@ -517,29 +476,8 @@ class PageESerialMonitor(ttk.Frame):
             self.serial_core.config.databits = int(self.databits_var.get())
             self.serial_core.config.stopbits = float(self.stopbits_var.get())
             self.serial_core.config.parity = self.parity_var.get()
-            self.serial_core.config.rts = self.rts_var.get()
-            self.serial_core.config.dtr = self.dtr_var.get()
         except ValueError as e:
             self.log_message(f"配置参数错误: {e}", "error")
-    
-    def update_control_signals(self):
-        """更新控制信号"""
-        rts_state = self.rts_var.get()
-        dtr_state = self.dtr_var.get()
-        
-        if self.is_connected:
-            self.serial_core.set_control_signals(rts=rts_state, dtr=dtr_state)
-            self.log_message(f"控制信号更新: RTS={rts_state}, DTR={dtr_state}")
-            
-            # 更新按钮颜色来体现状态
-            self.rts_cb.configure(style="Active.TCheckbutton" if rts_state else "TCheckbutton")
-            self.dtr_cb.configure(style="Active.TCheckbutton" if dtr_state else "TCheckbutton")
-        else:
-            self.log_message(f"控制信号预设: RTS={rts_state}, DTR={dtr_state} (连接后生效)")
-            
-        # 更新配置
-        self.serial_core.config.rts = rts_state
-        self.serial_core.config.dtr = dtr_state
     
     def send_text_data(self, event=None, add_cr=False, add_lf=False, add_crlf=False):
         """发送文本数据"""
@@ -572,19 +510,6 @@ class PageESerialMonitor(ttk.Frame):
             self.update_send_history(f"HEX: {hex_str}")
         else:
             self.log_message("发送十六进制数据失败", "error")
-    
-    def send_file(self):
-        """发送文件"""
-        file_path = filedialog.askopenfilename(
-            title="选择要发送的文件",
-            filetypes=[("文本文件", "*.txt"), ("所有文件", "*.*")]
-        )
-        
-        if file_path:
-            if self.serial_core.send_file(file_path):
-                self.log_message(f"文件发送完成: {file_path}")
-            else:
-                self.log_message("文件发送失败", "error")
     
     def update_send_history(self, item):
         """更新发送历史"""
@@ -681,15 +606,6 @@ class PageESerialMonitor(ttk.Frame):
         else:
             self.log_status_label.config(text="日志: 未启用", foreground="gray")
     
-    def toggle_hex_display(self):
-        """切换十六进制显示模式"""
-        self.hex_display = self.hex_var.get()
-        
-        if self.hex_display:
-            self.log_message("ASCII终端切换为十六进制显示模式")
-        else:
-            self.log_message("ASCII终端切换为普通文本显示模式")
-            
     def toggle_pause(self):
         """切换暂停/恢复终端显示"""
         self.pause_display = not self.pause_display
@@ -753,8 +669,6 @@ class PageESerialMonitor(ttk.Frame):
             except Exception as e:
                 self.log_message(f"保存数据失败: {e}", "error")
     
-
-    
     def display_received_data(self, processed_data): 
         """显示接收到的数据"""
         if self.pause_display:
@@ -766,14 +680,8 @@ class PageESerialMonitor(ttk.Frame):
         hex_data = processed_data['hex']
         printable_text = processed_data['printable_text']
         
-        # ASCII 终端显示 - 根据十六进制显示选项决定显示格式
-        if self.hex_display:
-            # 十六进制模式：显示时间戳和十六进制数据
-            display_text = f"[{timestamp}] RX: {hex_data}\n"
-        else:
-            # ASCII模式：显示原始ASCII数据
-            display_text = ascii_data
-            
+        # ASCII 终端显示 - 简化为普通ASCII模式
+        display_text = ascii_data
         self.ascii_text.insert(tk.END, display_text, "received")
         
         if self.scroll_var.get():
@@ -812,15 +720,9 @@ class PageESerialMonitor(ttk.Frame):
         except:
             ascii_data = data.decode('latin-1', errors='replace')
         
-        # ASCII 终端显示 - 根据十六进制显示选项决定显示格式
-        if self.hex_display:
-            # 十六进制模式：显示时间戳和十六进制数据
-            display_text = f"[{timestamp}] TX: {hex_data}\n"
-            self.ascii_text.insert(tk.END, display_text, "sent")
-        else:
-            # ASCII模式：显示原始ASCII数据（发送的通常不需要特别标记）
-            if ascii_data.strip():  # 只有非空数据才显示
-                self.ascii_text.insert(tk.END, ascii_data, "sent")
+        # ASCII 终端显示 - 简化为普通ASCII模式
+        if ascii_data.strip():  # 只有非空数据才显示
+            self.ascii_text.insert(tk.END, ascii_data, "sent")
         
         if self.scroll_var.get():
             self.ascii_text.see(tk.END)
@@ -849,16 +751,9 @@ class PageESerialMonitor(ttk.Frame):
             self.connect_btn.config(state=tk.DISABLED)
             self.disconnect_btn.config(state=tk.NORMAL)
             
-            # 体现RTS/DTR状态
-            rts_status = "✓" if self.rts_var.get() else "✗"
-            dtr_status = "✓" if self.dtr_var.get() else "✗"
-            status_text = f"已连接 ({port}) RTS:{rts_status} DTR:{dtr_status}"
-            
+            status_text = f"已连接 ({port})"
             self.stats_labels["状态"].config(text=status_text, foreground="green")
-            self.log_message(f"串口连接成功: {port}, RTS={self.rts_var.get()}, DTR={self.dtr_var.get()}")
-            
-            # 应用控制信号
-            self.update_control_signals()
+            self.log_message(f"串口连接成功: {port}")
         else:
             self.connect_btn.config(state=tk.NORMAL)
             self.disconnect_btn.config(state=tk.DISABLED)
