@@ -9,26 +9,10 @@ import queue
 from CLI.cli_clock import ClockClient
 from CORE.clock_api import build_clk_cfg_command
 
-# Table 列表
-Si5344_TLIST = [
-    "Table0-Manual Register Config",
-    "Table1-SYS_CLKOUT1(175MHz)-MGT_REF0CLK_OUT2(100MHz)-SMA_CLKOUT3(10MHz)-MGT_REF1CLK_OUT4(100MHz)",
-    "Table2-SYS_CLKOUT1(175MHz)-MGT_REF0CLK_OUT2(125MHz)-SMA_CLKOUT3(50MHz)-MGT_REF1CLK_OUT4(125MHz)",
-    "Table3-SYS_CLKOUT1(175MHz)-MGT_REF0CLK_OUT2(250MHz)-SMA_CLKOUT3(100MHz)-MGT_REF1CLK_OUT4(250MHz)",
-    "Table4-SYS_CLKOUT1(175MHz)-MGT_REF0CLK_OUT2(312.5MHz)-SMA_CLKOUT3(125MHz)-MGT_REF1CLK_OUT4(312.5MHz)",
-    "Table5-SYS_CLKOUT1(100MHz)-MGT_REF0CLK_OUT2(122.88MHz)-SMA_CLKOUT3(300MHz)-MGT_REF1CLK_OUT4(122.88MHz)",
-    "Table6-SYS_CLKOUT1(175MHz)-MGT_REF0CLK_OUT2(250MHz)-SMA_CLKOUT3(500MHz)-MGT_REF1CLK_OUT4(156.25MHz)",
-    "Table7-SYS_CLKOUT1(175MHz)-MGT_REF0CLK_OUT2(660MHz)-SMA_CLKOUT3(800MHz)-MGT_REF1CLK_OUT4(660MHz)",
-    "Table8-SYS_CLKOUT1(175MHz)-MGT_REF0CLK_OUT2(106.25MHz)-SMA_CLKOUT3(1028MHz)-MGT_REF1CLK_OUT4(106.25MHz)",
-    "Table9-SYS_CLKOUT1(175MHz)-MGT_REF0CLK_OUT2(212.5MHz)-SMA_CLKOUT3(900MHz)-MGT_REF1CLK_OUT4(212.5MHz)",
-    "Table10-SYS_CLKOUT1(175MHz)-MGT_REF0CLK_OUT2(150MHz)-SMA_CLKOUT3(200MHz)-MGT_REF1CLK_OUT4(150MHz)",
-]
-
 class ReliableClockClient:
     """真正可靠的时钟客户端"""
     def __init__(self, serial_core):
         self.serial = serial_core
-        self._last_idx = 0
         self._response_queue = queue.Queue()
         self._raw_buffer = ""  # 添加原始数据缓冲区
         self._ack_patterns = [
@@ -71,38 +55,6 @@ class ReliableClockClient:
     def is_connected(self) -> bool:
         """检查串口连接状态"""
         return self.serial.is_connected
-
-    def set_clock(self, table_idx: int):
-        """发送时钟 Table 配置命令"""
-        from CORE.clock_api import build_clk_set_command
-        self._last_idx = table_idx
-        cmd = build_clk_set_command(table_idx)
-        self.serial.send_text(cmd + "\n")
-
-    def get_clock(self, timeout: float = 3.0) -> int:
-        """获取当前时钟配置"""
-        from CORE.clock_api import build_clk_get_command, parse_clk_response
-        
-        # 清空响应队列
-        while not self._response_queue.empty():
-            try:
-                self._response_queue.get_nowait()
-            except queue.Empty:
-                break
-        
-        cmd = build_clk_get_command(self._last_idx)
-        self.serial.send_text(cmd + "\n")
-        
-        start = time.time()
-        while time.time() - start < timeout:
-            try:
-                line = self._response_queue.get(timeout=0.1)
-                if line.startswith("MC1PCLKGET"):
-                    return parse_clk_response(line)
-            except queue.Empty:
-                continue
-                
-        raise TimeoutError("Clock get timeout")
 
     def send_reg_with_guaranteed_ack(self, reg_offset: str, reg_value: str, timeout: float = 5.0, max_retries: int = 3) -> dict:
         """
@@ -204,7 +156,7 @@ class ReliableClockClient:
         return result
 
 class PageIClockMonitor(ttk.Frame):
-    """优化的 Si5344 时钟配置页面"""
+    """简化版Si5344时钟配置页面 - 只保留寄存器配置功能"""
     def __init__(self, parent, serial_core):
         super().__init__(parent)
         self.serial_core = serial_core  # 保存serial_core引用
@@ -219,62 +171,57 @@ class PageIClockMonitor(ttk.Frame):
         main_frame = ttk.Frame(self)
         main_frame.pack(fill=tk.BOTH, expand=True, padx=10, pady=10)
 
-        # === Table 配置区域 ===
-        table_frame = ttk.LabelFrame(main_frame, text="📋 Table 配置 (预设模式)")
-        table_frame.pack(fill=tk.X, pady=(0, 10))
-        table_frame.grid_columnconfigure(1, weight=1)
-
-        ttk.Label(table_frame, text="Clock Table:").grid(row=0, column=0, sticky=tk.W, padx=5, pady=5)
-        self.table_var = tk.StringVar(value=Si5344_TLIST[1])
-        self.table_cb = ttk.Combobox(
-            table_frame, textvariable=self.table_var, values=Si5344_TLIST,
-            state="readonly", width=60
-        )
-        self.table_cb.grid(row=0, column=1, padx=5, pady=5, sticky="ew")
-        
-        btn_frame = ttk.Frame(table_frame)
-        btn_frame.grid(row=0, column=2, padx=5, pady=5)
-        ttk.Button(btn_frame, text="SET TABLE", command=self._on_set).pack(side=tk.LEFT, padx=2)
-        ttk.Button(btn_frame, text="GET TABLE", command=self._on_get).pack(side=tk.LEFT, padx=2)
-
-        # === 可靠寄存器配置区域 ===
-        reg_frame = ttk.LabelFrame(main_frame, text="🔒 可靠寄存器配置 (100% 确认模式)")
-        reg_frame.pack(fill=tk.BOTH, expand=True, pady=(0, 10))
-        reg_frame.grid_columnconfigure(1, weight=1)
+        # === 时钟频点配置区域 ===
+        config_frame = ttk.LabelFrame(main_frame, text="🔒 时钟频点配置 (100% 确认模式)")
+        config_frame.pack(fill=tk.BOTH, expand=True, pady=(0, 10))
+        config_frame.grid_columnconfigure(1, weight=1)
 
         # 文件选择
-        ttk.Label(reg_frame, text="Regs File:").grid(row=0, column=0, sticky=tk.W, padx=5, pady=5)
+        ttk.Label(config_frame, text="配置文件:").grid(row=0, column=0, sticky=tk.W, padx=5, pady=5)
         self.file_var = tk.StringVar()
-        ttk.Entry(reg_frame, textvariable=self.file_var).grid(row=0, column=1, padx=5, pady=5, sticky="ew")
-        ttk.Button(reg_frame, text="Browse", command=self._browse_file).grid(row=0, column=2, padx=5, pady=5)
+        file_entry = ttk.Entry(config_frame, textvariable=self.file_var)
+        file_entry.grid(row=0, column=1, padx=5, pady=5, sticky="ew")
+        ttk.Button(config_frame, text="Browse", command=self._browse_file).grid(row=0, column=2, padx=5, pady=5)
+
+        # 文件信息显示
+        info_frame = ttk.Frame(config_frame)
+        info_frame.grid(row=1, column=0, columnspan=3, sticky="ew", padx=5, pady=5)
+        
+        ttk.Label(info_frame, text="检测到寄存器数量:").grid(row=0, column=0, sticky=tk.W, padx=5)
+        self.detected_regs_var = tk.StringVar(value="未选择文件")
+        ttk.Entry(info_frame, textvariable=self.detected_regs_var, state="readonly", width=15).grid(row=0, column=1, padx=5)
+        
+        ttk.Label(info_frame, text="文件大小:").grid(row=0, column=2, sticky=tk.W, padx=5)
+        self.file_size_var = tk.StringVar(value="--")
+        ttk.Entry(info_frame, textvariable=self.file_size_var, state="readonly", width=10).grid(row=0, column=3, padx=5)
 
         # 配置参数
-        config_frame = ttk.Frame(reg_frame)
-        config_frame.grid(row=1, column=0, columnspan=3, sticky="ew", padx=5, pady=5)
+        param_frame = ttk.Frame(config_frame)
+        param_frame.grid(row=2, column=0, columnspan=3, sticky="ew", padx=5, pady=5)
         
-        ttk.Label(config_frame, text="确认超时:").grid(row=0, column=0, sticky=tk.W, padx=5)
+        ttk.Label(param_frame, text="确认超时:").grid(row=0, column=0, sticky=tk.W, padx=5)
         self.timeout_var = tk.DoubleVar(value=3.0)
-        ttk.Spinbox(config_frame, from_=1.0, to=10.0, increment=0.5, 
+        ttk.Spinbox(param_frame, from_=1.0, to=10.0, increment=0.5, 
                    textvariable=self.timeout_var, width=8).grid(row=0, column=1, padx=5)
-        ttk.Label(config_frame, text="秒").grid(row=0, column=2, sticky=tk.W)
+        ttk.Label(param_frame, text="秒").grid(row=0, column=2, sticky=tk.W)
         
-        ttk.Label(config_frame, text="最大重试:").grid(row=0, column=3, sticky=tk.W, padx=5)
+        ttk.Label(param_frame, text="最大重试:").grid(row=0, column=3, sticky=tk.W, padx=5)
         self.retry_var = tk.IntVar(value=3)
-        ttk.Spinbox(config_frame, from_=1, to=5, increment=1, 
+        ttk.Spinbox(param_frame, from_=1, to=5, increment=1, 
                    textvariable=self.retry_var, width=8).grid(row=0, column=4, padx=5)
-        ttk.Label(config_frame, text="次").grid(row=0, column=5, sticky=tk.W)
+        ttk.Label(param_frame, text="次").grid(row=0, column=5, sticky=tk.W)
 
-        ttk.Label(config_frame, text="发送间隔:").grid(row=0, column=6, sticky=tk.W, padx=5)
+        ttk.Label(param_frame, text="发送间隔:").grid(row=0, column=6, sticky=tk.W, padx=5)
         self.interval_var = tk.DoubleVar(value=0.1)
-        ttk.Spinbox(config_frame, from_=0.05, to=1.0, increment=0.05, 
+        ttk.Spinbox(param_frame, from_=0.05, to=1.0, increment=0.05, 
                    textvariable=self.interval_var, width=8).grid(row=0, column=7, padx=5)
-        ttk.Label(config_frame, text="秒").grid(row=0, column=8, sticky=tk.W)
+        ttk.Label(param_frame, text="秒").grid(row=0, column=8, sticky=tk.W)
 
-        # 控制按钮 - 修改按钮文字并添加重置按钮
-        control_frame = ttk.Frame(reg_frame)
-        control_frame.grid(row=2, column=0, columnspan=3, pady=5)
+        # 控制按钮
+        control_frame = ttk.Frame(config_frame)
+        control_frame.grid(row=3, column=0, columnspan=3, pady=5)
         
-        self.send_btn = ttk.Button(control_frame, text="配置", command=self._send_regs_reliable)
+        self.send_btn = ttk.Button(control_frame, text="📡 配置", command=self._send_regs_reliable)
         self.send_btn.pack(side=tk.LEFT, padx=5)
         
         self.stop_btn = ttk.Button(control_frame, text="⏹️ 停止", command=self._stop_regs, state="disabled")
@@ -283,7 +230,6 @@ class PageIClockMonitor(ttk.Frame):
         self.log_btn = ttk.Button(control_frame, text="📋 查看详细日志", command=self._show_detailed_log)
         self.log_btn.pack(side=tk.LEFT, padx=5)
         
-        # 添加手动重置按钮
         self.reset_btn = ttk.Button(control_frame, text="🔄 重置", command=self.manual_reset)
         self.reset_btn.pack(side=tk.LEFT, padx=5)
 
@@ -335,30 +281,14 @@ class PageIClockMonitor(ttk.Frame):
         self.eta_var = tk.StringVar(value="--:--")
         ttk.Entry(detail_frame, textvariable=self.eta_var, width=8, state="readonly").grid(row=1, column=7, padx=2)
 
-        # === 频率显示区域 ===
-        freq_frame = ttk.LabelFrame(main_frame, text="🎛️ 当前配置频率")
-        freq_frame.pack(fill=tk.X)
-        freq_frame.grid_columnconfigure(1, weight=1)
-        freq_frame.grid_columnconfigure(3, weight=1)
-
-        self.freq_vars = {}
-        labels = ["SYS_OUT1", "MGT_REF0", "SMA_CLKOUT3", "MGT_REF1"]
-        for idx, lb in enumerate(labels):
-            row = idx // 2
-            col = (idx % 2) * 2
-            ttk.Label(freq_frame, text=f"{lb}:").grid(row=row, column=col, sticky=tk.W, padx=5, pady=2)
-            var = tk.StringVar(value="N/A")
-            ttk.Entry(freq_frame, textvariable=var, state="readonly", width=20).grid(row=row, column=col+1, sticky="ew", padx=5, pady=2)
-            self.freq_vars[lb] = var
-
         # 说明文字
         note_frame = ttk.Frame(main_frame)
         note_frame.pack(fill=tk.X, pady=5)
-        note = ("🔒 可靠模式特点：\n"
-               "• 每个寄存器都等待设备确认，确保 100% 可靠传输\n"
+        note = ("🔒 时钟频点配置特点：\n"
+               "• 自动检测配置文件中的寄存器数量（常见465个，支持其他数量）\n"
+               "• 每个寄存器都等待设备确认，确保100%可靠传输\n"
                "• 自动重试失败的寄存器，直到收到确认\n"
-               "• 实时显示真实的确认数量，与串口日志完全一致\n"
-               "• 速度较慢但绝对可靠，适合重要的时钟配置")
+               "• 实时显示真实的确认数量，与串口日志完全一致")
         ttk.Label(note_frame, text=note, foreground="blue", font=("Microsoft YaHei", 8), justify=tk.LEFT).pack(anchor=tk.W)
 
     def _check_connection(self) -> bool:
@@ -370,69 +300,10 @@ class PageIClockMonitor(ttk.Frame):
             return False
         return True
 
-    def _on_set(self):
-        """设置 Table"""
-        if not self._check_connection():
-            return
-            
-        try:
-            tbl = int(self.table_var.get().split("-")[0].replace("Table", ""))
-        except ValueError:
-            messagebox.showerror("Error", "请选择有效的 Table 项")
-            return
-
-        if tbl == 0:
-            messagebox.showinfo("提示", "Table 0 需要使用寄存器文件配置")
-            return
-
-        try:
-            self.client.set_clock(tbl)
-            self._update_freq_display(tbl)
-            messagebox.showinfo("配置成功", f"Table {tbl} 配置命令已发送")
-        except Exception as e:
-            messagebox.showerror("配置失败", str(e))
-
-    def _on_get(self):
-        """获取当前 Table"""
-        if not self._check_connection():
-            return
-            
-        try:
-            tbl = self.client.get_clock()
-            if 0 <= tbl < len(Si5344_TLIST):
-                self.table_var.set(Si5344_TLIST[tbl])
-                self._update_freq_display(tbl)
-                messagebox.showinfo("查询成功", f"当前配置: Table {tbl}")
-            else:
-                messagebox.showwarning("查询结果", f"返回了无效的 Table 编号: {tbl}")
-        except Exception as e:
-            messagebox.showerror("查询失败", str(e))
-
-    def _update_freq_display(self, table_idx):
-        """更新频率显示"""
-        freq_data = {
-            0: ["Manual", "Manual", "Manual", "Manual"],
-            1: ["175MHz", "100MHz", "10MHz", "100MHz"],
-            2: ["175MHz", "125MHz", "50MHz", "125MHz"],
-            3: ["175MHz", "250MHz", "100MHz", "250MHz"],
-            4: ["175MHz", "312.5MHz", "125MHz", "312.5MHz"],
-            5: ["100MHz", "122.88MHz", "300MHz", "122.88MHz"],
-            6: ["175MHz", "250MHz", "500MHz", "156.25MHz"],
-            7: ["175MHz", "660MHz", "800MHz", "660MHz"],
-            8: ["175MHz", "106.25MHz", "1028MHz", "106.25MHz"],
-            9: ["175MHz", "212.5MHz", "900MHz", "212.5MHz"],
-            10: ["175MHz", "150MHz", "200MHz", "150MHz"],
-        }
-        
-        if table_idx in freq_data:
-            freqs = freq_data[table_idx]
-            for (label, var), freq in zip(self.freq_vars.items(), freqs):
-                var.set(freq)
-
     def _browse_file(self):
         """浏览寄存器文件"""
         path = filedialog.askopenfilename(
-            title="选择 Si5344 寄存器文件",
+            title="选择时钟频点配置文件",
             filetypes=[("Text Files", "*.txt"), ("All Files", "*.*")]
         )
         if path:
@@ -440,27 +311,108 @@ class PageIClockMonitor(ttk.Frame):
             self._analyze_file(path)
 
     def _analyze_file(self, path):
-        """分析寄存器文件"""
+        """分析寄存器文件并自动检测数量"""
         try:
             total_lines = 0
-            valid_lines = 0
+            valid_regs = 0
+            comment_lines = 0
+            empty_lines = 0
+            file_size = os.path.getsize(path)
+            
             with open(path, 'r', encoding='latin-1') as f:
                 for line in f:
                     total_lines += 1
                     line = line.strip()
-                    if not line or line.startswith("#"):
+                    
+                    if not line:
+                        empty_lines += 1
                         continue
+                    
+                    if line.startswith("#"):
+                        comment_lines += 1
+                        continue
+                    
+                    # 检查有效的寄存器行格式 (地址,数据)
                     parts = [x.strip() for x in line.split(",")]
-                    if len(parts) == 2 and parts[0].startswith("0x"):
-                        valid_lines += 1
+                    if len(parts) == 2:
+                        addr_part = parts[0].strip()
+                        data_part = parts[1].strip()
+                        
+                        # 检查地址格式 (0x开头的十六进制)
+                        if addr_part.startswith("0x") and len(addr_part) >= 3:
+                            try:
+                                # 验证是否为有效的十六进制地址
+                                int(addr_part, 16)
+                                # 验证数据部分是否为有效的十六进制
+                                if data_part.startswith("0x"):
+                                    int(data_part, 16)
+                                    valid_regs += 1
+                                elif len(data_part) <= 4:  # 可能是不带0x前缀的十六进制
+                                    int(data_part, 16)
+                                    valid_regs += 1
+                            except ValueError:
+                                # 不是有效的十六进制，跳过
+                                pass
             
-            self.total_var.set(valid_lines)
+            # 更新显示
+            self.total_var.set(valid_regs)
+            self.detected_regs_var.set(f"{valid_regs} 个")
+            
+            # 格式化文件大小
+            if file_size < 1024:
+                size_str = f"{file_size} B"
+            elif file_size < 1024 * 1024:
+                size_str = f"{file_size/1024:.1f} KB"
+            else:
+                size_str = f"{file_size/(1024*1024):.1f} MB"
+            self.file_size_var.set(size_str)
+            
             self._reset_stats()
-            self.status_var.set(f"✅ 文件已加载：{valid_lines} 个有效寄存器")
+            
+            # 详细的状态信息
+            status_msg = (f"✅ 文件已分析完成 | "
+                         f"有效寄存器: {valid_regs} 个 | "
+                         f"总行数: {total_lines} | "
+                         f"注释行: {comment_lines} | "
+                         f"空行: {empty_lines}")
+            self.status_var.set(status_msg)
+            
+            # 如果检测到常见的寄存器数量，给出提示
+            if valid_regs == 465:
+                messagebox.showinfo("文件分析", 
+                                  f"✅ 检测到标准的Si5344配置文件\n\n"
+                                  f"📊 文件信息:\n"
+                                  f"• 有效寄存器: {valid_regs} 个 (标准数量)\n"
+                                  f"• 文件大小: {size_str}\n"
+                                  f"• 总行数: {total_lines}\n"
+                                  f"• 注释行: {comment_lines}\n"
+                                  f"• 空行: {empty_lines}\n\n"
+                                  f"🔧 可以开始配置")
+            elif valid_regs > 0:
+                messagebox.showinfo("文件分析", 
+                                  f"✅ 检测到时钟配置文件\n\n"
+                                  f"📊 文件信息:\n"
+                                  f"• 有效寄存器: {valid_regs} 个\n"
+                                  f"• 文件大小: {size_str}\n"
+                                  f"• 总行数: {total_lines}\n"
+                                  f"• 注释行: {comment_lines}\n"
+                                  f"• 空行: {empty_lines}\n\n"
+                                  f"⚠️ 注意: 这不是标准数量(465个)，请确认文件正确")
+            else:
+                messagebox.showwarning("文件分析", 
+                                     f"⚠️ 未检测到有效的寄存器配置\n\n"
+                                     f"文件应包含格式如下的行:\n"
+                                     f"0x1234,0x56\n"
+                                     f"或\n"
+                                     f"0x1234,56\n\n"
+                                     f"请检查文件格式是否正确")
             
         except Exception as e:
             self.total_var.set(0)
-            self.status_var.set(f"❌ 文件读取失败: {e}")
+            self.detected_regs_var.set("检测失败")
+            self.file_size_var.set("--")
+            self.status_var.set(f"❌ 文件分析失败: {e}")
+            messagebox.showerror("文件分析失败", f"无法分析文件:\n{str(e)}")
 
     def _reset_stats(self):
         """重置统计信息"""
@@ -474,7 +426,7 @@ class PageIClockMonitor(ttk.Frame):
         self._detailed_log.clear()
 
     def _send_regs_reliable(self):
-        """可靠发送模式 - 增加连接检查"""
+        """可靠发送模式"""
         if self._is_sending:
             messagebox.showwarning("提示", "正在发送中，请稍等...")
             return
@@ -485,7 +437,12 @@ class PageIClockMonitor(ttk.Frame):
             
         path = self.file_var.get().strip()
         if not path or not os.path.isfile(path):
-            messagebox.showerror("错误", "请先选择有效的寄存器文件")
+            messagebox.showerror("错误", "请先选择有效的配置文件")
+            return
+        
+        # 检查是否检测到寄存器
+        if self.total_var.get() <= 0:
+            messagebox.showerror("错误", "文件中未检测到有效的寄存器配置")
             return
             
         self._stop_sending = False
@@ -502,13 +459,13 @@ class PageIClockMonitor(ttk.Frame):
         self.after(0, self.status_var.set, "🛑 正在停止...")
 
     def _show_detailed_log(self):
-        """显示详细日志 - 改进版本"""
+        """显示详细日志"""
         if not self._detailed_log:
             messagebox.showinfo("日志", "暂无详细日志")
             return
             
         log_window = tk.Toplevel(self)
-        log_window.title("详细发送日志")
+        log_window.title("详细配置日志")
         log_window.geometry("1000x600")
         
         # 创建文本框和滚动条
@@ -569,7 +526,7 @@ class PageIClockMonitor(ttk.Frame):
         text_widget.see(tk.END)  # 滚动到底部
 
     def _do_reliable_send(self, path):
-        """可靠发送的后台线程 - 改进版本"""
+        """可靠发送的后台线程"""
         sent_count = 0
         confirmed_count = 0
         failed_count = 0
@@ -584,10 +541,10 @@ class PageIClockMonitor(ttk.Frame):
         last_update_time = start_time
         
         try:
-            self.after(0, self.status_var.set, f"🔒 开始可靠发送 (超时:{timeout}s, 重试:{max_retries}次, 间隔:{interval}s)...")
+            self.after(0, self.status_var.set, f"🔒 开始时钟频点配置 (超时:{timeout}s, 重试:{max_retries}次, 间隔:{interval}s)...")
             
             # 添加启动日志
-            start_log = f"📋 配置开始 - 文件: {os.path.basename(path)} | 总寄存器: {total} | 参数: 超时{timeout}s/重试{max_retries}次/间隔{interval}s"
+            start_log = f"📋 时钟频点配置开始 - 文件: {os.path.basename(path)} | 总寄存器: {total} | 参数: 超时{timeout}s/重试{max_retries}次/间隔{interval}s"
             self._detailed_log.append(start_log)
             
             with open(path, 'r', encoding='latin-1') as f:
@@ -599,12 +556,31 @@ class PageIClockMonitor(ttk.Frame):
                     if not line or line.startswith("#"):
                         continue
                         
+                    # 解析寄存器配置行
                     parts = [x.strip() for x in line.split(",")]
-                    if len(parts) != 2 or not parts[0].startswith("0x"):
+                    if len(parts) != 2:
+                        continue
+                    
+                    addr_part = parts[0].strip()
+                    data_part = parts[1].strip()
+                    
+                    # 验证地址格式
+                    if not addr_part.startswith("0x"):
+                        continue
+                    
+                    # 确保数据部分有0x前缀
+                    if not data_part.startswith("0x"):
+                        data_part = "0x" + data_part
+                    
+                    try:
+                        # 验证是否为有效的十六进制
+                        int(addr_part, 16)
+                        int(data_part, 16)
+                    except ValueError:
                         continue
                     
                     sent_count += 1
-                    reg_offset, reg_value = parts[0], parts[1]
+                    reg_offset, reg_value = addr_part, data_part
                     
                     # 更新当前状态
                     status_msg = f"🔒 发送 {sent_count}/{total}: {reg_offset} = {reg_value}"
@@ -647,7 +623,7 @@ class PageIClockMonitor(ttk.Frame):
                         self.after(0, self.ack_rate_var.set, ack_rate)
                         self.after(0, self.avg_retry_var.set, avg_retry)
                     
-                    # 更新速度和预计时间 (每秒更新一次)
+                    # 更新速度和预计时间
                     current_time = time.time()
                     if current_time - last_update_time >= 1.0:
                         elapsed = current_time - start_time
@@ -672,14 +648,14 @@ class PageIClockMonitor(ttk.Frame):
             final_ack_rate = f"{confirmed_count/sent_count*100:.1f}%" if sent_count > 0 else "0%"
             
             # 添加完成日志
-            completion_log = (f"📊 配置完成统计 - 总发送:{sent_count} | 成功:{confirmed_count} | 失败:{failed_count} | "
+            completion_log = (f"📊 时钟频点配置完成 - 总发送:{sent_count} | 成功:{confirmed_count} | 失败:{failed_count} | "
                             f"确认率:{final_ack_rate} | 平均重试:{total_retries/sent_count:.1f}次 | "
                             f"平均速度:{avg_speed:.1f}reg/s | 总耗时:{elapsed:.1f}秒")
             self._detailed_log.append(completion_log)
             
             if not self._stop_sending:
                 if confirmed_count == total:
-                    final_msg = f"🎉 完美完成！{confirmed_count}/{total} (100%) 全部确认成功！"
+                    final_msg = f"🎉 时钟频点配置完美完成！{confirmed_count}/{total} (100%) 全部确认成功！"
                     self.after(0, lambda: messagebox.showinfo("配置完成", 
                         f"🎉 所有 {confirmed_count} 个寄存器都收到设备确认！\n\n"
                         f"📊 统计信息:\n"
@@ -687,19 +663,18 @@ class PageIClockMonitor(ttk.Frame):
                         f"• 平均重试: {total_retries/sent_count:.1f} 次\n"
                         f"• 平均速度: {avg_speed:.1f} reg/s\n"
                         f"• 总耗时: {elapsed:.1f} 秒\n\n"
-                        f"✅ 串口日志中的确认数量与此完全一致"))
+                        f"✅ 时钟频点配置成功完成！"))
                 else:
-                    final_msg = f"⚠️ 完成：确认 {confirmed_count}/{sent_count} ({final_ack_rate}), 失败 {failed_count}"
+                    final_msg = f"⚠️ 配置完成：确认 {confirmed_count}/{sent_count} ({final_ack_rate}), 失败 {failed_count}"
                     self.after(0, lambda: messagebox.showwarning("配置完成", 
-                        f"发送完成，但有部分失败：\n\n"
+                        f"配置完成，但有部分失败：\n\n"
                         f"📊 统计信息:\n"
                         f"• 已确认: {confirmed_count} 个\n"
                         f"• 失败: {failed_count} 个\n"
                         f"• 确认率: {final_ack_rate}\n"
                         f"• 平均重试: {total_retries/sent_count:.1f} 次\n"
                         f"• 平均速度: {avg_speed:.1f} reg/s\n\n"
-                        f"⚠️ 请查看详细日志了解失败原因\n"
-                        f"建议：增加超时时间或重试次数后重新发送失败的寄存器"))
+                        f"⚠️ 请查看详细日志了解失败原因"))
                 
                 self.after(0, self.status_var.set, final_msg)
                 self.after(0, self.speed_var.set, f"{avg_speed:.1f} reg/s")
@@ -710,9 +685,9 @@ class PageIClockMonitor(ttk.Frame):
                 self.after(0, self.status_var.set, f"🛑 已停止：确认 {confirmed_count}, 失败 {failed_count}")
                     
         except Exception as e:
-            error_msg = f"❌ 发送异常: {str(e)}"
+            error_msg = f"❌ 配置异常: {str(e)}"
             self._detailed_log.append(error_msg)
-            self.after(0, lambda: messagebox.showerror("发送失败", 
+            self.after(0, lambda: messagebox.showerror("配置失败", 
                 f"配置过程中出现异常:\n\n{str(e)}\n\n"
                 f"已发送: {sent_count}\n"
                 f"已确认: {confirmed_count}\n"
@@ -724,24 +699,22 @@ class PageIClockMonitor(ttk.Frame):
             self.after(0, self.stop_btn.config, {"state": "disabled"})
 
     def reset(self):
-        """页面重置方法 - 修改为不重置关键状态"""
-        # 不再自动重置文件路径和频率显示
-        # 只重置日志显示，保持用户的配置状态
-        pass  # 暂时移除自动重置功能
-        
+        """页面重置方法"""
+        pass
+
     def manual_reset(self):
-        """手动重置方法 - 用户主动调用"""
+        """手动重置方法"""
         if self._is_sending:
             if messagebox.askyesno("确认", "当前正在发送配置，是否停止并重置？"):
                 self._stop_sending = True
-                time.sleep(0.1)  # 等待停止
+                time.sleep(0.1)
             else:
                 return
         
         self._reset_stats()
         self.status_var.set("Ready")
         self.file_var.set("")
-        for var in self.freq_vars.values():
-            var.set("N/A")
+        self.detected_regs_var.set("未选择文件")
+        self.file_size_var.set("--")
         self._detailed_log.clear()
         messagebox.showinfo("重置完成", "页面状态已重置")
