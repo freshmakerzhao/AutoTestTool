@@ -3,6 +3,7 @@
 """
 电流、功耗、温度监控GUI页面
 支持实时数据显示和CSV导出功能
+修复：通道状态同步显示，SET & GET按键整合
 """
 
 import tkinter as tk
@@ -109,7 +110,7 @@ class PageJPowerTempMonitor(ttk.Frame):
         # 上部控制面板
         self.build_control_panel(main_frame)
         
-        # 下部数据显示区（取消图表区）
+        # 下部数据显示区
         self.build_data_display_area(main_frame)
         
     def build_control_panel(self, parent):
@@ -147,14 +148,13 @@ class PageJPowerTempMonitor(ttk.Frame):
             )
             cb.grid(row=row, column=col, padx=5, pady=1, sticky=tk.W)
         
-        # 通道控制按钮
+        # 通道控制按钮 - 修改：去掉GET，将SET改为SET & GET
         btn_frame = ttk.Frame(channels_frame)
         btn_frame.pack(fill=tk.X, pady=(5, 0))
         
-        ttk.Button(btn_frame, text="全选", command=self.select_all_channels, width=8).pack(side=tk.LEFT, padx=2)
-        ttk.Button(btn_frame, text="全清", command=self.clear_all_channels, width=8).pack(side=tk.LEFT, padx=2)
-        ttk.Button(btn_frame, text="SET", command=self.send_config_set, width=8).pack(side=tk.LEFT, padx=2)
-        ttk.Button(btn_frame, text="GET", command=self.send_config_get, width=8).pack(side=tk.LEFT, padx=2)
+        ttk.Button(btn_frame, text="全选", command=self.select_all_channels, width=10).pack(side=tk.LEFT, padx=2)
+        ttk.Button(btn_frame, text="全清", command=self.clear_all_channels, width=10).pack(side=tk.LEFT, padx=2)
+        ttk.Button(btn_frame, text="SET & GET", command=self.send_config_set_and_get, width=12).pack(side=tk.LEFT, padx=2)
         
         # 控制按钮区域 - 整合所有监控控制功能
         control_btns_frame = ttk.LabelFrame(config_row, text="监控控制", padding=3)
@@ -280,10 +280,9 @@ class PageJPowerTempMonitor(ttk.Frame):
         """初始化电流功耗表格"""
         power_channels = self.power_temp_monitor.config.power_channels
         for i, channel in enumerate(power_channels):
-            self.power_tree.insert('', 'end', iid=channel, values=(channel, '0.000', '0.000', '0.000', '未启用'))
-            # 为奇偶行设置不同的标签（可选的视觉效果）
-            if i % 2 == 0:
-                self.power_tree.set(channel, '通道', channel)
+            # 初始状态根据通道是否启用来设置
+            initial_status = "已启用" if self.power_temp_monitor.config.channel_enabled[channel] else "未启用"
+            self.power_tree.insert('', 'end', iid=channel, values=(channel, '0.000', '0.000', '0.000', initial_status))
                 
     def build_status_display(self, parent):
         """构建状态显示"""
@@ -309,40 +308,50 @@ class PageJPowerTempMonitor(ttk.Frame):
             self.status_labels[label_text] = ttk.Label(status_grid, text="N/A", foreground=color, font=("Microsoft YaHei", 9, "bold"))
             self.status_labels[label_text].grid(row=row, column=col+1, sticky=tk.W, padx=5, pady=2)
         
-    def build_chart_area(self, parent):
-        """构建图表区域 - 已移除"""
-        pass
-        
-    def setup_charts(self):
-        """设置图表 - 已移除"""
-        pass
-        
-    def on_display_type_changed(self, event=None):
-        """显示类型改变事件 - 已移除"""
-        pass
-        
     def on_channel_toggled(self, channel):
-        """通道切换事件"""
+        """通道切换事件 - 修复：同步更新表格状态显示"""
         enabled = self.channel_vars[channel].get()
         self.power_temp_monitor.config.set_channel_enabled(channel, enabled)
+        
+        # 立即更新表格中的状态显示
+        self.update_channel_status_display(channel, enabled)
+        
         self.log_message(f"通道 {channel} {'启用' if enabled else '禁用'}")
+        
+    def update_channel_status_display(self, channel, enabled):
+        """更新单个通道的状态显示"""
+        if enabled:
+            # 如果启用但还没有数据，显示"等待数据"
+            current_voltage = self.power_tree.set(channel, '电压(mV)')
+            if current_voltage == '0.000':
+                self.power_tree.set(channel, '状态', '等待数据')
+            else:
+                self.power_tree.set(channel, '状态', '活跃')
+        else:
+            # 如果禁用，清空数据并设置状态
+            self.power_tree.set(channel, '电压(mV)', '0.000')
+            self.power_tree.set(channel, '电流(mA)', '0.000')
+            self.power_tree.set(channel, '功耗(mW)', '0.000')
+            self.power_tree.set(channel, '状态', '未启用')
         
     def select_all_channels(self):
         """全选所有通道"""
-        for var in self.channel_vars.values():
+        for channel, var in self.channel_vars.items():
             var.set(True)
-        self.power_temp_monitor.config.enable_all_channels()
+            self.power_temp_monitor.config.set_channel_enabled(channel, True)
+            self.update_channel_status_display(channel, True)
         self.log_message("已选择所有通道")
         
     def clear_all_channels(self):
         """清除所有通道选择"""
-        for var in self.channel_vars.values():
+        for channel, var in self.channel_vars.items():
             var.set(False)
-        self.power_temp_monitor.config.disable_all_channels()
+            self.power_temp_monitor.config.set_channel_enabled(channel, False)
+            self.update_channel_status_display(channel, False)
         self.log_message("已清除所有通道选择")
         
-    def send_config_set(self):
-        """发送配置SET命令"""
+    def send_config_set_and_get(self):
+        """发送配置SET & GET命令 - 修改：既发送SET也发送GET"""
         # 先同步所有通道状态到后端配置
         for channel, var in self.channel_vars.items():
             self.power_temp_monitor.config.set_channel_enabled(channel, var.get())
@@ -351,18 +360,22 @@ class PageJPowerTempMonitor(ttk.Frame):
         config_str = self.power_temp_monitor.config.get_config_string()
         enabled_count = sum(1 for v in self.channel_vars.values() if v.get())
         
+        # 发送SET命令
+        set_success = False
         if self.power_temp_monitor.send_power_config_set():
             self.log_message(f"配置SET命令已发送 - 启用 {enabled_count} 个通道")
+            set_success = True
         else:
             self.show_error("发送配置SET命令失败")
-            
-    def send_config_get(self):
-        """发送配置GET命令"""
-        if self.power_temp_monitor.send_power_config_get():
-            self.log_message("配置GET命令已发送")
-        else:
-            self.show_error("发送配置GET命令失败")
-            
+        
+        # 发送GET命令
+        if set_success:
+            time.sleep(0.1)  # 短暂延迟，确保SET命令处理完成
+            if self.power_temp_monitor.send_power_config_get():
+                self.log_message("配置GET命令已发送 - 验证配置状态")
+            else:
+                self.show_error("发送配置GET命令失败")
+                
     def start_monitoring(self):
         """开始监控"""
         if not self.serial_core or not self.serial_core.is_connected:
@@ -393,10 +406,6 @@ class PageJPowerTempMonitor(ttk.Frame):
         self.stop_csv_timer()
         
         self.log_message("停止电流功耗温度监控")
-        
-    def toggle_plot_pause(self):
-        """切换图表暂停 - 已移除"""
-        pass
             
     def toggle_auto_save(self):
         """切换自动保存"""
@@ -457,13 +466,18 @@ class PageJPowerTempMonitor(ttk.Frame):
         """清空所有数据"""
         self.power_temp_monitor.data_processor.clear_all_data()
         
-        # 重置电流功耗表格
+        # 重置电流功耗表格 - 保持通道启用状态
         for channel in self.power_temp_monitor.config.power_channels:
+            enabled = self.channel_vars[channel].get()
             self.power_tree.set(channel, '通道', channel)
             self.power_tree.set(channel, '电压(mV)', '0.000')
             self.power_tree.set(channel, '电流(mA)', '0.000')
             self.power_tree.set(channel, '功耗(mW)', '0.000')
-            self.power_tree.set(channel, '状态', '未启用')
+            # 根据通道启用状态设置正确的状态显示
+            if enabled:
+                self.power_tree.set(channel, '状态', '等待数据')
+            else:
+                self.power_tree.set(channel, '状态', '未启用')
         
         # 重置温度显示
         self.temp_sensor_label.config(text="N/A °C")
@@ -484,10 +498,6 @@ class PageJPowerTempMonitor(ttk.Frame):
             self.update_temperature_display(latest_temp_data)
         
         self.log_message("数据显示已刷新")
-        
-    def refresh_charts(self):
-        """刷新图表 - 已移除，保持兼容性"""
-        self.refresh_display()
         
     def export_current_data(self):
         """导出当前数据 - 自定义格式，分开显示电压、电流、功耗"""
@@ -574,7 +584,7 @@ class PageJPowerTempMonitor(ttk.Frame):
             return False
         
     def update_power_display(self, data):
-        """更新电流功耗显示"""
+        """更新电流功耗显示 - 修复：正确根据通道启用状态显示状态"""
         # 始终处理数据（即使页面不可见），确保CSV数据完整
         timestamp_str = data['timestamp'].strftime('%H:%M:%S')
         
@@ -586,17 +596,33 @@ class PageJPowerTempMonitor(ttk.Frame):
                 voltage_mv = values['voltage'] / 1000.0  # μV -> mV
                 current_ma = values['current'] / 1000.0  # μA -> mA
                 power_mw = values['power'] / 1000.0      # μW -> mW
-                # 判断状态
-                if values['voltage'] >= 0 or values['current'] >= 0 or values['power'] >= 0:
+                
+                # 改进的状态判断逻辑
+                channel_enabled = self.channel_vars[channel].get()
+                if not channel_enabled:
+                    # 通道未启用
+                    status = "未启用"
+                elif values['voltage'] > 0 or values['current'] > 0 or values['power'] > 0:
+                    # 通道启用且有数据
                     status = "活跃"
                 else:
-                    status = "未启用" if self.channel_vars[channel].get() else "已关闭"
+                    # 通道启用但无数据
+                    status = "等待数据"
+                
                 # 更新Treeview行数据，保留3位小数
                 try:
                     self.power_tree.set(channel, '通道', channel)
-                    self.power_tree.set(channel, '电压(mV)', f"{voltage_mv:.3f}")
-                    self.power_tree.set(channel, '电流(mA)', f"{current_ma:.3f}")
-                    self.power_tree.set(channel, '功耗(mW)', f"{power_mw:.3f}")
+                    
+                    # 如果通道未启用，强制显示0值
+                    if not channel_enabled:
+                        self.power_tree.set(channel, '电压(mV)', '0.000')
+                        self.power_tree.set(channel, '电流(mA)', '0.000')
+                        self.power_tree.set(channel, '功耗(mW)', '0.000')
+                    else:
+                        self.power_tree.set(channel, '电压(mV)', f"{voltage_mv:.3f}")
+                        self.power_tree.set(channel, '电流(mA)', f"{current_ma:.3f}")
+                        self.power_tree.set(channel, '功耗(mW)', f"{power_mw:.3f}")
+                    
                     self.power_tree.set(channel, '状态', status)
                     updated_channels.append(channel)
                 except Exception as e:
@@ -621,18 +647,6 @@ class PageJPowerTempMonitor(ttk.Frame):
     def update_config_display(self, data):
         """更新配置显示"""
         self.log_message(f"收到配置响应: {data}")
-        
-    def update_charts(self):
-        """更新图表 - 已移除"""
-        pass
-            
-    def update_temperature_chart(self):
-        """更新温度图表 - 已移除"""
-        pass
-        
-    def update_power_charts(self):
-        """更新电流/功耗图表 - 已移除"""
-        pass
             
     def start_update_timer(self):
         """启动更新定时器"""
@@ -759,13 +773,18 @@ class PageJPowerTempMonitor(ttk.Frame):
             self.stop_btn.config(state=tk.NORMAL)
             # 不清空数据，保持当前显示
         else:
-            # 如果监控未运行，执行常规重置，清空显示数据
+            # 如果监控未运行，执行常规重置，重建表格状态显示
             for channel in self.power_temp_monitor.config.power_channels:
+                enabled = self.channel_vars[channel].get()
                 self.power_tree.set(channel, '通道', channel)
                 self.power_tree.set(channel, '电压(mV)', '0.000')
                 self.power_tree.set(channel, '电流(mA)', '0.000')
                 self.power_tree.set(channel, '功耗(mW)', '0.000')
-                self.power_tree.set(channel, '状态', '未启用')
+                # 根据通道启用状态设置正确的状态显示
+                if enabled:
+                    self.power_tree.set(channel, '状态', '等待数据')
+                else:
+                    self.power_tree.set(channel, '状态', '未启用')
             # 重置温度显示
             self.temp_sensor_label.config(text="N/A °C")
             self.temp_fpga_label.config(text="N/A °C")
