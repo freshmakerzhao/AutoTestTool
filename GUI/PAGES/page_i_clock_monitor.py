@@ -56,6 +56,29 @@ class ReliableClockClient:
         """检查串口连接状态"""
         return self.serial.is_connected
 
+    def send_reg_direct(self, reg_offset: str, reg_value: str) -> dict:
+        """
+        直发模式：只发送寄存器，不等待确认
+        返回发送结果信息
+        """
+        result = {
+            "success": False,
+            "attempts": 1,
+            "error": None
+        }
+        
+        try:
+            # 发送命令
+            cmd = build_clk_cfg_command(reg_offset, reg_value)
+            if self.serial.send_text(cmd + "\n"):
+                result["success"] = True
+            else:
+                result["error"] = "串口发送失败"
+        except Exception as e:
+            result["error"] = f"发送异常: {str(e)}"
+        
+        return result
+
     def send_reg_with_guaranteed_ack(self, reg_offset: str, reg_value: str, timeout: float = 5.0, max_retries: int = 3) -> dict:
         """
         发送寄存器并确保收到设备确认
@@ -195,27 +218,19 @@ class PageIClockMonitor(ttk.Frame):
         self.file_size_var = tk.StringVar(value="--")
         ttk.Entry(info_frame, textvariable=self.file_size_var, state="readonly", width=10).grid(row=0, column=3, padx=5)
 
-        # 配置参数
-        param_frame = ttk.Frame(config_frame)
-        param_frame.grid(row=2, column=0, columnspan=3, sticky="ew", padx=5, pady=5)
+        # 发送模式选择
+        mode_frame = ttk.Frame(config_frame)
+        mode_frame.grid(row=2, column=0, columnspan=3, sticky="ew", padx=5, pady=5)
         
-        ttk.Label(param_frame, text="确认超时:").grid(row=0, column=0, sticky=tk.W, padx=5)
-        self.timeout_var = tk.DoubleVar(value=3.0)
-        ttk.Spinbox(param_frame, from_=1.0, to=10.0, increment=0.5, 
-                   textvariable=self.timeout_var, width=8).grid(row=0, column=1, padx=5)
-        ttk.Label(param_frame, text="秒").grid(row=0, column=2, sticky=tk.W)
+        ttk.Label(mode_frame, text="发送模式:").grid(row=0, column=0, sticky=tk.W, padx=5)
+        self.mode_var = tk.StringVar(value="确认模式")
+        mode_combo = ttk.Combobox(mode_frame, textvariable=self.mode_var, width=20, state="readonly")
+        mode_combo['values'] = ("确认模式 (等待设备确认)", "直发模式 (仅发送不等确认)")
+        mode_combo.grid(row=0, column=1, padx=5, sticky="w")
         
-        ttk.Label(param_frame, text="最大重试:").grid(row=0, column=3, sticky=tk.W, padx=5)
-        self.retry_var = tk.IntVar(value=3)
-        ttk.Spinbox(param_frame, from_=1, to=5, increment=1, 
-                   textvariable=self.retry_var, width=8).grid(row=0, column=4, padx=5)
-        ttk.Label(param_frame, text="次").grid(row=0, column=5, sticky=tk.W)
-
-        ttk.Label(param_frame, text="发送间隔:").grid(row=0, column=6, sticky=tk.W, padx=5)
-        self.interval_var = tk.DoubleVar(value=0.1)
-        ttk.Spinbox(param_frame, from_=0.05, to=1.0, increment=0.05, 
-                   textvariable=self.interval_var, width=8).grid(row=0, column=7, padx=5)
-        ttk.Label(param_frame, text="秒").grid(row=0, column=8, sticky=tk.W)
+        # 模式说明
+        ttk.Label(mode_frame, text="💡 确认模式适用于支持recv回复的板子，直发模式适用于不回复的板子", 
+                 foreground="blue", font=("Microsoft YaHei", 8)).grid(row=1, column=0, columnspan=3, sticky="w", padx=5, pady=2)
 
         # 控制按钮
         control_frame = ttk.Frame(config_frame)
@@ -234,7 +249,7 @@ class PageIClockMonitor(ttk.Frame):
         self.reset_btn.pack(side=tk.LEFT, padx=5)
 
         # === 实时统计区域 ===
-        stats_frame = ttk.LabelFrame(main_frame, text="📊 实时统计 (真实确认数据)")
+        stats_frame = ttk.LabelFrame(main_frame, text="📊 实时统计 (发送状态)")
         stats_frame.pack(fill=tk.X, pady=(0, 10))
 
         # 当前进度
@@ -256,7 +271,7 @@ class PageIClockMonitor(ttk.Frame):
         self.sent_var = tk.IntVar(value=0)
         ttk.Entry(detail_frame, textvariable=self.sent_var, width=6, state="readonly").grid(row=0, column=3, padx=2)
 
-        ttk.Label(detail_frame, text="已确认:").grid(row=0, column=4, padx=5)
+        ttk.Label(detail_frame, text="已成功:").grid(row=0, column=4, padx=5)
         self.confirmed_var = tk.IntVar(value=0)
         ttk.Entry(detail_frame, textvariable=self.confirmed_var, width=6, state="readonly").grid(row=0, column=5, padx=2)
 
@@ -265,7 +280,7 @@ class PageIClockMonitor(ttk.Frame):
         ttk.Entry(detail_frame, textvariable=self.failed_var, width=6, state="readonly").grid(row=0, column=7, padx=2)
 
         # 第二行统计
-        ttk.Label(detail_frame, text="确认率:").grid(row=1, column=0, padx=5)
+        ttk.Label(detail_frame, text="成功率:").grid(row=1, column=0, padx=5)
         self.ack_rate_var = tk.StringVar(value="0%")
         ttk.Entry(detail_frame, textvariable=self.ack_rate_var, width=8, state="readonly").grid(row=1, column=1, padx=2)
 
@@ -286,9 +301,9 @@ class PageIClockMonitor(ttk.Frame):
         note_frame.pack(fill=tk.X, pady=5)
         note = ("🔒 时钟频点配置特点：\n"
                "• 自动检测配置文件中的寄存器数量（常见465个，支持其他数量）\n"
-               "• 每个寄存器都等待设备确认，确保100%可靠传输\n"
-               "• 自动重试失败的寄存器，直到收到确认\n"
-               "• 实时显示真实的确认数量，与串口日志完全一致")
+               "• 支持两种模式：确认模式（等待设备recv回复）和直发模式（仅发送）\n"
+               "• 确认模式：适用于支持recv回复的板子，确保100%可靠传输\n"
+               "• 直发模式：适用于不回复recv的板子，快速批量发送")
         ttk.Label(note_frame, text=note, foreground="blue", font=("Microsoft YaHei", 8), justify=tk.LEFT).pack(anchor=tk.W)
 
     def _check_connection(self) -> bool:
@@ -526,25 +541,30 @@ class PageIClockMonitor(ttk.Frame):
         text_widget.see(tk.END)  # 滚动到底部
 
     def _do_reliable_send(self, path):
-        """可靠发送的后台线程"""
+        """可靠发送的后台线程 - 支持确认模式和直发模式"""
         sent_count = 0
         confirmed_count = 0
         failed_count = 0
         total_retries = 0
         total = self.total_var.get()
         
-        timeout = self.timeout_var.get()
-        max_retries = self.retry_var.get()
-        interval = self.interval_var.get()
+        # 根据模式选择参数
+        is_confirm_mode = "确认模式" in self.mode_var.get()
+        
+        # 固定参数设置
+        timeout = 3.0 if is_confirm_mode else 0.0
+        max_retries = 3 if is_confirm_mode else 1
+        interval = 0.05  # 发送间隔固定为0.05秒
         
         start_time = time.time()
         last_update_time = start_time
         
         try:
-            self.after(0, self.status_var.set, f"🔒 开始时钟频点配置 (超时:{timeout}s, 重试:{max_retries}次, 间隔:{interval}s)...")
+            mode_desc = "确认模式" if is_confirm_mode else "直发模式"
+            self.after(0, self.status_var.set, f"🔒 开始时钟频点配置 ({mode_desc})...")
             
             # 添加启动日志
-            start_log = f"📋 时钟频点配置开始 - 文件: {os.path.basename(path)} | 总寄存器: {total} | 参数: 超时{timeout}s/重试{max_retries}次/间隔{interval}s"
+            start_log = f"📋 时钟频点配置开始 - 文件: {os.path.basename(path)} | 总寄存器: {total} | 模式: {mode_desc}"
             self._detailed_log.append(start_log)
             
             with open(path, 'r', encoding='latin-1') as f:
@@ -587,29 +607,37 @@ class PageIClockMonitor(ttk.Frame):
                     self.after(0, self.status_var.set, status_msg)
                     self.after(0, self.sent_var.set, sent_count)
                     
-                    # 发送并等待确认
-                    result = self.client.send_reg_with_guaranteed_ack(
-                        reg_offset, reg_value, timeout=timeout, max_retries=max_retries
-                    )
-                    
-                    total_retries += result["attempts"]
-                    
-                    if result["success"]:
-                        confirmed_count += 1
-                        log_entry = (f"✅ [{sent_count:3d}/{total}] {reg_offset}={reg_value} 成功 "
-                                   f"(尝试:{result['attempts']}次) "
-                                   f"收到确认: {result['actual_response']}")
-                    else:
-                        failed_count += 1
-                        error_detail = result.get('error', 'Unknown error')
-                        parsed_info = ""
-                        if result.get('parsed_reg') or result.get('parsed_value'):
-                            parsed_info = f" | 解析到: reg={result.get('parsed_reg', 'N/A')}, value={result.get('parsed_value', 'N/A')}"
+                    # 根据模式选择发送方法
+                    if is_confirm_mode:
+                        # 确认模式：等待设备确认
+                        result = self.client.send_reg_with_guaranteed_ack(
+                            reg_offset, reg_value, timeout=timeout, max_retries=max_retries
+                        )
+                        total_retries += result["attempts"]
                         
-                        log_entry = (f"❌ [{sent_count:3d}/{total}] {reg_offset}={reg_value} 失败 "
-                                   f"(尝试:{result['attempts']}次) "
-                                   f"错误: {error_detail}{parsed_info} "
-                                   f"响应: {result.get('actual_response', 'No response')}")
+                        if result["success"]:
+                            confirmed_count += 1
+                            log_entry = (f"✅ [{sent_count:3d}/{total}] {reg_offset}={reg_value} 成功 "
+                                       f"(尝试:{result['attempts']}次) "
+                                       f"收到确认: {result['actual_response']}")
+                        else:
+                            failed_count += 1
+                            error_detail = result.get('error', 'Unknown error')
+                            log_entry = (f"❌ [{sent_count:3d}/{total}] {reg_offset}={reg_value} 失败 "
+                                       f"(尝试:{result['attempts']}次) "
+                                       f"错误: {error_detail}")
+                    else:
+                        # 直发模式：只发送不等确认
+                        result = self.client.send_reg_direct(reg_offset, reg_value)
+                        total_retries += result["attempts"]
+                        
+                        if result["success"]:
+                            confirmed_count += 1  # 直发模式认为发送成功就是确认
+                            log_entry = f"✅ [{sent_count:3d}/{total}] {reg_offset}={reg_value} 已发送"
+                        else:
+                            failed_count += 1
+                            error_detail = result.get('error', 'Unknown error')
+                            log_entry = f"❌ [{sent_count:3d}/{total}] {reg_offset}={reg_value} 发送失败: {error_detail}"
                     
                     self._detailed_log.append(log_entry)
                     
@@ -648,31 +676,31 @@ class PageIClockMonitor(ttk.Frame):
             final_ack_rate = f"{confirmed_count/sent_count*100:.1f}%" if sent_count > 0 else "0%"
             
             # 添加完成日志
-            completion_log = (f"📊 时钟频点配置完成 - 总发送:{sent_count} | 成功:{confirmed_count} | 失败:{failed_count} | "
-                            f"确认率:{final_ack_rate} | 平均重试:{total_retries/sent_count:.1f}次 | "
-                            f"平均速度:{avg_speed:.1f}reg/s | 总耗时:{elapsed:.1f}秒")
+            completion_log = (f"📊 时钟频点配置完成 - 模式:{mode_desc} | 总发送:{sent_count} | 成功:{confirmed_count} | 失败:{failed_count} | "
+                            f"成功率:{final_ack_rate} | 平均速度:{avg_speed:.1f}reg/s | 总耗时:{elapsed:.1f}秒")
             self._detailed_log.append(completion_log)
             
             if not self._stop_sending:
                 if confirmed_count == total:
-                    final_msg = f"🎉 时钟频点配置完美完成！{confirmed_count}/{total} (100%) 全部确认成功！"
+                    final_msg = f"🎉 时钟频点配置完美完成！{confirmed_count}/{total} (100%) 全部成功！"
+                    success_text = "确认成功" if is_confirm_mode else "发送成功"
                     self.after(0, lambda: messagebox.showinfo("配置完成", 
-                        f"🎉 所有 {confirmed_count} 个寄存器都收到设备确认！\n\n"
+                        f"🎉 所有 {confirmed_count} 个寄存器都{success_text}！\n\n"
                         f"📊 统计信息:\n"
-                        f"• 确认率: 100%\n"
-                        f"• 平均重试: {total_retries/sent_count:.1f} 次\n"
+                        f"• 成功率: 100%\n"
+                        f"• 发送模式: {mode_desc}\n"
                         f"• 平均速度: {avg_speed:.1f} reg/s\n"
                         f"• 总耗时: {elapsed:.1f} 秒\n\n"
                         f"✅ 时钟频点配置成功完成！"))
                 else:
-                    final_msg = f"⚠️ 配置完成：确认 {confirmed_count}/{sent_count} ({final_ack_rate}), 失败 {failed_count}"
+                    final_msg = f"⚠️ 配置完成：成功 {confirmed_count}/{sent_count} ({final_ack_rate}), 失败 {failed_count}"
                     self.after(0, lambda: messagebox.showwarning("配置完成", 
                         f"配置完成，但有部分失败：\n\n"
                         f"📊 统计信息:\n"
-                        f"• 已确认: {confirmed_count} 个\n"
+                        f"• 已成功: {confirmed_count} 个\n"
                         f"• 失败: {failed_count} 个\n"
-                        f"• 确认率: {final_ack_rate}\n"
-                        f"• 平均重试: {total_retries/sent_count:.1f} 次\n"
+                        f"• 成功率: {final_ack_rate}\n"
+                        f"• 发送模式: {mode_desc}\n"
                         f"• 平均速度: {avg_speed:.1f} reg/s\n\n"
                         f"⚠️ 请查看详细日志了解失败原因"))
                 
@@ -680,9 +708,9 @@ class PageIClockMonitor(ttk.Frame):
                 self.after(0, self.speed_var.set, f"{avg_speed:.1f} reg/s")
                 self.after(0, self.eta_var.set, "完成")
             else:
-                stop_log = f"🛑 配置已停止 - 发送:{sent_count} | 确认:{confirmed_count} | 失败:{failed_count}"
+                stop_log = f"🛑 配置已停止 - 发送:{sent_count} | 成功:{confirmed_count} | 失败:{failed_count}"
                 self._detailed_log.append(stop_log)
-                self.after(0, self.status_var.set, f"🛑 已停止：确认 {confirmed_count}, 失败 {failed_count}")
+                self.after(0, self.status_var.set, f"🛑 已停止：成功 {confirmed_count}, 失败 {failed_count}")
                     
         except Exception as e:
             error_msg = f"❌ 配置异常: {str(e)}"
@@ -690,7 +718,7 @@ class PageIClockMonitor(ttk.Frame):
             self.after(0, lambda: messagebox.showerror("配置失败", 
                 f"配置过程中出现异常:\n\n{str(e)}\n\n"
                 f"已发送: {sent_count}\n"
-                f"已确认: {confirmed_count}\n"
+                f"已成功: {confirmed_count}\n"
                 f"失败: {failed_count}"))
             self.after(0, self.status_var.set, error_msg)
         finally:
