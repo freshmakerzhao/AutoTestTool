@@ -7,7 +7,7 @@ import time
 import re
 import queue
 from CLI.cli_clock import ClockClient
-from CORE.clock_api import build_clk_cfg_command
+from CORE.module_clock import build_clk_cfg_command
 
 class ReliableClockClient:
     """真正可靠的时钟客户端"""

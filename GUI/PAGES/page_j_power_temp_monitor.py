@@ -23,7 +23,7 @@ core_dir = os.path.join(project_root, 'CORE')
 if core_dir not in sys.path:
     sys.path.insert(0, core_dir)
 
-from CORE.power_temp_api import PowerTempMonitor, PowerTempEventHandler, create_power_temp_monitor
+from CORE.module_power import PowerTempMonitor, PowerTempEventHandler, create_power_temp_monitor
 
 import logging
 

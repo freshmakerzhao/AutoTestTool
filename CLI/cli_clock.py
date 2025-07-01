@@ -2,7 +2,7 @@
 import time
 import re
 from CORE.serial_api import SerialCore
-from CORE.clock_api import (
+from CORE.module_clock import (
     build_clk_set_command,
     build_clk_get_command,
     build_clk_cfg_command,
