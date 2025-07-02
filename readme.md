@@ -95,3 +95,8 @@ vccm --project 项目路径 --vccm_values vccm电压值 --vswl_selected vswl电�
   - 各模块命令行参数解析文件；
   - 入口统一为main_shell.py。
   
+实际调用流程：
+- UI
+  - 用户在页面点击执行后，在page层将各项执行参数汇总，传递给core，由core做具体操作；
+- CLI（命令行接口）
+  - 用户通过控制台执行时，由main_shell做分配，分配给cli_xxx模块做参数解析，再传递给core做具体操作。

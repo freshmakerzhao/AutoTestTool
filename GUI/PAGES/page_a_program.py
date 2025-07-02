@@ -257,7 +257,6 @@ class PageAProgram(ttk.Frame):
 
         logging.info(f"[Program] ========= ALL PASS =========")
 
-
     def clear_log(self):
         self.log_text.config(state="normal")
         self.log_text.delete("1.0", tk.END)
