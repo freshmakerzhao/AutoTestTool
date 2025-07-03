@@ -11,22 +11,70 @@ from collections import deque
 from typing import Optional, Dict, List
 from CORE.serial_api import create_serial_monitor, SerialEventHandler
 
+class MessageBuffer:
+    """消息缓冲器，用于拼接完整的串口消息"""
+    
+    def __init__(self):
+        self.buffer = ""
+        self.lock = threading.Lock()
+        
+    def add_data(self, data: str) -> List[str]:
+        """
+        添加接收到的数据，返回完整的消息列表
+        
+        Args:
+            data: 新接收到的数据
+            
+        Returns:
+            List[str]: 完整消息列表
+        """
+        with self.lock:
+            self.buffer += data
+            complete_messages = []
+            
+            # 按换行符分割消息
+            lines = self.buffer.split('\n')
+            
+            # 最后一行可能不完整，保留在缓冲区
+            self.buffer = lines[-1]
+            
+            # 处理完整的消息（除了最后一行）
+            for line in lines[:-1]:
+                line = line.strip()
+                if line:  # 忽略空行
+                    complete_messages.append(line)
+                    
+            return complete_messages
+    
+    def clear(self):
+        """清空缓冲区"""
+        with self.lock:
+            self.buffer = ""
+
 class CLIEventHandler(SerialEventHandler):
     """CLI模式下的串口事件处理器"""
     
     def __init__(self, verbose=True):
         self.verbose = verbose
         self.running = True
+        self.message_buffer = MessageBuffer()
         
     def on_data_received(self, processed_data: dict) -> None:
         """处理接收到的数据"""
         if not self.verbose or not self.running:
             return
             
-        timestamp = processed_data['timestamp'].strftime("%H:%M:%S.%f")[:-3]
-        ascii_data = processed_data['ascii'].rstrip('\r\n')
-        if ascii_data:  # 只显示非空数据
-            print(f"[{timestamp}] RX: {ascii_data}")
+        # 获取接收时间戳
+        receive_timestamp = processed_data['timestamp']
+        ascii_data = processed_data['ascii']
+        
+        # 将数据添加到缓冲区，获取完整消息
+        complete_messages = self.message_buffer.add_data(ascii_data)
+        
+        # 显示每条完整的消息
+        for message in complete_messages:
+            timestamp_str = receive_timestamp.strftime("%H:%M:%S.%f")[:-3]
+            print(f"[{timestamp_str}] RX: {message}")
     
     def on_data_sent(self, data: bytes) -> None:
         """处理发送的数据"""
@@ -103,6 +151,7 @@ class AsyncSerialMonitor:
         self.baudrate = None
         self.start_time = None
         self.total_received = 0
+        self.message_buffer = MessageBuffer()  # 消息缓冲器
         self._initialized = True
         
     def start_monitoring(self, port: str, baudrate: int, log_file: Optional[str] = None) -> bool:
@@ -129,6 +178,9 @@ class AsyncSerialMonitor:
             # 设置日志
             if log_file:
                 self.enable_logging(log_file)
+                
+            # 清空消息缓冲区
+            self.message_buffer.clear()
                 
             # 更新状态
             self.is_monitoring = True
@@ -162,6 +214,9 @@ class AsyncSerialMonitor:
                 
             # 关闭日志文件
             self.disable_logging()
+            
+            # 清空消息缓冲区
+            self.message_buffer.clear()
             
             # 更新状态
             self.is_monitoring = False
@@ -219,28 +274,33 @@ class AsyncSerialMonitor:
         """处理接收到的数据"""
         with self.lock:
             try:
-                # 简单的数据处理
-                timestamp = processed_data['timestamp']
+                # 获取接收时间戳和数据
+                receive_timestamp = processed_data['timestamp']
                 raw_data = processed_data['raw_data']
                 ascii_data = processed_data['ascii']
                 
-                # 构建缓存数据
-                cache_data = {
-                    'timestamp': timestamp,
-                    'raw_text': ascii_data.strip(),
-                    'length': len(raw_data),
-                    'packet_id': processed_data.get('packet_id', 0)
-                }
+                # 将数据添加到消息缓冲区，获取完整消息
+                complete_messages = self.message_buffer.add_data(ascii_data)
                 
-                # 缓存数据
-                self.data_cache.append(cache_data)
-                self.total_received += 1
-                
-                # 写入日志文件
-                if self.log_enabled and self.log_file:
-                    log_line = self._format_log_line(cache_data)
-                    self.log_file.write(log_line + '\n')
-                    self.log_file.flush()
+                # 处理每条完整的消息
+                for message in complete_messages:
+                    # 构建缓存数据
+                    cache_data = {
+                        'timestamp': receive_timestamp,
+                        'raw_text': message,
+                        'length': len(message.encode('utf-8')),
+                        'packet_id': processed_data.get('packet_id', 0)
+                    }
+                    
+                    # 缓存数据
+                    self.data_cache.append(cache_data)
+                    self.total_received += 1
+                    
+                    # 写入日志文件
+                    if self.log_enabled and self.log_file:
+                        log_line = self._format_log_line(cache_data)
+                        self.log_file.write(log_line + '\n')
+                        self.log_file.flush()
                     
             except Exception as e:
                 print(f"❌ 数据处理错误: {e}")
@@ -662,7 +722,7 @@ def _cmd_get_stats(args):
         print("📊 串口统计信息:")
         print(f"  连接状态: {'已连接' if stats['is_connected'] else '未连接'}")
         print(f"  当前端口: {stats.get('current_port', 'N/A')}")
-        print(f"  会话接收: {stats['session_bytes']} 字节")
+        print(f"  会话接收: {stats['session_bytes']} 字节") 
         print(f"  总接收: {stats['total_bytes']} 字节") 
         print(f"  数据包数: {stats['packet_count']}")
         print(f"  日志状态: {'启用' if stats['log_enabled'] else '禁用'}")
