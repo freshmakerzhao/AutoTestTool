@@ -1,0 +1,62 @@
+# test_async.txt - 异步串口监听测试脚本
+# 放置路径: C:\Users\win\Desktop\HybrdchipGUI\merge_zhiwei\AutoTestTool\RESOURCE\SCRIPTS\test_async.txt
+
+# 设置变量
+set PORT COM6
+set BAUDRATE 115200
+
+echo "=== 异步串口监听测试开始 ==="
+echo "端口: $PORT"
+echo "波特率: $BAUDRATE"
+
+# 1. 列出可用端口
+echo "1. 列出可用串口:"
+moni ports
+
+# 2. 测试连接
+echo "2. 测试串口连接:"
+moni test $PORT $BAUDRATE
+
+# 3. 开始后台监听
+echo "3. 开始后台监听:"
+start_monitor $PORT $BAUDRATE
+sleep 3
+
+# 4. 查看监听状态
+echo "4. 查看监听状态:"
+monitor_status
+
+# 5. 等待一段时间，让数据积累
+echo "5. 等待数据积累..."
+sleep 10
+
+# 6. 查看缓存数据
+echo "6. 查看最近5条数据:"
+show_data 5
+
+# 7. 开启文件日志
+echo "7. 开启文件日志:"
+enable_log test_output.log
+sleep 5
+
+# 8. 查看更多数据
+echo "8. 查看最近10条数据:"
+show_data 10
+
+# 9. 关闭文件日志
+echo "9. 关闭文件日志:"
+disable_log
+
+# 10. 保存所有缓存数据
+echo "10. 保存缓存数据:"
+save_log complete_test.txt
+
+# 11. 最终状态检查
+echo "11. 最终状态检查:"
+monitor_status
+
+# 12. 停止监听
+echo "12. 停止监听:"
+stop_monitor
+
+echo "=== 异步串口监听测试结束 ==="
