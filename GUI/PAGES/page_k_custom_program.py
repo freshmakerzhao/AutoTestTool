@@ -54,21 +54,22 @@ class PageKCustomProgram(ttk.Frame):
 
         kwargs = dict(bit_file=bit_file)
         self.run_btn.config(state="disabled")
+        base_dir = os.path.dirname(sys.executable if getattr(sys, 'frozen', False) else __file__)
+        cur_log_path = os.path.join(base_dir, "log.txt")
         run_in_thread(
             self,
             self.program_bit_file,
             lock_widget=self.run_btn,
             on_success=self._after_success,
             on_error=self._after_error,
+            log_path=cur_log_path,
             **kwargs
         )
         
     def program_bit_file(self, bit_file):
         # 获取 exe 路径
         base_dir = os.path.dirname(sys.executable if getattr(sys, 'frozen', False) else __file__)
-        print(base_dir)
         exe_path = os.path.join(base_dir, "bin", "BitstreamLoader.exe")
-
         indirect_path = os.path.join(base_dir, "resource", "spiOverJtag_MC1P110.bit.gz")
         param_cable = "digilent_hs3"
         param_chip = "arty_a7_100t"
