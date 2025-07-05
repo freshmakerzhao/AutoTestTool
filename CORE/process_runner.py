@@ -49,7 +49,8 @@ def run_base_task(
     if compress:
         module_base.process_compress(bitstream_obj)
         
-
+    if file_suffix is None:
+        file_suffix = FILE_ENDWITH
     return bitstream_obj.save_file(file_suffix)
 
 VCCM_VALUES_LIST = [

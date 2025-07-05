@@ -21,7 +21,8 @@ python main_shell.py myscript.txt
 # 二、常用命令
 
 ## 2.1 基础功能
-
+### 压缩位流
+base --file 文件路径 --COMPRESS
 
 
 

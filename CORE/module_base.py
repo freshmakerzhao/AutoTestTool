@@ -236,7 +236,7 @@ def process_compress(bitstream_obj):
     is_first = True
     config_suffix = "_STR" if bitstream_obj.file_type == ".rbt" else "_BYTE"
     
-    # 构造FAR
+    # 构造FAR DATA
     def get_frame_address_register(frame_type, region_type, row_num, col_num, frame_index):
         # 00000000000000000000000000000000	frame_type:0 region_type:0 row_num:0 col_num:0 frame_index:0
         # 构造32位二进制数
@@ -501,18 +501,20 @@ def process_compress(bitstream_obj):
             # CMD 且 command:DGHIGH/LFRM 时，做插入
             if bitstream_obj.rbt_cfg_content_after[cur_index].cmd_name == "CMD" \
                 and bitstream_obj.rbt_cfg_content_after[cur_index].data_len == 2 \
-                and bitstream_obj.rbt_cfg_content_after[cur_index].get_data_from_index(1)[-2:] == "11":
+                and bitstream_obj.rbt_cfg_content_after[cur_index].get_data_from_index(1)[-5:] == "00011":
                         
                 # 此时需要在 cur_index+1位置插入两个 Item MASK CTL1
                 # MASK
                 item = bitstream_obj.PacketItem("MASK")
-                item.set_opcode(0)
+                item.set_opcode(2)
+                item.append_data(getattr(config, "MASK"+config_suffix))
                 item.append_data("00000000000000000001000000000000")
                 bitstream_obj.rbt_cfg_content_after.insert(cur_index+1, item)
                 
                 # CTL1
                 item = bitstream_obj.PacketItem("CTL1")
-                item.set_opcode(0)
+                item.set_opcode(2)
+                item.append_data(getattr(config, "CTL1"+config_suffix))
                 item.append_data("00000000000000000000000000000000")
                 bitstream_obj.rbt_cfg_content_after.insert(cur_index+2, item)
                 
@@ -524,18 +526,20 @@ def process_compress(bitstream_obj):
             # CMD 且 command:DGHIGH/LFRM 时，做插入
             if bitstream_obj.bit_cfg_content_after[cur_index].cmd_name == "CMD" \
                 and bitstream_obj.bit_cfg_content_after[cur_index].data_len == 2 \
-                and bitstream_obj.bit_cfg_content_after[cur_index].get_data_from_index(1)[-1:] == b"\x03":
+                and bitstream_obj.bit_cfg_content_after[cur_index].get_data_from_index(1)[-5:] == b"\x03":
                     
                 # 此时需要在 cur_index+1位置插入两个 Item MASK CTL1
                 # MASK
                 item = bitstream_obj.PacketItem("MASK")
-                item.set_opcode(0)
+                item.set_opcode(2)
+                item.append_data(getattr(config, "MASK"+config_suffix))
                 item.append_data(b"\x00\x00\x10\x00")
                 bitstream_obj.bit_cfg_content_after.insert(cur_index+1, item)
                 
                 # CTL1
                 item = bitstream_obj.PacketItem("CTL1")
-                item.set_opcode(0)
+                item.set_opcode(2)
+                item.append_data(getattr(config, "CTL1"+config_suffix))
                 item.append_data(b"\x00\x00\x00\x00")
                 bitstream_obj.bit_cfg_content_after.insert(cur_index+2, item)
                 
