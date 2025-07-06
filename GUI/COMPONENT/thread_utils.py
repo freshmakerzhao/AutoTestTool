@@ -1,6 +1,7 @@
 import threading, logging, traceback
 from tkinter import messagebox
 from typing import Callable, Any
+import contextlib
 
 _is_running = False
 
@@ -11,6 +12,7 @@ def run_in_thread(
     lock_widget=None,           # 执行按钮，防止二次点击
     on_success=None,            # 成功回调
     on_error=None,              # 失败回调
+    log_path=None,          # 新增参数
     **kwargs,
 ):
     
@@ -31,7 +33,13 @@ def run_in_thread(
         
     def _worker():
         try:
-            result = func(*args, **kwargs)
+            if log_path:
+                with open(log_path, "a", encoding="utf-8") as f, \
+                        contextlib.redirect_stdout(f), \
+                        contextlib.redirect_stderr(f):
+                    result = func(*args, **kwargs)
+            else:
+                result = func(*args, **kwargs)
             root.after(0, lambda: (
                 lock_widget and lock_widget.config(state="normal"),
                 on_success and on_success(result)

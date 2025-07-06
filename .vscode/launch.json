@@ -156,6 +156,22 @@
             "program": "E:\\workspace\\AutoTestTool\\GUI\\app.py",
             "console": "integratedTerminal",
             "justMyCode": false
-        }
+        },
+        {
+            "name": "compress",
+            "type": "debugpy",
+            "request": "launch",
+            "args": [
+                "-c",
+                "base --file C:/Users/DELL/Desktop/test_workspace/压缩位流/filter_HEX_VALUE_FF_test_origin.rbt --device MC1P110 --COMPRESS"
+            ],
+            "env": {
+                // 把根目录塞进 PYTHONPATH，省去 import 麻烦
+                "PYTHONPATH": "${workspaceFolder}"
+            },
+            "program": "E:\\workspace\\AutoTestTool\\CLI\\main_shell.py",
+            "console": "integratedTerminal",
+            "justMyCode": false
+        },
     ]
 }

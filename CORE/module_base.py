@@ -1,7 +1,8 @@
 import logging
-import COMMON.config as config
 import COMMON.utils as utils
 from collections import defaultdict
+from COMMON.config import ConfigurationPacket
+import COMMON.frame_structure as frame_structure
 
 # ====================== GTP 修改位置和数据 ====================== 
 GTP_CONFIG = [
@@ -88,20 +89,20 @@ def process_trim(bitstream_obj):
             if bitstream_obj.rbt_cfg_content_pre[i].cmd_name == "COR1":
                 new_line = bitstream_obj.rbt_cfg_content_pre[i].get_data_from_index(1)[:-13] + "1" + bitstream_obj.rbt_cfg_content_pre[i].get_data_from_index(1)[-12:]
                 bitstream_obj.rbt_cfg_content_pre[i].set_data_to_index(1, new_line)
-                bitstream_obj.rbt_cfg_content_pre[i].append_data(config.CMD_MASK_01_STR)
-                bitstream_obj.rbt_cfg_content_pre[i].append_data(config.CMD_MASK_02_STR)
-                bitstream_obj.rbt_cfg_content_pre[i].append_data(config.CMD_TRIM_01_STR)
-                bitstream_obj.rbt_cfg_content_pre[i].append_data(config.CMD_TRIM_02_STR)
+                bitstream_obj.rbt_cfg_content_pre[i].append_data(ConfigurationPacket.PacketTemplate.CONFIG_MASK.value.binstr)
+                bitstream_obj.rbt_cfg_content_pre[i].append_data(ConfigurationPacket.PacketTemplate.DATA_MASK_TRIM.value.binstr)
+                bitstream_obj.rbt_cfg_content_pre[i].append_data(ConfigurationPacket.PacketTemplate.CONFIG_TRIM.value.binstr)
+                bitstream_obj.rbt_cfg_content_pre[i].append_data(ConfigurationPacket.PacketTemplate.DATA_MASK_TRIM.value.binstr)
     elif bitstream_obj.file_type == ".bit" or bitstream_obj.file_type == ".bin":
         for i in range(len(bitstream_obj.bit_cfg_content_pre)):
             if bitstream_obj.bit_cfg_content_pre[i].cmd_name == "COR1":
                 word = utils.bytes_to_binary(bitstream_obj.bit_cfg_content_pre[i].get_data_from_index(1))
                 word = word[:-13] + "1" + word[-12:]
                 bitstream_obj.bit_cfg_content_pre[i].set_data_to_index(1, utils.binary_str_to_bytes(word))
-                bitstream_obj.bit_cfg_content_pre[i].append_data(config.CMD_MASK_01_BYTE)
-                bitstream_obj.bit_cfg_content_pre[i].append_data(config.CMD_MASK_02_BYTE)
-                bitstream_obj.bit_cfg_content_pre[i].append_data(config.CMD_TRIM_01_BYTE)
-                bitstream_obj.bit_cfg_content_pre[i].append_data(config.CMD_TRIM_02_BYTE)
+                bitstream_obj.bit_cfg_content_pre[i].append_data(ConfigurationPacket.PacketTemplate.CONFIG_MASK.value.byte)
+                bitstream_obj.bit_cfg_content_pre[i].append_data(ConfigurationPacket.PacketTemplate.DATA_MASK_TRIM.value.byte)
+                bitstream_obj.bit_cfg_content_pre[i].append_data(ConfigurationPacket.PacketTemplate.CONFIG_TRIM.value.byte)
+                bitstream_obj.bit_cfg_content_pre[i].append_data(ConfigurationPacket.PacketTemplate.DATA_MASK_TRIM.value.byte)
             
 # 修改gtp     
 def process_gtp_config(bitstream_obj):
@@ -171,7 +172,7 @@ def process_compress(bitstream_obj):
     all_frame_count = 0
     
     # ================================= 解析位流 开始 =========================================
-    for frame_type_key, frame_type_value in getattr(config, bitstream_obj.device + "_FRAME_STRUCT").items():
+    for frame_type_key, frame_type_value in getattr(frame_structure, bitstream_obj.device + "_FRAME_STRUCT").items():
         
         # type 0 type 1
         data_frame_features_index[frame_type_key] = {}
@@ -234,9 +235,9 @@ def process_compress(bitstream_obj):
     
     new_data_frame = [] # 存储新生成的data frame
     is_first = True
-    config_suffix = "_STR" if bitstream_obj.file_type == ".rbt" else "_BYTE"
+    config_suffix = "binstr" if bitstream_obj.file_type == ".rbt" else "byte"
     
-    # 构造FAR
+    # 构造FAR DATA
     def get_frame_address_register(frame_type, region_type, row_num, col_num, frame_index):
         # 00000000000000000000000000000000	frame_type:0 region_type:0 row_num:0 col_num:0 frame_index:0
         # 构造32位二进制数
@@ -324,11 +325,12 @@ def process_compress(bitstream_obj):
                         # 多帧数据
                         # ================= 首帧格式 ======================
                         if is_first:
-                            insert_data(getattr(config, "FAR"+config_suffix))
+                            
+                            insert_data(getattr(ConfigurationPacket.PacketTemplate.CONFIG_FAR.value, config_suffix))
                             insert_data(get_frame_address_register(row_data[current_feature][0]["FAR"]["frame_type"], row_data[current_feature][0]["FAR"]["region_type"], row_data[current_feature][0]["FAR"]["row_num"], row_data[current_feature][0]["FAR"]["col_num"], row_data[current_feature][0]["FAR"]["frame_index"]))
-                            insert_data(getattr(config, "CMD"+config_suffix))
-                            insert_data(getattr(config, "WCFG"+config_suffix))
-                            insert_data(getattr(config, "NOOP"+config_suffix))
+                            insert_data(getattr(ConfigurationPacket.PacketTemplate.CONFIG_CMD.value, config_suffix))
+                            insert_data(getattr(ConfigurationPacket.PacketTemplate.DATA_WCFG.value, config_suffix))
+                            insert_data(getattr(ConfigurationPacket.PacketTemplate.CONFIG_NOOP.value, config_suffix))
                             insert_data(get_cmd_from_word_count(101, "FDRI"))
                             
                             if bitstream_obj.file_type == ".rbt":
@@ -338,43 +340,43 @@ def process_compress(bitstream_obj):
                             
                             is_first = False
                         else:
-                            insert_data(getattr(config, "CMD"+config_suffix))
-                            insert_data(getattr(config, "WCFG"+config_suffix))
-                            insert_data(getattr(config, "NOOP"+config_suffix))
-                            insert_data(getattr(config, "FAR"+config_suffix))
+                            insert_data(getattr(ConfigurationPacket.PacketTemplate.CONFIG_CMD.value, config_suffix))
+                            insert_data(getattr(ConfigurationPacket.PacketTemplate.DATA_WCFG.value, config_suffix))
+                            insert_data(getattr(ConfigurationPacket.PacketTemplate.CONFIG_NOOP.value, config_suffix))
+                            insert_data(getattr(ConfigurationPacket.PacketTemplate.CONFIG_FAR.value, config_suffix))
                             insert_data(get_frame_address_register(row_data[current_feature][0]["FAR"]["frame_type"], row_data[current_feature][0]["FAR"]["region_type"], row_data[current_feature][0]["FAR"]["row_num"], row_data[current_feature][0]["FAR"]["col_num"], row_data[current_feature][0]["FAR"]["frame_index"]))
-                            insert_data(getattr(config, "NOOP"+config_suffix))
+                            insert_data(getattr(ConfigurationPacket.PacketTemplate.CONFIG_NOOP.value, config_suffix))
                             insert_data(get_cmd_from_word_count(101, "FDRI"))
                             if bitstream_obj.file_type == ".rbt":
                                 insert_multiple_words(bitstream_obj.rbt_data_content[row_data[current_feature][0]['index']['start_index']:row_data[current_feature][0]['index']['end_index']])
                             elif bitstream_obj.file_type == ".bit" or bitstream_obj.file_type == ".bin":
                                 insert_multiple_words(bitstream_obj.bit_data_content[row_data[current_feature][0]['index']['start_index']:row_data[current_feature][0]['index']['end_index']])
 
-                        insert_data(getattr(config, "CMD"+config_suffix))
-                        insert_data(getattr(config, "MFW"+config_suffix))
+                        insert_data(getattr(ConfigurationPacket.PacketTemplate.CONFIG_CMD.value, config_suffix))
+                        insert_data(getattr(ConfigurationPacket.PacketTemplate.DATA_MFW.value, config_suffix))
                         for _ in range(12):
-                            insert_data(getattr(config, "NOOP"+config_suffix))
+                            insert_data(getattr(ConfigurationPacket.PacketTemplate.CONFIG_NOOP.value, config_suffix))
                         insert_data(get_cmd_from_word_count(8, "MFWR"))
                         for _ in range(8):
-                            insert_data(getattr(config, "ZERO"+config_suffix))
+                            insert_data(getattr(ConfigurationPacket.PacketTemplate.DATA_ZERO.value, config_suffix))
                         
                         if frame_type_key == "frame_type_1":
                             # type 1时，头帧要等待8个 cycle，后续数据才能继续写入
                             for _ in range(8):
-                                insert_data(getattr(config, "NOOP"+config_suffix))
+                                insert_data(getattr(ConfigurationPacket.PacketTemplate.CONFIG_NOOP.value, config_suffix))
                         # ================= 首帧格式 ======================
                             
                         # 从第二帧开始, 压缩写入
                         for frame_index in range(1, group_len):
-                            insert_data(getattr(config, "FAR"+config_suffix))
+                            insert_data(getattr(ConfigurationPacket.PacketTemplate.CONFIG_FAR.value, config_suffix))
                             insert_data(get_frame_address_register(row_data[current_feature][frame_index]["FAR"]["frame_type"], row_data[current_feature][frame_index]["FAR"]["region_type"], row_data[current_feature][frame_index]["FAR"]["row_num"], row_data[current_feature][frame_index]["FAR"]["col_num"], row_data[current_feature][frame_index]["FAR"]["frame_index"]))
                             insert_data(get_cmd_from_word_count(4, "MFWR"))
                             for _ in range(4):
-                                insert_data(getattr(config, "ZERO"+config_suffix))
+                                insert_data(getattr(ConfigurationPacket.PacketTemplate.DATA_ZERO.value, config_suffix))
                             if frame_type_key == "frame_type_1":
                                 # type 1时，数据写入后要等待8个 cycle
                                 for _ in range(8):
-                                    insert_data(getattr(config, "NOOP"+config_suffix))
+                                    insert_data(getattr(ConfigurationPacket.PacketTemplate.CONFIG_NOOP.value, config_suffix))
                         
                         # 到下一个
                         feature_index += 1;        
@@ -404,16 +406,15 @@ def process_compress(bitstream_obj):
                             
                         # 此时 single_feature_list 中存放着连续单帧
                     
-                        insert_data(getattr(config, "CMD"+config_suffix))
-                        insert_data(getattr(config, "WCFG"+config_suffix))
-                        insert_data(getattr(config, "NOOP"+config_suffix))
-                        insert_data(getattr(config, "FAR"+config_suffix))
+                        insert_data(getattr(ConfigurationPacket.PacketTemplate.CONFIG_CMD.value, config_suffix))
+                        insert_data(getattr(ConfigurationPacket.PacketTemplate.DATA_WCFG.value, config_suffix))
+                        insert_data(getattr(ConfigurationPacket.PacketTemplate.CONFIG_NOOP.value, config_suffix))
+                        insert_data(getattr(ConfigurationPacket.PacketTemplate.CONFIG_FAR.value, config_suffix))
                         # current_feature 是 单帧列表中的第一个帧
                         insert_data(get_frame_address_register(row_data[current_feature][0]["FAR"]["frame_type"], row_data[current_feature][0]["FAR"]["region_type"], row_data[current_feature][0]["FAR"]["row_num"], row_data[current_feature][0]["FAR"]["col_num"], row_data[current_feature][0]["FAR"]["frame_index"]))
-                        insert_data(getattr(config, "NOOP"+config_suffix))
+                        insert_data(getattr(ConfigurationPacket.PacketTemplate.CONFIG_NOOP.value, config_suffix))
                         single_word_count = (len(single_feature_list)+1)*101
                         
-                        # ================ 方案一 ================ 
                         if single_word_count < 2048:
                             insert_data(get_cmd_from_word_count(single_word_count, "FDRI"))
                         else:
@@ -428,42 +429,8 @@ def process_compress(bitstream_obj):
                                 insert_multiple_words(bitstream_obj.bit_data_content[row_data[feature_key][0]['index']['start_index']:row_data[feature_key][0]['index']['end_index']])
                         # 最后插入 pad frame
                         for _ in range(101):
-                            insert_data(getattr(config, "ZERO"+config_suffix))
-                        # ================ 方案一 ================ 
-                            
-                        # ================ 方案二 ================ 
-                        # if single_word_count < 2048:
-                        #     insert_data(get_cmd_from_word_count(single_word_count, "FDRI"))
-                        #     # 插入这些单帧
-                        #     for feature_key in single_feature_list:
-                        #         if bitstream_obj.file_type == ".rbt":
-                        #             insert_multiple_words(bitstream_obj.rbt_data_content[row_data[feature_key][0]['index']['start_index']:row_data[feature_key][0]['index']['end_index']])
-                        #         elif bitstream_obj.file_type == ".bit" or bitstream_obj.file_type == ".bin":
-                        #             insert_multiple_words(bitstream_obj.bit_data_content[row_data[feature_key][0]['index']['start_index']:row_data[feature_key][0]['index']['end_index']])
-                        #         
-                        #     # 最后插入 pad frame
-                        #     for _ in range(101):
-                        #         insert_data(getattr(config, "ZERO"+config_suffix))
-                        # else:
-                        #     # FDRI cmd 低11位表示 word count ，最大为2047，超过这个数目，需要额外的一行作为表示
-                        #     insert_data(get_cmd_from_word_count(0, "FDRI"))
-                        #     insert_data(get_total_word(single_word_count))
-                        #     # 插入这些单帧
-                        #     for feature_key in single_feature_list:
-                        #         if bitstream_obj.file_type == ".rbt":
-                        #             insert_multiple_words(bitstream_obj.rbt_data_content[row_data[feature_key][0]['index']['start_index']:row_data[feature_key][0]['index']['end_index']])
-                        #         elif bitstream_obj.file_type == ".bit" or bitstream_obj.file_type == ".bin":
-                        #             insert_multiple_words(bitstream_obj.bit_data_content[row_data[feature_key][0]['index']['start_index']:row_data[feature_key][0]['index']['end_index']])
-                        #     for _ in range(101):
-                        #         insert_data(getattr(config, "ZERO"+config_suffix))
-                        #     insert_data(getattr(config, "CMD"+config_suffix))
-                        #     insert_data(getattr(config, "MFW"+config_suffix))
-                        #     for _ in range(12):
-                        #         insert_data(getattr(config, "NOOP"+config_suffix))
-                        #     insert_data(get_cmd_from_word_count(8, "MFWR"))
-                        #     for _ in range(8):
-                        #         insert_data(getattr(config, "ZERO"+config_suffix))
-                        # ================ 方案二 ================ 
+                            insert_data(getattr(ConfigurationPacket.PacketTemplate.DATA_ZERO.value, config_suffix))
+                        
                     else:
                         # 异常情况
                         print(456)
@@ -501,18 +468,20 @@ def process_compress(bitstream_obj):
             # CMD 且 command:DGHIGH/LFRM 时，做插入
             if bitstream_obj.rbt_cfg_content_after[cur_index].cmd_name == "CMD" \
                 and bitstream_obj.rbt_cfg_content_after[cur_index].data_len == 2 \
-                and bitstream_obj.rbt_cfg_content_after[cur_index].get_data_from_index(1)[-2:] == "11":
+                and bitstream_obj.rbt_cfg_content_after[cur_index].get_data_from_index(1)[-5:] == "00011":
                         
                 # 此时需要在 cur_index+1位置插入两个 Item MASK CTL1
                 # MASK
                 item = bitstream_obj.PacketItem("MASK")
-                item.set_opcode(0)
+                item.set_opcode(2)
+                item.append_data(getattr(ConfigurationPacket.PacketTemplate.CONFIG_MASK.value, config_suffix))
                 item.append_data("00000000000000000001000000000000")
                 bitstream_obj.rbt_cfg_content_after.insert(cur_index+1, item)
                 
                 # CTL1
                 item = bitstream_obj.PacketItem("CTL1")
-                item.set_opcode(0)
+                item.set_opcode(2)
+                item.append_data(getattr(ConfigurationPacket.PacketTemplate.CONFIG_CTL1.value, config_suffix))
                 item.append_data("00000000000000000000000000000000")
                 bitstream_obj.rbt_cfg_content_after.insert(cur_index+2, item)
                 
@@ -524,18 +493,20 @@ def process_compress(bitstream_obj):
             # CMD 且 command:DGHIGH/LFRM 时，做插入
             if bitstream_obj.bit_cfg_content_after[cur_index].cmd_name == "CMD" \
                 and bitstream_obj.bit_cfg_content_after[cur_index].data_len == 2 \
-                and bitstream_obj.bit_cfg_content_after[cur_index].get_data_from_index(1)[-1:] == b"\x03":
+                and bitstream_obj.bit_cfg_content_after[cur_index].get_data_from_index(1)[-5:] == b"\x03":
                     
                 # 此时需要在 cur_index+1位置插入两个 Item MASK CTL1
                 # MASK
                 item = bitstream_obj.PacketItem("MASK")
-                item.set_opcode(0)
+                item.set_opcode(2)
+                item.append_data(getattr(ConfigurationPacket.PacketTemplate.CONFIG_MASK.value, config_suffix))
                 item.append_data(b"\x00\x00\x10\x00")
                 bitstream_obj.bit_cfg_content_after.insert(cur_index+1, item)
                 
                 # CTL1
                 item = bitstream_obj.PacketItem("CTL1")
-                item.set_opcode(0)
+                item.set_opcode(2)
+                item.append_data(getattr(ConfigurationPacket.PacketTemplate.CONFIG_CTL1.value, config_suffix))
                 item.append_data(b"\x00\x00\x00\x00")
                 bitstream_obj.bit_cfg_content_after.insert(cur_index+2, item)
                 

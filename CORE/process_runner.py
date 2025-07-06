@@ -1,5 +1,5 @@
 import logging
-import COMMON.config as config
+import COMMON.frame_structure as frame_structure
 from CORE.bitstream_parser import BitstreamParser
 from CORE import module_base, module_crc, module_refresh, module_vccm, module_convert
 import os,copy, traceback
@@ -20,7 +20,7 @@ def run_base_task(
     readback_refresh = None, 
     timer_refresh=None,
 ):
-    dev = config.DEVICE_MAP.get(device.upper(), "MC1P110")
+    dev = frame_structure.DEVICE_MAP.get(device.upper(), "MC1P110")
     bitstream_obj = BitstreamParser(dev, file, crc)
 
     if gtp:
@@ -49,7 +49,8 @@ def run_base_task(
     if compress:
         module_base.process_compress(bitstream_obj)
         
-
+    if file_suffix is None:
+        file_suffix = FILE_ENDWITH
     return bitstream_obj.save_file(file_suffix)
 
 VCCM_VALUES_LIST = [

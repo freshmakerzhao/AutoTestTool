@@ -1,5 +1,5 @@
 
-import COMMON.config as config
+from COMMON.config import ConfigurationPacket
 import COMMON.utils as utils
 import struct
 import logging
@@ -89,9 +89,7 @@ class BitstreamParser:
         # 存储后续配置信息
         self.rbt_cfg_content_after = []
         # ======================= rbt =====================     
-        
-        self.cfg_obj = config.ConfigurationPacket()
-        
+                
         self.load_file()
     
     def load_file(self) -> None:
@@ -193,35 +191,35 @@ class BitstreamParser:
         rbt_cfg_content_pre_len = 0
         while index < self.rbt_content_len:
             line = self.rbt_content[index]
-            word_type = self.cfg_obj.get_packet_type(line, "str")
+            word_type = ConfigurationPacket.get_packet_type(line, "str")
             
             packet_content = {}
             if word_type == 1:
-                packet_content = self.cfg_obj.get_type_1_packet_content(line, "str")
+                packet_content = ConfigurationPacket.get_type_1_packet_content(line, "str")
             elif word_type == 2:
-                packet_content = self.cfg_obj.get_type_2_packet_content(line, "str")
+                packet_content = ConfigurationPacket.get_type_2_packet_content(line, "str")
             
             # 拿到word count
             word_count = packet_content.get('word_count', 0)
             
-            if line == config.NOOP_STR:
+            if line == ConfigurationPacket.PacketTemplate.CONFIG_NOOP.value.binstr:
                 item = self.PacketItem("NOOP")
                 item.set_opcode(-1)
                 word_count = 0
-            elif line == config.DUMMY_STR:
+            elif line == ConfigurationPacket.PacketTemplate.DATA_DUMMY.value.binstr:
                 item = self.PacketItem("DUMMY")
                 item.set_opcode(-1)
                 word_count = 0
-            elif line == config.SYNC_WORD_STR:
+            elif line == ConfigurationPacket.PacketTemplate.DATA_SYNC_WORD.value.binstr:
                 item = self.PacketItem("SYNC_WORD")
                 item.set_opcode(-1)
                 word_count = 0
-            elif line == config.BUS_WIDTH_AUTO_DETECT_01_STR or line == config.BUS_WIDTH_AUTO_DETECT_02_STR:
+            elif line == ConfigurationPacket.PacketTemplate.DATA_BUS_WIDTH_AUTO_DETECT_01.value.binstr or line == ConfigurationPacket.PacketTemplate.DATA_BUS_WIDTH_AUTO_DETECT_02.value.binstr:
                 item = self.PacketItem("BUS_WIDTH")
                 item.set_opcode(-1)
                 word_count = 0
             else:
-                item = self.PacketItem(self.cfg_obj.get_cmd_name(packet_content.get("address")))
+                item = self.PacketItem(ConfigurationPacket.get_address_name(packet_content.get("address")))
                 item.set_opcode(packet_content.get("opcode", -1))
             
             item.append_data(self.rbt_content[index]) # 插入cmd
@@ -245,8 +243,8 @@ class BitstreamParser:
             
             # 对于普通位流，当 FDRI 时
             if packet_content.get("header_type", -1) == 1 \
-                and packet_content.get("opcode", self.cfg_obj.OpCode.UNKNOWN) == self.cfg_obj.OpCode.WRITE \
-                and packet_content.get("address", self.cfg_obj.Address.UNKNOWN) == self.cfg_obj.Address.FDRI \
+                and packet_content.get("opcode", ConfigurationPacket.OpCode.UNKNOWN) == ConfigurationPacket.OpCode.WRITE \
+                and packet_content.get("address", ConfigurationPacket.Address.UNKNOWN) == ConfigurationPacket.Address.FDRI \
                 and self.is_compress == False:
                 word_content = self.rbt_content[index]
                 item = self.PacketItem("WORD_COUNT")
@@ -254,13 +252,13 @@ class BitstreamParser:
                 item.append_data(word_content)
                 self.rbt_cfg_content_pre.append(item)
                 rbt_cfg_content_pre_len += 1
-                self.word_count = self.cfg_obj.get_type_2_packet_content(word_content,"str").get("word_count",0)
+                self.word_count = ConfigurationPacket.get_type_2_packet_content(word_content,"str").get("word_count",0)
                 self.rbt_content_cur_loc = index+1
                 break
             # 对于压缩位流，当 FDRI 时，将后续所有内容放入 rbt_compress_data_content,临时解决
             if packet_content.get("header_type", -1) == 1 \
-                and packet_content.get("opcode", self.cfg_obj.OpCode.UNKNOWN) == self.cfg_obj.OpCode.WRITE \
-                and packet_content.get("address", self.cfg_obj.Address.UNKNOWN) == self.cfg_obj.Address.FDRI \
+                and packet_content.get("opcode", ConfigurationPacket.OpCode.UNKNOWN) == ConfigurationPacket.OpCode.WRITE \
+                and packet_content.get("address", ConfigurationPacket.Address.UNKNOWN) == ConfigurationPacket.Address.FDRI \
                 and self.is_compress == True:
                     self.rbt_compress_data_content.extend(self.rbt_content[index:])
                     break
@@ -272,35 +270,35 @@ class BitstreamParser:
         while self.rbt_content_cur_loc < self.rbt_content_len:
             line = self.rbt_content[self.rbt_content_cur_loc]
             
-            word_type = self.cfg_obj.get_packet_type(line, "str")
+            word_type = ConfigurationPacket.get_packet_type(line, "str")
             
             packet_content = {}
             if word_type == 1:
-                packet_content = self.cfg_obj.get_type_1_packet_content(line, "str")
+                packet_content = ConfigurationPacket.get_type_1_packet_content(line, "str")
             elif word_type == 2:
-                packet_content = self.cfg_obj.get_type_2_packet_content(line, "str")
+                packet_content = ConfigurationPacket.get_type_2_packet_content(line, "str")
             
             # 拿到word count
             word_count = packet_content.get('word_count', 0)
             
-            if line == config.NOOP_STR:
+            if line == ConfigurationPacket.PacketTemplate.CONFIG_NOOP.value.binstr:
                 item = self.PacketItem("NOOP")
                 item.set_opcode(-1)
                 word_count = 0
-            elif line == config.DUMMY_STR:
+            elif line == ConfigurationPacket.PacketTemplate.DATA_DUMMY.value.binstr:
                 item = self.PacketItem("DUMMY")
                 item.set_opcode(-1)
                 word_count = 0
-            elif line == config.SYNC_WORD_STR:
+            elif line == ConfigurationPacket.PacketTemplate.DATA_SYNC_WORD.value.binstr:
                 item = self.PacketItem("SYNC_WORD")
                 item.set_opcode(-1)
                 word_count = 0
-            elif line == config.BUS_WIDTH_AUTO_DETECT_01_STR or line == config.BUS_WIDTH_AUTO_DETECT_02_STR:
+            elif line == ConfigurationPacket.PacketTemplate.DATA_BUS_WIDTH_AUTO_DETECT_01.value.binstr or line == ConfigurationPacket.PacketTemplate.DATA_BUS_WIDTH_AUTO_DETECT_02.value.binstr:
                 item = self.PacketItem("BUS_WIDTH")
                 item.set_opcode(-1)
                 word_count = 0
             else:
-                item = self.PacketItem(self.cfg_obj.get_cmd_name(packet_content.get("address")))
+                item = self.PacketItem(ConfigurationPacket.get_address_name(packet_content.get("address")))
                 item.set_opcode(packet_content.get("opcode", -1))
             
                 
@@ -414,35 +412,35 @@ class BitstreamParser:
                 logging.warning(f"Warning: Last chunk is less than 4 bytes: {word.hex()}")
             
             word_content = struct.unpack('>I', word)[0] # 转无符号整型
-            word_type = self.cfg_obj.get_packet_type(word_content, "int")
+            word_type = ConfigurationPacket.get_packet_type(word_content, "int")
             
             packet_content = {}
             if word_type == 1:
-                packet_content = self.cfg_obj.get_type_1_packet_content(word_content, "int")
+                packet_content = ConfigurationPacket.get_type_1_packet_content(word_content, "int")
             elif word_type == 2:
-                packet_content = self.cfg_obj.get_type_2_packet_content(word_content, "int")
+                packet_content = ConfigurationPacket.get_type_2_packet_content(word_content, "int")
             
             # 拿到word count
             word_count = packet_content.get('word_count', 0)
             
-            if word == config.NOOP_BYTE:
+            if word == ConfigurationPacket.PacketTemplate.CONFIG_NOOP.value.byte:
                 item = self.PacketItem("NOOP")
                 item.set_opcode(-1)
                 word_count = 0
-            elif word == config.DUMMY_BYTE:
+            elif word == ConfigurationPacket.PacketTemplate.DATA_DUMMY.value.byte:
                 item = self.PacketItem("DUMMY")
                 item.set_opcode(-1)
                 word_count = 0
-            elif word == config.SYNC_WORD_BYTE:
+            elif word == ConfigurationPacket.PacketTemplate.DATA_SYNC_WORD.value.byte:
                 item = self.PacketItem("SYNC_WORD")
                 item.set_opcode(-1)
                 word_count = 0
-            elif word == config.BUS_WIDTH_AUTO_DETECT_01_BYTE or word == config.BUS_WIDTH_AUTO_DETECT_02_BYTE:
+            elif word == ConfigurationPacket.PacketTemplate.DATA_BUS_WIDTH_AUTO_DETECT_01.value.byte or word == ConfigurationPacket.PacketTemplate.DATA_BUS_WIDTH_AUTO_DETECT_02.value.byte:
                 item = self.PacketItem("BUS_WIDTH")
                 item.set_opcode(-1)
                 word_count = 0
             else:
-                item = self.PacketItem(self.cfg_obj.get_cmd_name(packet_content.get("address")))
+                item = self.PacketItem(ConfigurationPacket.get_address_name(packet_content.get("address")))
                 item.set_opcode(packet_content.get("opcode", -1))
             
             item.append_data(word) # 插入cmd
@@ -464,8 +462,8 @@ class BitstreamParser:
                     
             # 读取到 FDRI 后，读取结束 30004000
             if packet_content.get("header_type", -1) == 1 \
-                and packet_content.get("opcode", self.cfg_obj.OpCode.UNKNOWN) == self.cfg_obj.OpCode.WRITE \
-                and packet_content.get("address", self.cfg_obj.Address.UNKNOWN) == self.cfg_obj.Address.FDRI \
+                and packet_content.get("opcode", ConfigurationPacket.OpCode.UNKNOWN) == ConfigurationPacket.OpCode.WRITE \
+                and packet_content.get("address", ConfigurationPacket.Address.UNKNOWN) == ConfigurationPacket.Address.FDRI \
                 and self.is_compress == False:
                     word = self.read_bit_bytes(4)
                     item = self.PacketItem("WORD_COUNT")
@@ -475,14 +473,14 @@ class BitstreamParser:
                     bit_cfg_content_pre_len += 1
                     word_content = struct.unpack('>I', word)[0] # 转无符号整型
                     # 拿到 word_count，其单位是word，换成字节*4
-                    self.word_count = self.cfg_obj.get_type_2_packet_content(word_content, "int").get("word_count",0)
+                    self.word_count = ConfigurationPacket.get_type_2_packet_content(word_content, "int").get("word_count",0)
                     self.bit_data_content_byte_count = self.word_count * 4
                     break
                 
             # 对于压缩位流，当 FDRI 时，将后续所有内容放入 bit_compress_data_content,临时解决
             if packet_content.get("header_type", -1) == 1 \
-                and packet_content.get("opcode", self.cfg_obj.OpCode.UNKNOWN) == self.cfg_obj.OpCode.WRITE \
-                and packet_content.get("address", self.cfg_obj.Address.UNKNOWN) == self.cfg_obj.Address.FDRI \
+                and packet_content.get("opcode", ConfigurationPacket.OpCode.UNKNOWN) == ConfigurationPacket.OpCode.WRITE \
+                and packet_content.get("address", ConfigurationPacket.Address.UNKNOWN) == ConfigurationPacket.Address.FDRI \
                 and self.is_compress == True:
                     for i in range(self.bit_byte_content_cur_loc, self.bit_byte_content_len, 4):
                         word = self.read_bit_bytes(4)
@@ -499,35 +497,35 @@ class BitstreamParser:
                 logging.warning(f"Warning: Last chunk is less than 4 bytes: {word.hex()}")
             
             word_content = struct.unpack('>I', word)[0] # 转无符号整型
-            word_type = self.cfg_obj.get_packet_type(word_content, "int")
+            word_type = ConfigurationPacket.get_packet_type(word_content, "int")
             
             packet_content = {}
             if word_type == 1:
-                packet_content = self.cfg_obj.get_type_1_packet_content(word_content, "int")
+                packet_content = ConfigurationPacket.get_type_1_packet_content(word_content, "int")
             elif word_type == 2:
-                packet_content = self.cfg_obj.get_type_2_packet_content(word_content, "int")
+                packet_content = ConfigurationPacket.get_type_2_packet_content(word_content, "int")
             
             # 拿到word count
             word_count = packet_content.get('word_count', 0)
             
-            if word == config.NOOP_BYTE:
+            if word == ConfigurationPacket.PacketTemplate.CONFIG_NOOP.value.byte:
                 item = self.PacketItem("NOOP")
                 item.set_opcode(-1)
                 word_count = 0
-            elif word == config.DUMMY_BYTE:
+            elif word == ConfigurationPacket.PacketTemplate.DATA_DUMMY.value.byte:
                 item = self.PacketItem("DUMMY")
                 item.set_opcode(-1)
                 word_count = 0
-            elif word == config.SYNC_WORD_BYTE:
+            elif word == ConfigurationPacket.PacketTemplate.DATA_SYNC_WORD.value.byte:
                 item = self.PacketItem("SYNC_WORD")
                 item.set_opcode(-1)
                 word_count = 0
-            elif word == config.BUS_WIDTH_AUTO_DETECT_01_BYTE or word == config.BUS_WIDTH_AUTO_DETECT_02_BYTE:
+            elif word == ConfigurationPacket.PacketTemplate.DATA_BUS_WIDTH_AUTO_DETECT_01.value.byte or word == ConfigurationPacket.PacketTemplate.DATA_BUS_WIDTH_AUTO_DETECT_02.value.byte:
                 item = self.PacketItem("BUS_WIDTH")
                 item.set_opcode(-1)
                 word_count = 0
             else:
-                item = self.PacketItem(self.cfg_obj.get_cmd_name(packet_content.get("address")))
+                item = self.PacketItem(ConfigurationPacket.get_address_name(packet_content.get("address")))
                 item.set_opcode(packet_content.get("opcode", -1))
                 
             item.append_data(word) # 插入cmd
