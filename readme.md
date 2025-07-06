@@ -22,10 +22,12 @@ python main_shell.py myscript.txt
 
 ## 2.1 基础功能
 ### 压缩位流
-base --file 文件路径 --COMPRESS
+base --file 文件路径 --device MC1P110 --COMPRESS
 
-
-
+- device
+  - MC1P110
+  - MC1P170
+  - MC1P210
 
 ## 2.2 VCCM
 
