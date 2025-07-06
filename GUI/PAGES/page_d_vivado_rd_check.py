@@ -458,9 +458,13 @@ class PageDVivadoRDCheck(ttk.Frame):
         if special_value in ["00","AA","55","FF"]:
             if not self._compare_files(mask_file_path, readback_file_path, gold_file_path, special_value, result_file_path):
                 logging.error(f"[vivado 回读校验] {special_value} 比对失败: {result_file_path}")
+            else:
+                logging.info(f"[vivado 回读校验] 比对通过 PASS")
         else:
             if not self._compare_func_files(mask_file_path, readback_file_path, gold_file_path):
                 logging.error(f"[vivado 回读校验] {special_value} 比对失败: {result_file_path}")
+            else:
+                logging.info(f"[vivado 回读校验] 比对通过 PASS")
                 
     def _run_vivado_process(self, 
                             *, 
@@ -516,7 +520,13 @@ class PageDVivadoRDCheck(ttk.Frame):
             if not self._program_bitstream_file(vivado_bat_path, program_script, bitstream_file_path):
                 logging.error(f"[vivado 回读校验] 烧写 bitstream 文件失败: {bitstream_file_path}")
                 cur_special_value_status = False
-                
+                is_all_pass = False
+                cur_status["status"] = "FAIL"
+                cur_status["readback_file"] = "/"
+                logging.error(f"[vivado 回读校验] 跳过当前case")
+                self._append_status_csv(cur_status, status_csv_path)
+                continue
+
             try:
                 # 删除已存在的 readback 文件
                 if os.path.exists(readback_file_path):
@@ -534,15 +544,26 @@ class PageDVivadoRDCheck(ttk.Frame):
             if not self._readback_file(vivado_bat_path, readback_script, readback_file_path):
                 logging.error(f"[vivado 回读校验] 回读 rbd 文件失败: {readback_file_path}")
                 cur_special_value_status = False
+                is_all_pass = False
+                cur_status["status"] = "FAIL"
+                cur_status["readback_file"] = "/"
+                logging.error(f"[vivado 回读校验] 跳过当前case")
+                self._append_status_csv(cur_status, status_csv_path)
+                continue
                 
             if special_value in ["00","AA","55","FF"]:
                 if not self._compare_files(mask_file_path, readback_file_path, gold_path, special_value, result_path):
                     logging.error(f"[vivado 回读校验] {special_value} 比对失败: {result_path}")
                     cur_special_value_status = False
+                else:
+                    logging.info(f"[vivado 回读校验] 比对通过 PASS")
             else:
                 if not self._compare_func_files(mask_file_path, readback_file_path, gold_path):
                     logging.error(f"[vivado 回读校验] {special_value} 比对失败: {result_path}")
                     cur_special_value_status = False
+                else:
+                    logging.info(f"[vivado 回读校验] 比对通过 PASS")
+
             if not cur_special_value_status:
                 is_all_pass = False
                 cur_status["status"] = "FAIL"
@@ -626,7 +647,6 @@ class PageDVivadoRDCheck(ttk.Frame):
                     continue
                 if r != g:
                     return False
-        logging.info(f"[vivado 回读校验] 比对通过 PASS")
         return True
     
     def _compare_files(self, mask_file_path, readback_file_path, gold_path, special_value, result_path):
@@ -685,7 +705,6 @@ class PageDVivadoRDCheck(ttk.Frame):
         for i in range(gold_len):
             if gold_content[i].strip() != result_content[i].strip():
                 return False
-        logging.info(f"[vivado 回读校验] 比对通过 PASS")
         return True
     
     def _after_success(self, result=None):
