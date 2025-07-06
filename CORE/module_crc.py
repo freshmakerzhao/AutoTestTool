@@ -1,8 +1,7 @@
 
-import logging
-import COMMON.config as config
 import COMMON.utils as utils
 import struct
+from COMMON.config import ConfigurationPacket
 
 # 关闭CRC    
 def disable_crc(bitstream_obj):
@@ -11,13 +10,13 @@ def disable_crc(bitstream_obj):
         if bitstream_obj.file_type == ".rbt":
             for i in range(len(bitstream_obj.rbt_cfg_content_after)):
                 if bitstream_obj.rbt_cfg_content_after[i].cmd_name == "CRC":
-                    bitstream_obj.rbt_cfg_content_after[i].set_data_to_index(0, config.CMD_RCRC_01_STR)
-                    bitstream_obj.rbt_cfg_content_after[i].set_data_to_index(1, config.CMD_RCRC_02_STR)
+                    bitstream_obj.rbt_cfg_content_after[i].set_data_to_index(0, ConfigurationPacket.PacketTemplate.CONFIG_CMD.value.binstr)
+                    bitstream_obj.rbt_cfg_content_after[i].set_data_to_index(1, ConfigurationPacket.PacketTemplate.DATA_RCRC.value.binstr)
         elif bitstream_obj.file_type == ".bit" or bitstream_obj.file_type == ".bin":
             for i in range(len(bitstream_obj.bit_cfg_content_after)):
                 if bitstream_obj.bit_cfg_content_after[i].cmd_name == "CRC":
-                    bitstream_obj.bit_cfg_content_after[i].set_data_to_index(0, config.CMD_RCRC_01_BYTE)
-                    bitstream_obj.bit_cfg_content_after[i].set_data_to_index(1, config.CMD_RCRC_02_BYTE)
+                    bitstream_obj.bit_cfg_content_after[i].set_data_to_index(0, ConfigurationPacket.PacketTemplate.CONFIG_CMD.value.byte)
+                    bitstream_obj.bit_cfg_content_after[i].set_data_to_index(1, ConfigurationPacket.PacketTemplate.DATA_RCRC.value.byte)
     else:
         # 逆序遍历压缩位流 compress_data
         # 找到两个crc位置，记录下来loc1,loc2
@@ -30,24 +29,23 @@ def disable_crc(bitstream_obj):
                 if compress_data_content_len - index > 600:
                     break
                 line = bitstream_obj.rbt_compress_data_content[index]
-                word_type = bitstream_obj.cfg_obj.get_packet_type(line, "str")
-                
-                if line == config.NOOP_STR:
+                word_type = ConfigurationPacket.get_packet_type(line, "str")
+                if line == ConfigurationPacket.PacketTemplate.CONFIG_NOOP.value.binstr:
                     continue
-                elif line == config.DUMMY_STR:
+                elif line == ConfigurationPacket.PacketTemplate.DATA_DUMMY.value.binstr:
                     continue
-                elif line == config.SYNC_WORD_STR:
+                elif line == ConfigurationPacket.PacketTemplate.DATA_SYNC_WORD.value.binstr:
                     continue
-                elif line == config.BUS_WIDTH_AUTO_DETECT_01_STR or line == config.BUS_WIDTH_AUTO_DETECT_02_STR:
+                elif line == ConfigurationPacket.PacketTemplate.DATA_BUS_WIDTH_AUTO_DETECT_01.value.binstr or line == ConfigurationPacket.PacketTemplate.DATA_BUS_WIDTH_AUTO_DETECT_02.value.binstr:
                     continue
                 
                 packet_content = {}
                 if word_type == 1:
-                    packet_content = bitstream_obj.cfg_obj.get_type_1_packet_content(line, "str")
+                    packet_content = ConfigurationPacket.get_type_1_packet_content(line, "str")
                 elif word_type == 2:
-                    packet_content = bitstream_obj.cfg_obj.get_type_2_packet_content(line, "str")
+                    packet_content = ConfigurationPacket.get_type_2_packet_content(line, "str")
                     
-                if packet_content.get("address", bitstream_obj.cfg_obj.Address.UNKNOWN) == bitstream_obj.cfg_obj.Address.CRC:
+                if packet_content.get("address", ConfigurationPacket.Address.UNKNOWN) == ConfigurationPacket.Address.CRC:
                     if loc_crc_1 == -1:
                         # 找到第一个crc
                         loc_crc_1 = index
@@ -56,8 +54,8 @@ def disable_crc(bitstream_obj):
                         break
                 
                 if index > 0 \
-                    and bitstream_obj.rbt_compress_data_content[index] == config.CMD_RCRC_02_STR \
-                    and bitstream_obj.rbt_compress_data_content[index-1] == config.CMD_RCRC_01_STR:
+                    and bitstream_obj.rbt_compress_data_content[index] == ConfigurationPacket.PacketTemplate.DATA_RCRC.value.binstr \
+                    and bitstream_obj.rbt_compress_data_content[index-1] == ConfigurationPacket.PacketTemplate.CONFIG_CMD.value.binstr:
                     if loc_crc_1 == -1:
                         # 找到第一个crc
                         loc_crc_1 = index-1
@@ -66,11 +64,11 @@ def disable_crc(bitstream_obj):
                         break
                     
             if loc_crc_1 != -1:
-                bitstream_obj.rbt_compress_data_content[loc_crc_1] = config.CMD_RCRC_01_STR
-                bitstream_obj.rbt_compress_data_content[loc_crc_1+1] = config.CMD_RCRC_02_STR
+                bitstream_obj.rbt_compress_data_content[loc_crc_1] = ConfigurationPacket.PacketTemplate.CONFIG_CMD.value.binstr
+                bitstream_obj.rbt_compress_data_content[loc_crc_1+1] = ConfigurationPacket.PacketTemplate.DATA_RCRC.value.binstr
             if loc_crc_2 != -1:
-                bitstream_obj.rbt_compress_data_content[loc_crc_2] = config.CMD_RCRC_01_STR
-                bitstream_obj.rbt_compress_data_content[loc_crc_2+1] = config.CMD_RCRC_02_STR
+                bitstream_obj.rbt_compress_data_content[loc_crc_2] = ConfigurationPacket.PacketTemplate.CONFIG_CMD.value.binstr
+                bitstream_obj.rbt_compress_data_content[loc_crc_2+1] = ConfigurationPacket.PacketTemplate.DATA_RCRC.value.binstr
                 
         elif bitstream_obj.file_type == ".bit" or bitstream_obj.file_type == ".bin":
             compress_data_content_len = len(bitstream_obj.bit_compress_data_content)
@@ -79,24 +77,24 @@ def disable_crc(bitstream_obj):
                     break
                 line = bitstream_obj.bit_compress_data_content[index]
                 word_content = struct.unpack('>I', line)[0] # 转无符号整型
-                word_type = bitstream_obj.cfg_obj.get_packet_type(word_content, "int")
+                word_type = ConfigurationPacket.get_packet_type(word_content, "int")
                 
-                if line == config.NOOP_BYTE:
+                if line == ConfigurationPacket.PacketTemplate.CONFIG_NOOP.value.byte:
                     continue
-                elif line == config.DUMMY_BYTE:
+                elif line == ConfigurationPacket.PacketTemplate.DATA_DUMMY.value.byte:
                     continue
-                elif line == config.SYNC_WORD_BYTE:
+                elif line == ConfigurationPacket.PacketTemplate.DATA_SYNC_WORD.value.byte:
                     continue
-                elif line == config.BUS_WIDTH_AUTO_DETECT_01_BYTE or line == config.BUS_WIDTH_AUTO_DETECT_02_BYTE:
+                elif line == ConfigurationPacket.PacketTemplate.DATA_BUS_WIDTH_AUTO_DETECT_01.value.byte or line == ConfigurationPacket.PacketTemplate.DATA_BUS_WIDTH_AUTO_DETECT_02.value.byte:
                     continue
                 
                 packet_content = {}
                 if word_type == 1:
-                    packet_content = bitstream_obj.cfg_obj.get_type_1_packet_content(word_content, "int")
+                    packet_content = ConfigurationPacket.get_type_1_packet_content(word_content, "int")
                 elif word_type == 2:
-                    packet_content = bitstream_obj.cfg_obj.get_type_2_packet_content(word_content, "int")
+                    packet_content = ConfigurationPacket.get_type_2_packet_content(word_content, "int")
                     
-                if packet_content.get("address", bitstream_obj.cfg_obj.Address.UNKNOWN) == bitstream_obj.cfg_obj.Address.CRC:
+                if packet_content.get("address", ConfigurationPacket.Address.UNKNOWN) == ConfigurationPacket.Address.CRC:
                     if loc_crc_1 == -1:
                         # 找到第一个crc
                         loc_crc_1 = index
@@ -105,8 +103,8 @@ def disable_crc(bitstream_obj):
                         break
                     
                 if index > 0 \
-                    and bitstream_obj.bit_compress_data_content[index] == config.CMD_RCRC_02_BYTE \
-                    and bitstream_obj.bit_compress_data_content[index-1] == config.CMD_RCRC_01_BYTE:
+                    and bitstream_obj.bit_compress_data_content[index] == ConfigurationPacket.PacketTemplate.DATA_RCRC.value.byte \
+                    and bitstream_obj.bit_compress_data_content[index-1] == ConfigurationPacket.PacketTemplate.CONFIG_CMD.value.byte:
                     if loc_crc_1 == -1:
                         # 找到第一个crc
                         loc_crc_1 = index-1
@@ -115,11 +113,11 @@ def disable_crc(bitstream_obj):
                         break
                     
             if loc_crc_1 != -1:
-                bitstream_obj.bit_compress_data_content[loc_crc_1] = config.CMD_RCRC_01_BYTE
-                bitstream_obj.bit_compress_data_content[loc_crc_1+1] = config.CMD_RCRC_02_BYTE
+                bitstream_obj.bit_compress_data_content[loc_crc_1] = ConfigurationPacket.PacketTemplate.CONFIG_CMD.value.byte
+                bitstream_obj.bit_compress_data_content[loc_crc_1+1] = ConfigurationPacket.PacketTemplate.DATA_RCRC.value.byte
             if loc_crc_2 != -1:
-                bitstream_obj.bit_compress_data_content[loc_crc_2] = config.CMD_RCRC_01_BYTE
-                bitstream_obj.bit_compress_data_content[loc_crc_2+1] = config.CMD_RCRC_02_BYTE
+                bitstream_obj.bit_compress_data_content[loc_crc_2] = ConfigurationPacket.PacketTemplate.CONFIG_CMD.value.byte
+                bitstream_obj.bit_compress_data_content[loc_crc_2+1] = ConfigurationPacket.PacketTemplate.DATA_RCRC.value.byte
                     
 # 计算crc
 def calculate_crc(bitstream_obj):
@@ -136,7 +134,7 @@ def calculate_crc(bitstream_obj):
                 # 参与运算
                 words_len = item.get_data_len()
                 for index in range(1, words_len):
-                    if item.get_data_from_index(0) == config.CMD_RCRC_01_STR and item.get_data_from_index(1) == config.CMD_RCRC_02_STR:
+                    if item.get_data_from_index(0) == ConfigurationPacket.PacketTemplate.CONFIG_CMD.value.binstr and item.get_data_from_index(1) == ConfigurationPacket.PacketTemplate.DATA_RCRC.value.binstr:
                         # 从这里开始，后面的寄存器参与运算
                         crc_start_flag = True
                         continue
@@ -147,12 +145,12 @@ def calculate_crc(bitstream_obj):
                         # 拿到当前cmd下的word
                         cur_word = item.get_data_from_index(index) # rbt
                         
-                        crc_data_in = bitstream_obj.cfg_obj.make_len_37_crc_data_in(cur_word, cmd_word, "str")
+                        crc_data_in = ConfigurationPacket.make_len_37_crc_data_in(cur_word, cmd_word, "str")
                         bitstream_obj.crc_01 = bitstream_obj.icap_crc(crc_data_in, bitstream_obj.crc_01)
         # 00010010000111000110100110000001                
         for word in bitstream_obj.rbt_data_content:
             # 计算crc
-            crc_data_in = bitstream_obj.cfg_obj.make_len_37_crc_data_in(word, config.FDRI_STR, "str")
+            crc_data_in = ConfigurationPacket.make_len_37_crc_data_in(word, ConfigurationPacket.PacketTemplate.CONFIG_FDRI.value.binstr, "str")
             bitstream_obj.crc_01 = bitstream_obj.icap_crc(crc_data_in, bitstream_obj.crc_01)
         print("第一段crc数据：%s" ,bitstream_obj.crc_01)
         # ============== 第一段 =====================
@@ -172,30 +170,30 @@ def calculate_crc(bitstream_obj):
                 for data_index in range(1, words_len):
                     if bitstream_obj.own_crc_is_enable:
                             # 当开启crc时，遇到 crc 计数一次
-                        if item.get_data_from_index(0) == config.CRC_STR:
+                        if item.get_data_from_index(0) == ConfigurationPacket.PacketTemplate.CONFIG_CRC.value.binstr:
                             if crc_cmd_count == 0:
                                 # 第一个
-                                bitstream_obj.rbt_cfg_content_after[cfg_index].set_data_to_index(0, config.CRC_STR)
+                                bitstream_obj.rbt_cfg_content_after[cfg_index].set_data_to_index(0, ConfigurationPacket.PacketTemplate.CONFIG_CRC.value.binstr)
                                 bitstream_obj.rbt_cfg_content_after[cfg_index].set_data_to_index(1, bitstream_obj.crc_01)
                             elif crc_cmd_count == 1:
                                 # 第二个
-                                bitstream_obj.rbt_cfg_content_after[cfg_index].set_data_to_index(0, config.CRC_STR)
+                                bitstream_obj.rbt_cfg_content_after[cfg_index].set_data_to_index(0, ConfigurationPacket.PacketTemplate.CONFIG_CRC.value.binstr)
                                 bitstream_obj.rbt_cfg_content_after[cfg_index].set_data_to_index(1, bitstream_obj.crc_02)
                             crc_cmd_count += 1
                             break
                     else:
                         # 当没有开启crc, 遇到cmd + 07时，计数一次
                         if words_len == 2 \
-                            and item.get_data_from_index(0) == config.CMD_RCRC_01_STR \
-                            and item.get_data_from_index(1) == config.CMD_RCRC_02_STR:
+                            and item.get_data_from_index(0) == ConfigurationPacket.PacketTemplate.CONFIG_CMD.value.binstr \
+                            and item.get_data_from_index(1) == ConfigurationPacket.PacketTemplate.DATA_RCRC.value.binstr:
                             # 将得到的crc赋值给 bit_cfg_content_after 
                             if crc_cmd_count == 0:
                                 # 第一个
-                                bitstream_obj.rbt_cfg_content_after[cfg_index].set_data_to_index(0, config.CRC_STR)
+                                bitstream_obj.rbt_cfg_content_after[cfg_index].set_data_to_index(0, ConfigurationPacket.PacketTemplate.CONFIG_CRC.value.binstr)
                                 bitstream_obj.rbt_cfg_content_after[cfg_index].set_data_to_index(1, bitstream_obj.crc_01)
                             elif crc_cmd_count == 1:
                                 # 第二个
-                                bitstream_obj.rbt_cfg_content_after[cfg_index].set_data_to_index(0, config.CRC_STR)
+                                bitstream_obj.rbt_cfg_content_after[cfg_index].set_data_to_index(0, ConfigurationPacket.PacketTemplate.CONFIG_CRC.value.binstr)
                                 bitstream_obj.rbt_cfg_content_after[cfg_index].set_data_to_index(1, bitstream_obj.crc_02)
                             crc_cmd_count += 1
                             break
@@ -206,7 +204,7 @@ def calculate_crc(bitstream_obj):
                     # 拿到当前cmd下的word
                     cur_word = item.get_data_from_index(data_index) # RBT
                     
-                    crc_data_in = bitstream_obj.cfg_obj.make_len_37_crc_data_in(cur_word, cmd_word, "str")
+                    crc_data_in = ConfigurationPacket.make_len_37_crc_data_in(cur_word, cmd_word, "str")
                     # print("第二段数据：%s" ,crc_data_in)
                     bitstream_obj.crc_02 = bitstream_obj.icap_crc(crc_data_in, bitstream_obj.crc_02)
             if crc_cmd_count == 2:
@@ -227,7 +225,7 @@ def calculate_crc(bitstream_obj):
                 # 参与运算
                 words_len = item.get_data_len()
                 for index in range(1, words_len):
-                    if item.get_data_from_index(0) == config.CMD_RCRC_01_BYTE and item.get_data_from_index(1) == config.CMD_RCRC_02_BYTE:
+                    if item.get_data_from_index(0) == ConfigurationPacket.PacketTemplate.CONFIG_CMD.value.byte and item.get_data_from_index(1) == ConfigurationPacket.PacketTemplate.DATA_RCRC.value.byte:
                         # 从这里开始，后面的寄存器参与运算
                         crc_start_flag = True
                         continue
@@ -238,12 +236,12 @@ def calculate_crc(bitstream_obj):
                         # 拿到当前cmd下的word
                         cur_word = item.get_data_from_index(index) # 字节
                         
-                        crc_data_in = bitstream_obj.cfg_obj.make_len_37_crc_data_in(cur_word, cmd_word, "byte")
+                        crc_data_in = ConfigurationPacket.make_len_37_crc_data_in(cur_word, cmd_word, "byte")
                         bitstream_obj.crc_01 = bitstream_obj.icap_crc(crc_data_in, bitstream_obj.crc_01)
         # 00010010000111000110100110000001                
         for word in bitstream_obj.bit_data_content:
             # 计算crc
-            crc_data_in = bitstream_obj.cfg_obj.make_len_37_crc_data_in(word, config.FDRI_BYTE, "byte")
+            crc_data_in = ConfigurationPacket.make_len_37_crc_data_in(word, ConfigurationPacket.PacketTemplate.CONFIG_FDRI.value.byte, "byte")
             bitstream_obj.crc_01 = bitstream_obj.icap_crc(crc_data_in, bitstream_obj.crc_01)
                         
         print(bitstream_obj.crc_01) # 01111100100101011110011001111001 7C95E679
@@ -266,30 +264,30 @@ def calculate_crc(bitstream_obj):
                 for data_index in range(1, words_len):
                     if bitstream_obj.own_crc_is_enable:
                             # 当开启crc时，遇到 crc 计数一次
-                        if item.get_data_from_index(0) == config.CRC_BIT:
+                        if item.get_data_from_index(0) == ConfigurationPacket.PacketTemplate.CONFIG_CRC.value.byte:
                             if crc_cmd_count == 0:
                                 # 第一个
-                                bitstream_obj.bit_cfg_content_after[cfg_index].set_data_to_index(0, config.CRC_BIT)
+                                bitstream_obj.bit_cfg_content_after[cfg_index].set_data_to_index(0, ConfigurationPacket.PacketTemplate.CONFIG_CRC.value.byte)
                                 bitstream_obj.bit_cfg_content_after[cfg_index].set_data_to_index(1, utils.binary_str_to_bytes(bitstream_obj.crc_01))
                             elif crc_cmd_count == 1:
                                 # 第二个
-                                bitstream_obj.bit_cfg_content_after[cfg_index].set_data_to_index(0, config.CRC_BIT)
+                                bitstream_obj.bit_cfg_content_after[cfg_index].set_data_to_index(0, ConfigurationPacket.PacketTemplate.CONFIG_CRC.value.byte)
                                 bitstream_obj.bit_cfg_content_after[cfg_index].set_data_to_index(1, utils.binary_str_to_bytes(bitstream_obj.crc_02))
                             crc_cmd_count += 1
                             break
                     else:
                         # 当没有开启crc, 遇到cmd + 07时，计数一次
                         if words_len == 2 \
-                            and item.get_data_from_index(0) == config.CMD_RCRC_01_BYTE \
-                            and item.get_data_from_index(1) == config.CMD_RCRC_02_BYTE:
+                            and item.get_data_from_index(0) == ConfigurationPacket.PacketTemplate.CONFIG_CMD.value.byte \
+                            and item.get_data_from_index(1) == ConfigurationPacket.PacketTemplate.DATA_RCRC.value.byte:
                             # 将得到的crc赋值给 bit_cfg_content_after 
                             if crc_cmd_count == 0:
                                 # 第一个
-                                bitstream_obj.bit_cfg_content_after[cfg_index].set_data_to_index(0, config.CRC_BIT)
+                                bitstream_obj.bit_cfg_content_after[cfg_index].set_data_to_index(0, ConfigurationPacket.PacketTemplate.CONFIG_CRC.value.byte)
                                 bitstream_obj.bit_cfg_content_after[cfg_index].set_data_to_index(1, utils.binary_str_to_bytes(bitstream_obj.crc_01))
                             elif crc_cmd_count == 1:
                                 # 第二个
-                                bitstream_obj.bit_cfg_content_after[cfg_index].set_data_to_index(0, config.CRC_BIT)
+                                bitstream_obj.bit_cfg_content_after[cfg_index].set_data_to_index(0, ConfigurationPacket.PacketTemplate.CONFIG_CRC.value.byte)
                                 bitstream_obj.bit_cfg_content_after[cfg_index].set_data_to_index(1, utils.binary_str_to_bytes(bitstream_obj.crc_02))
                             crc_cmd_count += 1
                             break
@@ -299,7 +297,7 @@ def calculate_crc(bitstream_obj):
                     # 拿到当前cmd下的word
                     cur_word = item.get_data_from_index(data_index) # 字节
                     
-                    crc_data_in = bitstream_obj.cfg_obj.make_len_37_crc_data_in(cur_word, cmd_word, "byte")
+                    crc_data_in = ConfigurationPacket.make_len_37_crc_data_in(cur_word, cmd_word, "byte")
                     int_value = int(''.join(map(str, crc_data_in)), 2)
                     hex_str = f"{int_value:x}"
                     bitstream_obj.crc_02 = bitstream_obj.icap_crc(crc_data_in, bitstream_obj.crc_02)

@@ -2,7 +2,7 @@
 import struct
 import logging
 import argparse
-import COMMON.config as config
+from COMMON.config import ConfigurationPacket
 import COMMON.utils as utils
 from collections import defaultdict
 
@@ -31,7 +31,7 @@ def timer_refresh(bitstream_obj, RHBD_DATA_STR="00000000000000000000000000000000
                 for _ in range(2):
                     item = bitstream_obj.PacketItem("NOOP")
                     item.set_opcode(-1)
-                    item.append_data(config.NOOP_STR)
+                    item.append_data(ConfigurationPacket.PacketTemplate.CONFIG_NOOP.value.binstr)
                     bitstream_obj.rbt_cfg_content_pre.insert(cur_index+1, item)
                     cur_index += 1
                 # ============ 插入noop * 2 ============ 
@@ -39,8 +39,8 @@ def timer_refresh(bitstream_obj, RHBD_DATA_STR="00000000000000000000000000000000
                 # ============ 插入RHBD ============ 
                 item = bitstream_obj.PacketItem("RHBD")
                 item.set_opcode(-1)
-                item.append_data(config.RHBD_REG_STR)
-                line = config.ZERO_DATA_STR
+                item.append_data(ConfigurationPacket.PacketTemplate.CONFIG_RHBD.value.binstr)
+                line = ConfigurationPacket.PacketTemplate.DATA_ZERO.value.binstr
                 new_line = utils.update_data_by_index(line,[4],["1"])
                 item.append_data(new_line)
                 bitstream_obj.rbt_cfg_content_pre.insert(cur_index+1, item)
@@ -51,7 +51,7 @@ def timer_refresh(bitstream_obj, RHBD_DATA_STR="00000000000000000000000000000000
                 for _ in range(2):
                     item = bitstream_obj.PacketItem("NOOP")
                     item.set_opcode(-1)
-                    item.append_data(config.NOOP_STR)
+                    item.append_data(ConfigurationPacket.PacketTemplate.CONFIG_NOOP.value.binstr)
                     bitstream_obj.rbt_cfg_content_pre.insert(cur_index+1, item)
                     cur_index += 1
                 # ============ 插入noop * 2 ============ 
@@ -70,7 +70,7 @@ def timer_refresh(bitstream_obj, RHBD_DATA_STR="00000000000000000000000000000000
                 for _ in range(2):
                     item = bitstream_obj.PacketItem("NOOP")
                     item.set_opcode(-1)
-                    item.append_data(config.NOOP_STR)
+                    item.append_data(ConfigurationPacket.PacketTemplate.CONFIG_NOOP.value.binstr)
                     bitstream_obj.rbt_cfg_content_pre.insert(cur_index+1, item)
                     cur_index += 1
                 # ============ 插入noop * 2 ============ 
@@ -78,7 +78,7 @@ def timer_refresh(bitstream_obj, RHBD_DATA_STR="00000000000000000000000000000000
                 # ============ 插入RHBD ============ 
                 item = bitstream_obj.PacketItem("RHBD")
                 item.set_opcode(-1)
-                item.append_data(config.RHBD_REG_STR)
+                item.append_data(ConfigurationPacket.PacketTemplate.CONFIG_RHBD.value.binstr)
                 item.append_data(RHBD_DATA_STR)
                 bitstream_obj.rbt_cfg_content_pre.insert(cur_index+1, item)
                 cur_index += 1
@@ -88,7 +88,7 @@ def timer_refresh(bitstream_obj, RHBD_DATA_STR="00000000000000000000000000000000
                 for _ in range(2):
                     item = bitstream_obj.PacketItem("NOOP")
                     item.set_opcode(-1)
-                    item.append_data(config.NOOP_STR)
+                    item.append_data(ConfigurationPacket.PacketTemplate.CONFIG_NOOP.value.binstr)
                     bitstream_obj.rbt_cfg_content_pre.insert(cur_index+1, item)
                     cur_index += 1
                 # ============ 插入noop * 2 ============ 
@@ -107,7 +107,7 @@ def timer_refresh(bitstream_obj, RHBD_DATA_STR="00000000000000000000000000000000
                 for _ in range(2):
                     item = bitstream_obj.PacketItem("NOOP")
                     item.set_opcode(-1)
-                    item.append_data(config.NOOP_BYTE)
+                    item.append_data(ConfigurationPacket.PacketTemplate.CONFIG_NOOP.value.byte)
                     bitstream_obj.bit_cfg_content_pre.insert(cur_index+1, item)
                     cur_index += 1
                 # ============ 插入noop * 2 ============ 
@@ -116,7 +116,7 @@ def timer_refresh(bitstream_obj, RHBD_DATA_STR="00000000000000000000000000000000
                 # ============ 插入RHBD ============ 
                 item = bitstream_obj.PacketItem("RHBD")
                 item.set_opcode(-1)
-                item.append_data(config.RHBD_REG_BYTE)
+                item.append_data(ConfigurationPacket.PacketTemplate.CONFIG_RHBD.value.byte)
                 item.append_data(utils.binary_str_to_bytes(RHBD_DATA_STR))
                 bitstream_obj.bit_cfg_content_pre.insert(cur_index+1, item)
                 cur_index += 1
@@ -126,7 +126,7 @@ def timer_refresh(bitstream_obj, RHBD_DATA_STR="00000000000000000000000000000000
                 for _ in range(2):
                     item = bitstream_obj.PacketItem("NOOP")
                     item.set_opcode(-1)
-                    item.append_data(config.NOOP_BYTE)
+                    item.append_data(ConfigurationPacket.PacketTemplate.CONFIG_NOOP.value.byte)
                     bitstream_obj.bit_cfg_content_pre.insert(cur_index+1, item)
                     cur_index += 1
                 # ============ 插入noop * 2 ============ 
@@ -157,7 +157,7 @@ def readback_refresh(bitstream_obj, RHBD_DATA_STR="00000000000000000000000000000
                 for _ in range(2):
                     item = bitstream_obj.PacketItem("NOOP")
                     item.set_opcode(-1)
-                    item.append_data(config.NOOP_STR)
+                    item.append_data(ConfigurationPacket.PacketTemplate.CONFIG_NOOP.value.binstr)
                     bitstream_obj.rbt_cfg_content_pre.insert(cur_index+1, item)
                     cur_index += 1
                 # ============ 插入noop * 2 ============ 
@@ -165,7 +165,7 @@ def readback_refresh(bitstream_obj, RHBD_DATA_STR="00000000000000000000000000000
                 # ============ 插入RHBD ============ 
                 item = bitstream_obj.PacketItem("RHBD")
                 item.set_opcode(-1)
-                item.append_data(config.RHBD_REG_STR)
+                item.append_data(ConfigurationPacket.PacketTemplate.CONFIG_RHBD.value.binstr)
                 item.append_data(RHBD_DATA_STR)
                 bitstream_obj.rbt_cfg_content_pre.insert(cur_index+1, item)
                 cur_index += 1
@@ -175,7 +175,7 @@ def readback_refresh(bitstream_obj, RHBD_DATA_STR="00000000000000000000000000000
                 for _ in range(2):
                     item = bitstream_obj.PacketItem("NOOP")
                     item.set_opcode(-1)
-                    item.append_data(config.NOOP_STR)
+                    item.append_data(ConfigurationPacket.PacketTemplate.CONFIG_NOOP.value.binstr)
                     bitstream_obj.rbt_cfg_content_pre.insert(cur_index+1, item)
                     cur_index += 1
                 # ============ 插入noop * 2 ============ 
@@ -194,7 +194,7 @@ def readback_refresh(bitstream_obj, RHBD_DATA_STR="00000000000000000000000000000
                 for _ in range(2):
                     item = bitstream_obj.PacketItem("NOOP")
                     item.set_opcode(-1)
-                    item.append_data(config.NOOP_BYTE)
+                    item.append_data(ConfigurationPacket.PacketTemplate.CONFIG_NOOP.value.byte)
                     bitstream_obj.bit_cfg_content_pre.insert(cur_index+1, item)
                     cur_index += 1
                 # ============ 插入noop * 2 ============ 
@@ -203,7 +203,7 @@ def readback_refresh(bitstream_obj, RHBD_DATA_STR="00000000000000000000000000000
                 # ============ 插入RHBD ============ 
                 item = bitstream_obj.PacketItem("RHBD")
                 item.set_opcode(-1)
-                item.append_data(config.RHBD_REG_BYTE)
+                item.append_data(ConfigurationPacket.PacketTemplate.CONFIG_RHBD.value.byte)
                 item.append_data(utils.binary_str_to_bytes(RHBD_DATA_STR))
                 bitstream_obj.bit_cfg_content_pre.insert(cur_index+1, item)
                 cur_index += 1
@@ -213,7 +213,7 @@ def readback_refresh(bitstream_obj, RHBD_DATA_STR="00000000000000000000000000000
                 for _ in range(2):
                     item = bitstream_obj.PacketItem("NOOP")
                     item.set_opcode(-1)
-                    item.append_data(config.NOOP_BYTE)
+                    item.append_data(ConfigurationPacket.PacketTemplate.CONFIG_NOOP.value.byte)
                     bitstream_obj.bit_cfg_content_pre.insert(cur_index+1, item)
                     cur_index += 1
                 # ============ 插入noop * 2 ============ 
