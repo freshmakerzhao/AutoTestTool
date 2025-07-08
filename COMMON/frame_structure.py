@@ -5641,7 +5641,7 @@ MC1P170_FRAME_STRUCT = {
                     }
                 }
             },
-            "row_num_1": {
+            "row_num_2": {
                 "col_num_0": {
                     "frame_count": 128,
                     "FAR": {
