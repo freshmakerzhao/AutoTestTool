@@ -55,7 +55,7 @@ class MainApp(tk.Tk):
         # self.nb.add(self.page_h, text="  基础功能  ")
         # self.nb.add(self.page_i, text="  Si5344 Clk  ")
         # self.nb.add(self.page_j, text="  电流功耗温度  ")
-        self.nb.add(self.page_k, text="  flash烧写  ")
+        self.nb.add(self.page_k, text="  fpga与flash配置  ")
         
         # 绑定切换事件
         self.nb.bind("<<NotebookTabChanged>>", self._on_tab_changed)
