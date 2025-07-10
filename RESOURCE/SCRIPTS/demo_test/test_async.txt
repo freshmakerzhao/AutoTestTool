@@ -1,5 +1,5 @@
 # test_async.txt - 异步串口监听测试脚本
-# 放置路径: C:\Users\win\Desktop\HybrdchipGUI\merge_zhiwei\AutoTestTool\RESOURCE\SCRIPTS\test_async.txt
+# 放置路径: C:\Users\win\Desktop\HybrdchipGUI\merge_zhiwei\AutoTestTool\RESOURCE\SCRIPTS\demo_test\test_async.txt
 
 # 设置变量
 set PORT COM6

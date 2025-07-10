@@ -1,0 +1,155 @@
+# test_voltage.txt - MC1P110电压控制测试脚本
+# 放置路径: C:\Users\win\Desktop\HybrdchipGUI\merge_zhiwei\AutoTestTool\RESOURCE\SCRIPTS\demo_test\test_voltage.txt
+
+# 设置变量
+set PORT COM6
+set BAUDRATE 115200
+
+echo "=== MC1P110电压控制测试开始 ==="
+echo "端口: $PORT"
+echo "波特率: $BAUDRATE"
+
+# 1. 列出可用端口
+echo "1. 列出可用串口:"
+moni ports
+
+# 2. 测试连接
+echo "2. 测试串口连接:"
+moni test $PORT $BAUDRATE
+
+# 3. 开始后台监听
+echo "3. 开始后台监听:"
+start_monitor $PORT $BAUDRATE --log voltage_test_session.log
+sleep 3
+
+# 4. 查看监听状态
+echo "4. 查看监听状态:"
+monitor_status
+
+# 5. 检查电压功能可用性
+echo "5. 检查电压功能可用性:"
+voltage_check
+
+# 6. 显示MC1P110电压规格
+echo "6. 显示MC1P110电压规格:"
+voltage_specs
+
+# 7. 等待设备数据积累
+echo "7. 等待设备数据积累..."
+sleep 5
+
+# 8. 查看当前电压状态（优先缓存）
+echo "8. 查看当前电压状态（优先缓存）:"
+voltage_status
+
+# 9. 主动查询电压状态
+echo "9. 主动查询电压状态:"
+voltage_status --live
+
+# 10. 查看最近的串口数据
+echo "10. 查看最近的串口数据:"
+show_data 5
+
+# 11. 设置MC1P110默认电压值
+echo "11. 设置MC1P110默认电压值:"
+voltage_set --defaults --verify
+sleep 3
+
+# 12. 验证设置结果
+echo "12. 验证设置结果:"
+voltage_status
+sleep 2
+
+# 13. 设置自定义电压值
+echo "13. 设置自定义电压值:"
+set VCCO_0_VAL 3320
+set VCCBRAM_VAL 1050
+set VCCAUX_VAL 1850
+set VCCINT_VAL 1050
+voltage_set --values $VCCO_0_VAL $VCCBRAM_VAL $VCCAUX_VAL $VCCINT_VAL 3300 3300 3300 3300 1500 1200 1000 --verify
+sleep 3
+
+# 14. 查看自定义设置结果
+echo "14. 查看自定义设置结果:"
+voltage_status
+
+# 15. 测试步进校正功能
+echo "15. 测试步进校正功能:"
+voltage_set --values 3303 1003 1807 1002 3298 3295 3301 3299 1503 1203 1001 --verify
+sleep 3
+
+# 16. 查看步进校正结果
+echo "16. 查看步进校正结果:"
+voltage_status
+
+# 17. 测试边界值
+echo "17. 测试边界值（应该校正或拒绝）:"
+voltage_set --values 3350 1100 2000 1100 3350 3350 3350 3350 1550 1320 1100 --verify
+sleep 3
+
+# 18. 恢复默认电压
+echo "18. 恢复默认电压:"
+voltage_set --defaults --verify
+sleep 2
+
+# 19. 使用快速命令测试
+echo "19. 使用快速命令测试:"
+voltage_quick check
+voltage_quick status
+voltage_quick defaults
+sleep 2
+
+# 20. 综合功能测试
+echo "20. 综合功能测试:"
+voltage_test
+sleep 2
+
+# 21. 开启专门的电压日志记录
+echo "21. 开启专门的电压日志记录:"
+enable_log voltage_detailed.log
+sleep 2
+
+# 22. 再次进行电压操作（记录到新日志）
+echo "22. 再次进行电压操作:"
+voltage_set --values 3310 1020 1820 1020 3310 3310 3310 3310 1510 1210 1020 --verify
+sleep 3
+
+# 23. 查看最近的操作记录
+echo "23. 查看最近的操作记录:"
+show_data 10
+
+# 24. 关闭电压日志
+echo "24. 关闭电压日志:"
+disable_log
+
+# 25. 保存完整的测试数据
+echo "25. 保存完整的测试数据:"
+save_log voltage_complete_test.txt
+
+# 26. 测试JSON格式输出
+echo "26. 测试JSON格式输出:"
+voltage_status --format json
+
+# 27. 最终状态检查
+echo "27. 最终状态检查:"
+voltage_check
+monitor_status
+
+# 28. 清理：恢复默认设置
+echo "28. 清理：恢复默认设置:"
+voltage_set --defaults
+sleep 2
+
+# 29. 最终电压状态
+echo "29. 最终电压状态:"
+voltage_status
+
+# 30. 停止监听
+echo "30. 停止监听:"
+stop_monitor
+
+echo "=== MC1P110电压控制测试结束 ==="
+echo "生成的文件:"
+echo "  - voltage_test_session.log (完整会话日志)"
+echo "  - voltage_detailed.log (详细电压操作日志)"
+echo "  - voltage_complete_test.txt (测试数据导出)"
