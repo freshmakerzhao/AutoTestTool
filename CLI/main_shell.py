@@ -1343,10 +1343,11 @@ def main():
         shell.do_run_script(sys.argv[1])
     else:
         print("参数格式错误，支持：")
-        print("  无参数(交互模式): python main_shell.py")
-        print("  单命令模式: python main_shell.py -c \"命令\"")
-        print("  多命令模式: python main_shell.py -c \"命令1\" -c \"命令2\"")
-        print("  脚本模式: python main_shell.py script.txt")
+        print("  无参数(交互模式): AutoTestTool.exe")
+        print("  UI: AutoTestTool.exe -ui")
+        print("  单命令模式: AutoTestTool.exe -c \"命令\"")
+        print("  多命令模式: AutoTestTool.exe -c \"命令1\" -c \"命令2\"")
+        print("  脚本模式: AutoTestTool.exe script.txt")
 
 if __name__ == "__main__":
     main()
