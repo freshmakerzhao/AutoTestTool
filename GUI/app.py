@@ -71,5 +71,8 @@ class MainApp(tk.Tk):
         text_handler.poll()
         self.after(100, self._poll_logger)
 
-if __name__ == "__main__":
+def main():
     MainApp().mainloop()
+
+if __name__ == "__main__":
+    main()

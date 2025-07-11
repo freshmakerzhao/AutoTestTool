@@ -1,7 +1,7 @@
 # -*- mode: python ; coding: utf-8 -*-
 
 a = Analysis(
-    ['GUI/app.py'],
+    ['main.py'],
     pathex=['.','E:/Application_miniconda3/envs/only_install_ui/Lib/site-packages'],
     binaries=[],
     datas=[
@@ -29,7 +29,7 @@ exe = EXE(
     upx=True,
     upx_exclude=[],
     runtime_tmpdir=None,
-    console=False,
+    console=True,
     disable_windowed_traceback=False,
     argv_emulation=False,
     target_arch=None,
