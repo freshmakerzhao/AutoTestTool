@@ -43,13 +43,17 @@ def run_script_tcl(
     if not os.path.exists(tcl_script_path):
         raise RuntimeError(f"TCL脚本文件未找到: {tcl_script_path}")
     
+    # 获取脚本的绝对路径和目录
+    abs_tcl_script_path = os.path.abspath(tcl_script_path)
+    tcl_script_dir = os.path.dirname(abs_tcl_script_path)
+    
     # 构建命令
     cmd = [
         vivado_bat_path,
         "-mode", mode,
         "-log", log_file,
         "-journal", journal_file,
-        "-source", tcl_script_path
+        "-source", abs_tcl_script_path  # 使用绝对路径
     ]
     
     # 添加TCL参数
@@ -61,6 +65,8 @@ def run_script_tcl(
     logging.info(f"[run_script_tcl] 执行参数:")
     logging.info(f"  vivado_bin_path = {vivado_bin_path}")
     logging.info(f"  tcl_script_path = {tcl_script_path}")
+    logging.info(f"  abs_tcl_script_path = {abs_tcl_script_path}")
+    logging.info(f"  工作目录 = {tcl_script_dir}")
     logging.info(f"  tcl_args = {tcl_args}")
     logging.info(f"  log_file = {log_file}")
     logging.info(f"  journal_file = {journal_file}")
@@ -68,13 +74,14 @@ def run_script_tcl(
     logging.info(f"  命令: {' '.join(cmd)}")
     logging.info("=======================================================")
     
-    # 执行命令
+    # 执行命令，设置工作目录为脚本所在目录
     try:
         result = subprocess.run(
             cmd,
             capture_output=capture_output,
             text=True,
-            check=False  # 不自动抛出异常，让调用者处理
+            check=False,  # 不自动抛出异常，让调用者处理
+            cwd=tcl_script_dir  # 🔑 关键修改：设置工作目录
         )
         
         if result.returncode == 0:
