@@ -38,16 +38,30 @@ class PageKCustomProgram(ttk.Frame):
         self.browse_btn = ttk.Button(file_row, text="浏览...", command=self.browse_bitfile)
         self.browse_btn.grid(row=0, column=2, padx=4)
 
+        # --- 模式选择下拉 ---
+        spi_row = ttk.Frame(self)
+        spi_row.grid(row=2, column=0, sticky="ew", pady=(6,0))
+        ttk.Label(spi_row, text="bus with:").pack(side="left", padx=(0, 8))
+        self.spi_mode_var = tk.StringVar(value="x1")
+        self.spi_mode_combo = ttk.Combobox(
+            spi_row,
+            textvariable=self.spi_mode_var,
+            values=["x1", "x2", "x4"],
+            width=5,
+            state="readonly"
+        )
+        self.spi_mode_combo.pack(side="left")
+
         # --- 烧写按钮 -----
         btn_row = ttk.Frame(self)
-        btn_row.grid(row=2, column=0, pady=14)
+        btn_row.grid(row=3, column=0, pady=14)
         self.run_btn = ttk.Button(btn_row, text="配置", command=self.on_run)
         self.run_btn.pack(side="left", padx=10)
 
         # --- 日志框 -----
         self.log_text = tk.Text(self, height=8, state="disabled")
-        self.log_text.grid(row=3, column=0, sticky="nsew")
-        self.rowconfigure(3, weight=1)
+        self.log_text.grid(row=4, column=0, sticky="nsew")
+        self.rowconfigure(4, weight=1)
 
         self.set_mode("fpga")  # 默认模式
 
@@ -56,9 +70,11 @@ class PageKCustomProgram(ttk.Frame):
         if mode == "fpga":
             self.fpga_btn.state(["disabled"])
             self.flash_btn.state(["!disabled"])
+            self.spi_mode_combo.config(state="disabled")
         else:
             self.flash_btn.state(["disabled"])
             self.fpga_btn.state(["!disabled"])
+            self.spi_mode_combo.config(state="readonly")
         self.bit_path_var.set("")
 
     def browse_bitfile(self):
@@ -78,8 +94,8 @@ class PageKCustomProgram(ttk.Frame):
         if not os.path.isfile(bit_file):
             messagebox.showerror("错误", "请选择有效的烧写文件！")
             return
-
-        kwargs = dict(bit_file=bit_file, prog_mode=self.prog_mode)
+        spi_mode = self.spi_mode_var.get()
+        kwargs = dict(bit_file=bit_file, prog_mode=self.prog_mode, spi_mode=spi_mode)
         self.run_btn.config(state="disabled")
         base_dir = os.path.dirname(sys.executable if getattr(sys, 'frozen', False) else __file__)
         cur_log_path = os.path.join(base_dir, "log.txt")
@@ -93,7 +109,7 @@ class PageKCustomProgram(ttk.Frame):
             **kwargs
         )
 
-    def program_bit_file(self, bit_file, prog_mode):
+    def program_bit_file(self, bit_file, prog_mode, spi_mode):
         base_dir = os.path.dirname(sys.executable if getattr(sys, 'frozen', False) else __file__)
         exe_path = os.path.join(base_dir, "bin", "BitstreamLoader.exe")
         indirect_path = os.path.join(base_dir, "resource", "spiOverJtag_MC1P110.bit.gz")
@@ -106,6 +122,8 @@ class PageKCustomProgram(ttk.Frame):
             cmd = [exe_path, "-c", param_cable, bit_file, "--license", param_license]
         else:
             cmd = [exe_path, "-c", param_cable, "-b", param_chip, "-B", indirect_path, "-f", bit_file, "--license", param_license]
+            if spi_mode == "x4":
+                cmd.append("--enable-quad")
 
         logging.info(f"[Program] {bit_file} 烧写中...")
         result = subprocess.run(cmd, capture_output=True, text=True)
