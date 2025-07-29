@@ -3,12 +3,12 @@ from typing import List
 
 def calc_length(payload: str, cmd_name: str) -> str:
     """
-    按协议：长度 = len(cmd_name) + 1(空格) + len(payload) + 5(协议额外字节)
-    返回 4 位大写十六进制字符串
+    按协议：长度 = 整个命令字符串的长度（不包括换行符）
     """
-    base = len(cmd_name) + 1 + len(payload)
-    total = base + 5
-    return f"{total:04X}"
+    # 构建完整命令： "MC1PCLKCFG 0000 payload"
+    full_command = f"{cmd_name} 0000 {payload}"
+    total_length = len(full_command)
+    return f"{total_length:04X}"
 
 def build_clk_set_command(table_idx: int) -> str:
     """构造 MC1PCLKSET 命令，table_idx: 0~10"""
@@ -27,10 +27,16 @@ def build_clk_get_command(table_idx: int) -> str:
     return f"MC1PCLKGET {length} {payload}"
 
 def build_clk_cfg_command(reg_offset: str, reg_value: str) -> str:
-    """构造 MC1PCLKCFG 命令，用于逐寄存器发送"""
+    """构造 MC1PCLKCFG 命令，按TCL版本协议"""
     payload = f"{reg_offset} {reg_value}"
-    length = calc_length(payload, "MC1PCLKCFG")
-    return f"MC1PCLKCFG {length} {payload}"
+    
+    # 按TCL方式：先构建完整命令，再计算长度
+    temp_command = f"MC1PCLKCFG 0000 {payload}"
+    length = f"{len(temp_command):04X}"
+    
+    # 构建最终命令
+    final_command = f"MC1PCLKCFG {length} {payload}"
+    return final_command
 
 def parse_clk_response(resp: str) -> int:
     """

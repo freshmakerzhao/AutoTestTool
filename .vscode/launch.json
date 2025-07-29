@@ -173,5 +173,20 @@
             "console": "integratedTerminal",
             "justMyCode": false
         },
+        {
+            "name": "CLI测试-all",
+            "type": "debugpy",
+            "request": "launch",
+            "args": [
+                "C:\\Users\\win\\Desktop\\HybrdchipGUI\\merge_zhiwei\\temp_test\\AutoTestTool\\RESOURCE\\SCRIPTS\\demo\\test_all.txt"
+            ],
+            "env": {
+                "PYTHONPATH": "${workspaceFolder}",
+                "DEBUG": "1"
+            },
+            "program": "C:\\Users\\win\\Desktop\\HybrdchipGUI\\merge_zhiwei\\temp_test\\AutoTestTool\\CLI\\main_shell.py",
+            "console": "integratedTerminal",
+            "justMyCode": false
+        },        
     ]
 }

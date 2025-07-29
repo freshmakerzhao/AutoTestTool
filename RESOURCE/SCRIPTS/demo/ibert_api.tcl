@@ -16,11 +16,11 @@ proc create_link {args} {
     array set params $args
 
     if {$params(-tx_nub) >= [llength [get_hw_sio_txs]]} {
-        puts "tx nubmer $tx_nub error"
+        puts "tx number $params(-tx_nub) error"
         return 0
     }
     if {$params(-rx_nub) >= [llength [get_hw_sio_rxs]]} {
-        puts "rx nubmer $rx_nub error"
+        puts "rx number $params(-rx_nub) error"
         return 0
     }
 
@@ -346,4 +346,162 @@ proc merge_csv_files_complete {temp_files output_file link_names} {
     puts "Complete data format created successfully!"
     puts "- Includes all metadata and 2D eye diagram data"
     puts "- Channel column added for identification"
+}
+
+# ============= CSV合并功能（新增部分）=============
+
+# 全局变量：存储metadata文件列表
+set global_metadata_list {}
+
+# 添加metadata文件到全局列表
+proc add_metadata_file {metadata_file test_round} {
+    global global_metadata_list
+    
+    if {[file exists $metadata_file]} {
+        lappend global_metadata_list [list $metadata_file $test_round]
+        puts "已添加metadata文件: $metadata_file (测试轮次: $test_round)"
+        return 1
+    } else {
+        puts "警告: metadata文件不存在: $metadata_file"
+        return 0
+    }
+}
+
+# 显示当前metadata文件列表
+proc show_metadata_list {} {
+    global global_metadata_list
+    
+    puts "当前metadata文件列表:"
+    if {[llength $global_metadata_list] == 0} {
+        puts "  (空列表)"
+    } else {
+        set index 1
+        foreach entry $global_metadata_list {
+            set file [lindex $entry 0]
+            set round [lindex $entry 1]
+            puts "  $index. [file tail $file] (测试轮次: $round)"
+            incr index
+        }
+    }
+}
+
+# 清空metadata文件列表
+proc clear_metadata_list {} {
+    global global_metadata_list
+    set global_metadata_list {}
+    puts "metadata文件列表已清空"
+}
+
+# 合并所有metadata文件为总表
+proc merge_all_metadata {output_file} {
+    global global_metadata_list
+    
+    puts "开始合并metadata文件..."
+    puts "待合并文件数量: [llength $global_metadata_list]"
+    
+    if {[llength $global_metadata_list] == 0} {
+        puts "错误: 没有metadata文件需要合并"
+        return 0
+    }
+    
+    set output_fd [open $output_file w]
+    
+    set header_written 0
+    set total_rows 0
+    
+    # 按测试轮次排序
+    set sorted_list [lsort -integer -index 1 $global_metadata_list]
+    
+    foreach entry $sorted_list {
+        set metadata_file [lindex $entry 0]
+        set test_round [lindex $entry 1]
+        
+        puts "处理文件: [file tail $metadata_file] (测试轮次: $test_round)"
+        
+        if {![file exists $metadata_file]} {
+            puts "警告: 文件不存在，跳过: $metadata_file"
+            continue
+        }
+        
+        set input_fd [open $metadata_file r]
+        set line_num 0
+        
+        while {[gets $input_fd line] >= 0} {
+            incr line_num
+            set clean_line [string trim $line]
+            
+            # 跳过空行
+            if {$clean_line eq ""} continue
+            
+            if {$line_num == 1} {
+                # 处理表头
+                if {!$header_written} {
+                    # 第一次写入表头，添加Test_Round列
+                    puts $output_fd "Test_Round,$clean_line"
+                    set header_written 1
+                }
+                # 其他文件跳过表头
+                continue
+            } else {
+                # 处理数据行，添加测试轮次信息
+                puts $output_fd "$test_round,$clean_line"
+                incr total_rows
+            }
+        }
+        
+        close $input_fd
+    }
+    
+    close $output_fd
+    
+    puts "metadata合并完成！"
+    puts "输出文件: $output_file"
+    puts "包含测试轮次: [llength $sorted_list]"
+    puts "总数据行数: $total_rows"
+    puts "表格格式: Test_Round + 18项原始参数"
+    
+    return 1
+}
+
+# 智能检测并添加最新的metadata文件
+proc auto_add_latest_metadata {base_name test_round} {
+    set metadata_file "${base_name}_metadata.csv"
+    
+    if {[add_metadata_file $metadata_file $test_round]} {
+        puts "自动添加成功: [file tail $metadata_file]"
+        return 1
+    } else {
+        puts "自动添加失败: [file tail $metadata_file]"
+        return 0
+    }
+}
+
+# 生成最终合并报告
+proc generate_metadata_report {output_file} {
+    global global_metadata_list
+    
+    if {[merge_all_metadata $output_file]} {
+        puts ""
+        puts "🎉 Metadata合并报告生成成功！"
+        puts ""
+        puts "📊 测试统计："
+        puts "  • 测试轮次: [llength $global_metadata_list]"
+        puts "  • 预期数据行: [expr {[llength $global_metadata_list] * 4}] (每轮4通道)"
+        puts "  • 输出文件: $output_file"
+        puts ""
+        puts "📁 文件格式："
+        puts "  • 第1列: Test_Round (测试轮次)"
+        puts "  • 第2-19列: 原始18项测试参数"
+        puts "  • 每轮次包含4行数据 (Link 0-3)"
+        puts ""
+        puts "💡 使用建议："
+        puts "  • 用Excel打开进行数据分析"
+        puts "  • 可创建透视表按轮次/通道分析"
+        puts "  • 关注Eye Height、Eye Width等关键指标"
+        puts ""
+        return 1
+    } else {
+        puts "❌ Metadata合并失败"
+        return 0
+    }
 }

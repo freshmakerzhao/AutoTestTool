@@ -38,6 +38,11 @@ from CLI.cli_vivado import (
     get_supported_flash_parts
 )
 
+# 导入时钟配置接口函数
+from CLI.cli_clock import (
+    run_clock_cli, clk_set_regs_file, clk_get_status, clk_test, is_clock_available
+)
+
 class AutoTestToolShell(cmd.Cmd):
     intro = "AutoTestTool Shell，输入 help 查看可用命令，输入 exit 退出。"
     prompt = "(AutoTestTool) "
@@ -1027,6 +1032,274 @@ class AutoTestToolShell(cmd.Cmd):
         actions = ["status", "defaults", "check"]
         return [action for action in actions if action.startswith(text)]
 
+    def do_clock(self, line):
+        """
+        Si5344时钟配置功能 (基于串口监听服务)
+        
+        使用前提：必须先启动串口监听
+          start_monitor COM3 115200        # 启动串口监听
+        
+        示例:
+          clock status                     # 显示时钟配置状态
+          clock set -f config.txt          # 配置时钟寄存器文件 (默认直发模式)
+          clock set -f config.txt -m confirm  # 配置时钟寄存器文件 (确认模式)
+          clock table -i 5                 # 设置时钟表索引 (0-10)
+          clock test                       # 测试时钟功能
+          clock help                       # 显示帮助信息
+        
+        支持变量替换，如 clock set -f $CONFIG_FILE
+        """
+        line = self._substitute_variables(line)
+        try:
+            args_list = shlex.split(line) if line.strip() else []
+            run_clock_cli(args_list)
+        except Exception as e:
+            print(f"执行 clock 命令出错: {e}")
+
+    # =============================================================================
+    # 时钟配置快捷命令 (基于Si5344)
+    # =============================================================================
+    
+    def do_clk_set(self, line):
+        """
+        快速设置时钟配置文件
+        
+        使用前提：串口监听必须已启动
+        
+        示例:
+          clk_set -f si5344_config.txt              # 直发模式配置
+          clk_set -f si5344_config.txt -m confirm   # 确认模式配置
+          clk_set -f $CONFIG_FILE                   # 使用变量
+        
+        参数:
+          -f, --file      : 时钟配置文件路径 (必需)
+          -m, --mode      : 发送模式 (direct/confirm，默认direct)
+        """
+        line = self._substitute_variables(line)
+        parser = argparse.ArgumentParser(prog="clk_set", add_help=False)
+        parser.add_argument("-f", "--file", required=True, help="时钟配置文件路径")
+        parser.add_argument("-m", "--mode", choices=["direct", "confirm"], default="direct", 
+                           help="发送模式")
+        
+        try:
+            args = parser.parse_args(shlex.split(line))
+            
+            if not is_clock_available():
+                print("❌ 串口监听未启动，请先执行: start_monitor <port> <baudrate>")
+                return
+            
+            file_path = args.file
+            mode = args.mode
+            
+            if not os.path.isfile(file_path):
+                print(f"❌ 文件不存在: {file_path}")
+                return
+            
+            print(f"🔒 开始时钟配置 - 文件: {os.path.basename(file_path)} | 模式: {mode}")
+            
+            result = clk_set_regs_file(file_path, mode)
+            
+            if "error" in result:
+                print(f"❌ 配置失败: {result['error']}")
+            else:
+                success_rate = result.get('success_rate', 0) * 100
+                print(f"✅ 时钟配置完成:")
+                print(f"  总寄存器: {result.get('total', 0)}")
+                print(f"  成功: {result.get('success', 0)}")
+                print(f"  失败: {result.get('failed', 0)}")
+                print(f"  成功率: {success_rate:.1f}%")
+                
+                if result.get('failed', 0) == 0:
+                    print("🎉 所有寄存器配置成功！")
+                elif success_rate >= 95:
+                    print("⚠️ 大部分寄存器配置成功")
+                else:
+                    print("⚠️ 配置失败较多，请检查设备连接")
+                
+        except (SystemExit, ValueError):
+            print("用法: clk_set -f <file> [-m direct|confirm]")
+        except Exception as e:
+            print(f"❌ 配置失败: {e}")
+
+    def do_clk_status(self, line):
+        """
+        快速显示时钟配置状态
+        
+        使用前提：串口监听必须已启动
+        
+        示例:
+          clk_status                       # 显示时钟配置状态
+        """
+        try:
+            if not is_clock_available():
+                print("❌ 串口监听未启动，请先执行: start_monitor <port> <baudrate>")
+                return
+            
+            status = clk_get_status()
+            
+            if status['available']:
+                print("✓ 时钟配置状态:")
+                monitor_details = status['details'].get('monitor', {})
+                print(f"  串口监听: ✓ 运行中")
+                print(f"  连接端口: {monitor_details.get('port', 'Unknown')}@{monitor_details.get('baudrate', 'Unknown')}")
+                print(f"  缓存数据: {monitor_details.get('cached_count', 0)}/1000 条")
+                print(f"  时钟模块: Si5344配置就绪")
+            else:
+                error_msg = status.get('error', '未知错误')
+                print(f"❌ 时钟配置不可用: {error_msg}")
+                
+        except Exception as e:
+            print(f"❌ 获取状态失败: {e}")
+
+    def do_clk_test(self, line):
+        """
+        测试时钟配置功能
+        
+        使用前提：串口监听必须已启动
+        
+        示例:
+          clk_test                         # 测试时钟功能
+        """
+        try:
+            if not is_clock_available():
+                print("❌ 串口监听未启动，请先执行: start_monitor <port> <baudrate>")
+                return
+            
+            print("🧪 开始时钟功能测试")
+            
+            success = clk_test()
+            
+            if success:
+                print("✅ 时钟功能测试成功")
+            else:
+                print("❌ 时钟功能测试失败")
+                
+        except Exception as e:
+            print(f"❌ 测试失败: {e}")
+
+    def do_clk_check(self, line):
+        """
+        检查时钟配置功能可用性和状态
+        
+        示例:
+          clk_check                        # 检查时钟功能状态
+        """
+        try:
+            print("📊 时钟功能检查:")
+            
+            # 检查串口监听状态
+            if is_clock_available():
+                from CLI.cli_moni import get_monitor_status
+                monitor_status = get_monitor_status()
+                
+                print(f"  串口监听: ✓ 运行中")
+                print(f"  连接端口: {monitor_status['port']}@{monitor_status['baudrate']}")
+                print(f"  运行时长: {datetime.now() - monitor_status['start_time'] if monitor_status['start_time'] else 'N/A'}")
+                print(f"  缓存数据: {monitor_status['cached_count']}/1000 条")
+                print(f"  时钟模块: Si5344配置就绪")
+                
+                # 尝试简单测试
+                test_result = clk_test()
+                print(f"  通信测试: {'✓ 正常' if test_result else '⚠️ 异常'}")
+                
+            else:
+                print(f"  串口监听: ❌ 未运行")
+                print(f"  解决方法: 执行 start_monitor <port> <baudrate>")
+                
+            # 显示时钟配置摘要
+            print(f"\n📋 Si5344时钟配置摘要:")
+            print(f"  支持模式: 寄存器配置 + 时钟表切换")
+            print(f"  配置文件: 标准CSV格式 (地址,数据)")
+            print(f"  发送模式: 直发模式(推荐) / 确认模式")
+            print(f"  时钟表: 支持0-10索引切换")
+            
+        except Exception as e:
+            print(f"❌ 检查失败: {e}")
+
+    def do_clk_quick(self, line):
+        """
+        快速时钟操作
+        
+        示例:
+          clk_quick status                 # 快速查看状态
+          clk_quick test                   # 快速测试功能
+          clk_quick check                  # 快速检查功能
+        
+        参数:
+          status      : 显示时钟状态
+          test        : 测试时钟功能
+          check       : 检查功能可用性
+        """
+        line = self._substitute_variables(line).strip()
+        
+        if not line:
+            print("用法: clk_quick <status|test|check>")
+            return
+        
+        action = line.lower()
+        
+        try:
+            if action == "status":
+                if not is_clock_available():
+                    print("❌ 串口监听未启动")
+                    return
+                status = clk_get_status()
+                if status['available']:
+                    print("✓ 时钟配置: 可用")
+                    monitor_details = status['details'].get('monitor', {})
+                    print(f"串口: {monitor_details.get('port', 'Unknown')}@{monitor_details.get('baudrate', 'Unknown')}")
+                else:
+                    print("❌ 时钟配置: 不可用")
+                    
+            elif action == "test":
+                if not is_clock_available():
+                    print("❌ 串口监听未启动")
+                    return
+                success = clk_test()
+                print(f"时钟测试: {'✓ 通过' if success else '❌ 失败'}")
+                    
+            elif action == "check":
+                available = is_clock_available()
+                print(f"时钟功能: {'✓ 可用' if available else '❌ 不可用'}")
+                if available:
+                    from CLI.cli_moni import get_monitor_status
+                    status = get_monitor_status()
+                    print(f"串口: {status['port']}@{status['baudrate']}")
+                    
+            else:
+                print(f"❌ 未知操作: {action}")
+                print("支持的操作: status, test, check")
+                
+        except Exception as e:
+            print(f"❌ 操作失败: {e}")
+
+    # =============================================================================
+    # 时钟配置命令自动补全功能
+    # =============================================================================
+
+    def complete_clock(self, text, line, begidx, endidx):
+        """clock 命令自动补全"""
+        subcommands = ["status", "set", "table", "test", "help"]
+        words = line.split()
+        
+        if len(words) <= 2:  # 补全子命令
+            return [cmd for cmd in subcommands if cmd.startswith(text)]
+        return []
+
+    def complete_clk_set(self, text, line, begidx, endidx):
+        """clk_set 命令自动补全"""
+        return [f"${k}" for k in self.variables if k.startswith(text.replace("$", ""))]
+
+    def complete_clk_table(self, text, line, begidx, endidx):
+        """clk_table 命令自动补全"""
+        return [f"${k}" for k in self.variables if k.startswith(text.replace("$", ""))]
+
+    def complete_clk_quick(self, text, line, begidx, endidx):
+        """clk_quick 命令自动补全"""
+        actions = ["status", "test", "check"]
+        return [action for action in actions if action.startswith(text)]
+
+
 # =============================================================================
 # 辅助函数 (在 AutoTestToolShell 类外部添加)
 # =============================================================================
@@ -1310,6 +1583,96 @@ def get_vivado_flash_parts():
         print(f"支持的Flash型号: {', '.join(parts)}")
     """
     return get_supported_flash_parts()
+
+# =============================================================================
+# 对外提供的时钟配置接口函数 (在文件末尾，main函数之前添加)
+# =============================================================================
+
+def quick_clock_set_file(file_path: str, mode: str = "direct"):
+    """
+    快速时钟配置文件函数 (供其他脚本调用)
+    
+    Args:
+        file_path: 时钟配置文件路径
+        mode: 发送模式 ("direct")
+        
+    Returns:
+        dict: 配置结果
+        
+    使用示例:
+        result = quick_clock_set_file("si5344_config.txt", "direct")
+        if result.get("success_rate", 0) > 0.95:
+            print("配置成功")
+    """
+    return clk_set_regs_file(file_path, mode)
+
+def quick_clock_test():
+    """
+    快速时钟测试函数 (供其他脚本调用)
+    
+    Returns:
+        bool: 测试结果
+        
+    使用示例:
+        success = quick_clock_test()
+        if success:
+            print("时钟功能正常")
+    """
+    return clk_test()
+
+def quick_clock_status():
+    """
+    快速时钟状态函数 (供其他脚本调用)
+    
+    Returns:
+        dict: 状态信息
+        
+    使用示例:
+        status = quick_clock_status()
+        if status['available']:
+            print("时钟功能可用")
+    """
+    return clk_get_status()
+
+def check_clock_availability():
+    """
+    检查时钟功能可用性 (供其他脚本调用)
+    
+    Returns:
+        dict: 包含可用性状态和详细信息的字典
+        
+    使用示例:
+        status = check_clock_availability()
+        if status['available']:
+            print("可以进行时钟配置")
+    """
+    result = {
+        'available': False,
+        'monitor_running': False,
+        'device_communicating': False,
+        'error': None,
+        'details': {}
+    }
+    
+    try:
+        # 检查监听状态
+        result['monitor_running'] = is_clock_available()
+        
+        if result['monitor_running']:
+            from CLI.cli_moni import get_monitor_status
+            monitor_status = get_monitor_status()
+            result['details']['monitor'] = monitor_status
+            
+            # 对于命令行模式，假设设备通信正常
+            result['device_communicating'] = True
+            result['available'] = True
+        else:
+            result['error'] = "串口监听未启动"
+            
+    except Exception as e:
+        result['error'] = str(e)
+    
+    return result
 
 # 交互模式：    python main_shell.py
 # 单命令模式：  python main_shell.py -c "base --file xxx"

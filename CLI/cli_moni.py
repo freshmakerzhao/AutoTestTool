@@ -373,6 +373,9 @@ class AsyncSerialMonitor:
 # 全局异步监听器实例
 _global_monitor = AsyncSerialMonitor()
 
+# 🔧 新增：暴露串口核心接口供外部访问（如 cli_clock 使用）
+serial_monitor = None
+
 def run_moni_cli(args_list):
     """串口监视器CLI主入口函数"""
     parser = argparse.ArgumentParser(
@@ -822,7 +825,14 @@ def start_monitor(port: str, baudrate: int, log_file: Optional[str] = None) -> b
         - 如果指定log_file，则同时写入文件日志
         - 支持异步操作，不阻塞主shell线程
     """
-    return _global_monitor.start_monitoring(port, baudrate, log_file)
+    # return _global_monitor.start_monitoring(port, baudrate, log_file)
+    global serial_monitor  # ✅ 声明我们要用全局变量
+    result = _global_monitor.start_monitoring(port, baudrate, log_file)
+    if result:
+        serial_monitor = _global_monitor.serial_core  # ✅ 将当前串口对象赋给 serial_monitor
+    else:
+        serial_monitor = None
+    return result
 
 def stop_monitor() -> bool:
     """
