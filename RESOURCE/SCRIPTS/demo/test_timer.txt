@@ -27,13 +27,3 @@ echo "=== 步骤3: 配置Si5344时钟 ==="
 clk_set -f "E:\workspace\AutoTestTool\RESOURCE\SCRIPTS\Si5344-RevD-ZKXC-Registers-GT122.88M-SYS100M-Out2PD.txt" -m confirm
 sleep 2
 echo ""
-
-# 4. 执行Vivado自定义TCL脚本
-echo "=== 步骤4: Vivado硬件测试 ==="
-vivado_custom -v "C:\\Xilinx\\Vivado\\2020.1\\bin" -t "C:\\Users\\win\\Desktop\\HybrdchipGUI\\merge_zhiwei\\master\\AutoTestTool\\RESOURCE\\SCRIPTS\\demo\\ibert_example_all.tcl"
-echo ""
-
-# 5. 结束串口监听
-echo "=== 步骤5: 清理与收尾 ==="
-stop_monitor
-echo "🟢 全流程测试完成"
