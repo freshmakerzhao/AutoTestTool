@@ -172,16 +172,11 @@ class AutoTestToolShell(cmd.Cmd):
     # 串口命令行参数
     def get_serial_parser(self):
         parser = argparse.ArgumentParser(prog="serial")
-        parser.add_argument("--connect_only", action="store_true", help="仅连接串口")
         parser.add_argument("--port", required=True, help="串口号，如 COM3")
         parser.add_argument("--clock_config_path", help="发送时钟配置文件")
-        # parser.add_argument("--wait", type=float, default=1.0, help="等待接收时间，单位秒")
-        # parser.add_argument("--send_text", help="发送文本")
-        # parser.add_argument("--send_hex", help="发送十六进制字符串")
-
         return parser
     
-    # 串口命令行参数
+    # VCCM
     def get_vccm_parser(self):
         parser = argparse.ArgumentParser(prog="vccm")
         parser.add_argument('--file', type=str)

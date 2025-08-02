@@ -1,5 +1,7 @@
 import logging
-from CORE.module_serial import GLOBAL_SERIAL_CORE
+from CORE.SERIAL.serial_core import GLOBAL_SERIAL_CORE
+from CORE.SERIAL.serial_handler_factory import get_handler
+from CORE.SERIAL.serial_packet_parser import AckType
 import time
 
 def run_serial_cli(args):
@@ -10,6 +12,10 @@ def run_serial_cli(args):
     GLOBAL_SERIAL_CORE.config.stopbits = 1
     GLOBAL_SERIAL_CORE.config.parity = 'N'
  
+    # 注册 CLI 事件处理器
+    cli_handler = get_handler("cli")
+    GLOBAL_SERIAL_CORE.event_router.register(cli_handler)
+
     # 尝试连接
     if not GLOBAL_SERIAL_CORE.SERIAL_INSTANCE or not GLOBAL_SERIAL_CORE.SERIAL_INSTANCE.is_open:
         # 当连接不存在时，尝试连接
@@ -19,39 +25,39 @@ def run_serial_cli(args):
         else:
             print(f"[ERROR] 串口连接失败")
             return
+    time.sleep(1)
 
-    # 仅连接
-    if args.connect_only:
-        return
+    # 发送字符串
+    # if args.send_text:
+    #     success = GLOBAL_SERIAL_CORE.send_text("MC1PCLKCFG 001B 0x0B24 0xC0")
+    #     success = GLOBAL_SERIAL_CORE.send_text("MC1PCLKCFG 001A 0x0B25 0x00")
+    #     success = GLOBAL_SERIAL_CORE.send_text("MC1PCLKCFG 001A 0x0540 0x01")
+    #     success = GLOBAL_SERIAL_CORE.send_text("MC1PCLKCFG 001A 0x0006 0x00")
+    #     success = GLOBAL_SERIAL_CORE.send_text("MC1PCLKCFG 001A 0x0007 0x00")
+    #     success = GLOBAL_SERIAL_CORE.send_text("MC1PCLKCFG 001A 0x0008 0x00")
+    #     success = GLOBAL_SERIAL_CORE.send_text("MC1PCLKCFG 001A 0x000B 0x68")
+
+    #   # 发送 HEX 字符串
+    # if args.send_hex:
+    #     success = GLOBAL_SERIAL_CORE.send_hex(args.send_hex)
+    #     cli_handler.wait_for_acknowledge(timeout=args.wait or 1.0)
+    #     if success:
+    #         logging.info(f"[Serial INFO] 已发送 HEX: {args.send_hex}")
+    #     else:
+    #         logging.error(f"[Serial ERROR] 发送失败 HEX: {args.send_hex}")
 
     # 发送配置文件
     if args.clock_config_path:
-        send_clock_config_file(args.config_file)
-
-    # 发送数据
-    if args.send_text:
-        success = GLOBAL_SERIAL_CORE.send_text(args.send_text)
-        time.sleep(args.wait or 1.0)
-        if success:
-            logging.info(f"[Serial INFO] 已发送 TEXT: {args.send_text}")
-        else:
-            logging.error(f"[Serial ERROR] 发送失败 TEXT: {args.send_text}")
-
-    if args.send_hex:
-        success = GLOBAL_SERIAL_CORE.send_hex(args.send_hex)
-        time.sleep(args.wait or 1.0)
-        if success:
-            logging.info(f"[Serial INFO] 已发送 HEX: {args.send_hex}")
-        else:
-            logging.error(f"[Serial ERROR] 发送失败 HEX: {args.send_hex}")
+        send_clock_config_file(args.clock_config_path)
 
 def send_clock_config_file(file_path: str):
+    event_router = GLOBAL_SERIAL_CORE.event_router
     try:
-        with open(file_path, 'r', encoding='utf-8') as f:
+        with open(file_path, 'r') as f:
             for lineno, line in enumerate(f, 1):
                 line = line.strip()
 
-                # 跳过注释
+                # 跳过注释或空行
                 if not line or line.startswith("#"):
                     continue
 
@@ -65,22 +71,20 @@ def send_clock_config_file(file_path: str):
 
                     # 检查是否需要延时
                     if reg_addr.upper() == "0x0540" and reg_data.upper() == "0x01":
-                        logging.info(f"[Line {lineno}] 延时 300ms")
-                        time.sleep(0.3)
+                        time.sleep(0.3) # delay 300ms
 
                     # 构造字符串：MC1PCLKCFG 0000 0xADDR 0xVALUE
                     cmd_str = f"MC1PCLKCFG 0000 {reg_addr} {reg_data}"
 
-                    # 计算长度（字符数），填入原 cmd_str 的 0000 位置
+                    # 计算长度（字符数）
                     real_len = len(cmd_str)
                     len_hex = f"{real_len:04X}"  # 长度为4位HEX大写
-                    cmd_str = cmd_str[:12] + len_hex + cmd_str[16:]
+                    cmd_str = cmd_str[:11] + len_hex + cmd_str[15:]
 
-                    logging.info(f"[Line {lineno}] 发送命令: {cmd_str}")
-
-                    # 发送数据（编码为 utf-8）
+                    # 发送前清除 ACK 状态
+                    event_router.reset_ack(AckType.CLKCFG)
                     GLOBAL_SERIAL_CORE.send_text(cmd_str)
+                    event_router.wait_for_ack(AckType.CLKCFG)
 
-                    time.sleep(0.05)
     except Exception as e:
         logging.error(f"发送配置文件失败: {e}")

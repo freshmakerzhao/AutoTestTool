@@ -222,7 +222,7 @@
             "request": "launch",
             "args": [
                 "-c",
-                "serial --port COM4 --connect_only"
+                "serial --port COM4 --clock_config_path E:/workspace/AutoTestTool/RESOURCE/SCRIPTS/Si5344-RevD-ZKXC-Registers-GT122.88M-SYS100M-Out2PD.txt"
             ],
             "env": {
                 "PYTHONPATH": "${workspaceFolder}"
