@@ -13,6 +13,7 @@ class PageESerialConfig(ttk.Frame):
         self.port_map = {}  # 用于从显示值 -> 实际端口名
         self.build_ui()
         self.bind_events()
+        self.refresh_ports()
 
     def build_ui(self):
         # === 串口选择区 ===

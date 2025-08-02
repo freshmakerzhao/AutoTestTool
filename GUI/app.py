@@ -1,12 +1,12 @@
 import tkinter as tk
 from tkinter import ttk
 from GUI.PAGES.page_a_program import PageAProgram
-from GUI.PAGES.page_h_base import PageHBase
 from GUI.PAGES.page_b_refesh import PageBRefresh
 from GUI.PAGES.page_c_vccm import PageCVCCM
 from GUI.PAGES.page_d_vivado_rd_check import PageDVivadoRDCheck
 from GUI.PAGES.page_e_serial_config import PageESerialConfig
-# 添加串口监视器页面导入
+from GUI.PAGES.page_f_clock_config import PageFClockConfig
+from GUI.PAGES.page_h_base import PageHBase
 from GUI.PAGES.page_g_ibert import PageGIbertTest
 
 import logging
@@ -31,6 +31,7 @@ class MainApp(tk.Tk):
         self.page_c = PageCVCCM(self.nb, self.ctx)
         self.page_d = PageDVivadoRDCheck(self.nb, self.ctx)
         self.page_e = PageESerialConfig(self.nb, self.ctx)
+        self.page_f = PageFClockConfig(self.nb, self.ctx)
         self.page_g = PageGIbertTest(self.nb, self.ctx)
         self.page_h = PageHBase(self.nb, self.ctx)
 
@@ -39,6 +40,7 @@ class MainApp(tk.Tk):
         self.nb.add(self.page_c, text="  VCCM设置  ")
         self.nb.add(self.page_d, text="  Vivado回读校验  ")
         self.nb.add(self.page_e, text="  串口配置  ")
+        self.nb.add(self.page_f, text="  Si5344 clk  ")
         self.nb.add(self.page_g, text="  Ibert测试  ")
         self.nb.add(self.page_h, text="  基础功能  ")
         

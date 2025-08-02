@@ -21,13 +21,19 @@ class GUISerialEventHandler:
         self.gui_page.after(0, self._update_error, error)
 
     def _update_received_data(self, processed_data):
-        self.gui_page.display_received_data(processed_data)
+        self._safe_call("display_received_data", processed_data)
 
     def _update_sent_data(self, data):
-        self.gui_page.display_sent_data(data)
+        self._safe_call("display_sent_data", data)
 
     def _update_connection_status(self, connected, port):
-        self.gui_page.update_connection_status(connected, port)
+        self._safe_call("update_connection_status", connected, port)
 
     def _update_error(self, error):
-        self.gui_page.show_error(error)
+        self._safe_call("show_error", error)
+
+    # 安全回调，有对应回调再调
+    def _safe_call(self, method_name: str, *args, **kwargs):
+        method = getattr(self.gui_page, method_name, None)
+        if callable(method):
+            method(*args, **kwargs)
