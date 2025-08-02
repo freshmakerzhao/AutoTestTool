@@ -29,7 +29,8 @@ class SerialCore:
         self.event_router = SerialEventRouter()
 
     def register_handler(self, handler):
-        self.event_router.register(handler)
+        if handler:
+            self.event_router.register(handler)
 
     def get_available_ports(self):
         """枚举系统所有串口设备"""
@@ -103,6 +104,10 @@ class SerialCore:
             return False
 
     def send_text(self, text: str) -> bool:
+        if not self.running:
+            self.event_router.on_error(f"串口未连接")
+            return False
+        
         """发送 UTF-8 编码的字符串"""
         try:
             data = text.encode("utf-8")

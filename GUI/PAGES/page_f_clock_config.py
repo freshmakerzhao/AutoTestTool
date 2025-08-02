@@ -116,13 +116,12 @@ class PageFClockConfig(ttk.Frame):
                         cmd_str = cmd_str[:11] + len_hex + cmd_str[15:]
 
                         # 发送命令并等待ACK
-                        router = GLOBAL_SERIAL_CORE.event_router
-                        router.reset_ack(AckType.CLKCFG)
+                        GLOBAL_SERIAL_CORE.event_router.reset_ack(AckType.CLKCFG)
                         GLOBAL_SERIAL_CORE.send_text(cmd_str)
                         self.append_log(f"发送: {cmd_str}")
                         cur_try_times += 1
 
-                        if not router.wait_for_ack(AckType.CLKCFG):
+                        if not GLOBAL_SERIAL_CORE.event_router.wait_for_ack(AckType.CLKCFG):
                             if cur_try_times > max_try_times:
                                 messagebox.showerror("错误", f"[Line {lineno}] 等待 ACK 超时")
                         
@@ -148,7 +147,7 @@ class PageFClockConfig(ttk.Frame):
     def _after_error(self, exc: Exception):
         messagebox.showerror("错误", str(exc))
         self.set_btn.config(state="normal")
-        
+
     def clear_log(self):
         self.log_text.config(state="normal")
         self.log_text.delete("1.0", tk.END)

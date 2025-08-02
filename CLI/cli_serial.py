@@ -1,6 +1,6 @@
 import logging
 from CORE.SERIAL.serial_core import GLOBAL_SERIAL_CORE
-from CORE.SERIAL.serial_handler_factory import get_handler
+from CORE.SERIAL.serial_handler_factory import create_handler
 from CORE.SERIAL.serial_packet_parser import AckType
 import time
 
@@ -13,7 +13,7 @@ def run_serial_cli(args):
     GLOBAL_SERIAL_CORE.config.parity = 'N'
  
     # 注册 CLI 事件处理器
-    cli_handler = get_handler("cli")
+    cli_handler = create_handler("cli", "run_serial_cli")
     GLOBAL_SERIAL_CORE.event_router.register(cli_handler)
 
     # 尝试连接

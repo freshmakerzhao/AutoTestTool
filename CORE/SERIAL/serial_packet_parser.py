@@ -43,40 +43,46 @@ class SerialPacketParser:
                 continue
 
             cmd_type = tokens[0]
-            try:
-                if cmd_type not in CommandType.__members__:
-                    print(f"[SerialPacketParser Warning] {cmd_type} is not in CommandType")
-                    return
-                command = CommandType(cmd_type)
-                ack_type = AckType[cmd_type]
-
-                if command.name in AckType.__members__ and self.event_router:
-                    ack_type = AckType[command.name]
-                    self.event_router.trigger_ack(ack_type)
-            except KeyError:
-                pass 
+            
+            if cmd_type not in CommandType.__members__:
+                print(f"[SerialPacketParser Warning] {cmd_type} is not in CommandType")
+                return
+            command = CommandType(cmd_type)
 
             # 调用不同的解析函数
             if command == CommandType.VOLGET:
-                self.parse_volget(tokens)
+                return self.parse_volget(tokens)
             elif command == CommandType.CURGET:
-                self.parse_curget(tokens)
+                return self.parse_curget(tokens)
             elif command == CommandType.CLKCFG:
-                pass
-            # ... 添加更多 cmd_type 的解析逻辑
+                return self.parse_clkcfg(tokens)
 
     def parse_volget(self, tokens):
+        self.event_router.trigger_ack(AckType.VOLGET)
+        # MC1PVOLGET + 长度004A + 13路电压
         if len(tokens) != 15:
-            print("VOLGET 格式错误")
+            print("[SerialPacketParser Error] VOLGET 格式错误")
             return
-        vcc_values = tokens[2:2+11]  # 假设11个VCC
-        vcc_adc = tokens[13]
-        vcc_ref = tokens[14]
-        # 调用某个全局回调或更新状态
-        print("VCC values:", vcc_values, "ADC:", vcc_adc, "REF:", vcc_ref)
+        vcc_values = tokens[2:2+11] # 11路VCC
+        vcc_names = [
+            "VCCO_0", "VCCBRAM", "VCCAUX", "VCCINT",
+            "VCCO_16", "VCCO_15", "VCCO_14", "VCCO_13",
+            "VCCO_34", "MGTAVTT", "MGTAVCC"
+        ]
+        vcc_dict = dict(zip(vcc_names, vcc_values))
+        vcc_dict["VCCADC"] = tokens[13]
+        vcc_dict["VCCREF"] = tokens[14]
+        
+        return self._build_data(CommandType.VOLGET, vcc_dict)
 
     def parse_curget(self, tokens):
         if len(tokens) != 14:
             print("CURGET 格式错误")
-            return
-        # 同理解析 current
+        return self._build_data(CommandType.CURGET, {})
+        
+    def parse_clkcfg(self, tokens):
+        self.event_router.trigger_ack(AckType.CLKCFG)
+        return self._build_data(CommandType.CLKCFG, {})
+
+    def _build_data(self, data_type: CommandType, data_content: dict):
+        return dict(data_type=data_type, data_content=data_content)

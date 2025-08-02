@@ -2,7 +2,7 @@ from tkinter import ttk
 import tkinter as tk
 from CORE.SERIAL.serial_core import GLOBAL_SERIAL_CORE
 from tkinter import ttk, messagebox
-from CORE.SERIAL.serial_handler_factory import get_handler
+from CORE.SERIAL.serial_handler_factory import create_handler
 
 class PageESerialConfig(ttk.Frame):
     """E 组：串口配置"""
@@ -62,9 +62,6 @@ class PageESerialConfig(ttk.Frame):
         self.refresh_btn.config(command=self.refresh_ports)
         self.connect_btn.config(command=self.connect_serial)
         self.disconnect_btn.config(command=self.disconnect_serial)
-
-        self.gui_handler = get_handler("gui", gui_page=self)
-        GLOBAL_SERIAL_CORE.event_router.register(self.gui_handler)
 
     def refresh_ports(self):
         ports = GLOBAL_SERIAL_CORE.get_available_ports()
@@ -130,3 +127,11 @@ class PageESerialConfig(ttk.Frame):
 
     def show_error(self, exc: Exception):
         messagebox.showerror("错误", str(exc))
+
+    def register_handler(self):
+        self.gui_handler = create_handler("gui", "PageESerialConfig", gui_page=self)
+        GLOBAL_SERIAL_CORE.event_router.register(self.gui_handler)
+
+    def unregister_handler(self):
+        GLOBAL_SERIAL_CORE.event_router.unregister(self.gui_handler)
+        del self.gui_handler

@@ -6,9 +6,8 @@ class CLISerialHandler:
     并支持在发送配置指令时阻塞等待 ACK。
     """
 
-    def __init__(self):
-        self.wait_for_ack = False
-        self.ack_success = False
+    def __init__(self, handler_name):
+        self.handler_name = handler_name
 
     def on_data_received(self, processed_data):
         print(processed_data["decode_content"]+"\n")
