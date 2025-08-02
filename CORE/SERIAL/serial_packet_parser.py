@@ -1,5 +1,6 @@
 from enum import Enum
 from typing import Optional
+from CORE.SERIAL.serial_state import SerialHistory
 
 
 class AckType(Enum):
@@ -30,6 +31,7 @@ class SerialPacketParser:
     def parse(self, line: str):
         if "MC1P" not in line or len(line) < 15:
             return
+        SerialHistory.append_log(line)
         parts = line.split("MC1P")
         for raw_packet in parts:
             packet = raw_packet.strip()

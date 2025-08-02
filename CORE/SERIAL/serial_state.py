@@ -34,9 +34,14 @@ class SerialHistory:
 
     _history: Dict[str, deque] = {}
     _maxlen: int = 200
+    _recent_log: deque = deque(maxlen=_maxlen)
+    
+    @classmethod
+    def append_log(cls, log_content: str) -> None:
+        cls._recent_log.append(log_content)
 
     @classmethod
-    def append(cls, name: str, value: float, ts: Optional[datetime] = None) -> None:
+    def append_data(cls, name: str, value: float, ts: Optional[datetime] = None) -> None:
         if ts is None:
             ts = datetime.now()
         if name not in cls._history:

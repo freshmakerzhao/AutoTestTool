@@ -27,7 +27,6 @@ class SerialCore:
         self.recv_thread = None
         self.running = False
         self.event_router = SerialEventRouter()
-        self.recent_rx_lines = deque(maxlen=100)  # 最近 100 条接收记录
 
     def register_handler(self, handler):
         self.event_router.register(handler)
@@ -149,7 +148,6 @@ class SerialCore:
                             "origin_content": line,
                             "decode_content": line_str
                         }
-                        self.recent_rx_lines.append(processed)
                         # 广播给各个 handler
                         self.event_router.on_data_received(processed)
             except Exception as e:
