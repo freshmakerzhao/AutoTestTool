@@ -28,8 +28,8 @@ def run_in_thread(
         lock_widget.config(state="disabled")
 
     # 禁用跳转
-    if hasattr(root, "disable_tabs"):
-        root.disable_tabs()
+    # if hasattr(root, "disable_tabs"):
+    #     root.disable_tabs()
         
     def _worker():
         try:
@@ -54,5 +54,8 @@ def run_in_thread(
         finally:
             global _is_running
             _is_running = False
+            # 结束后恢复标签页
+            # if hasattr(root, "enable_tabs"):
+            #     root.after(0, root.enable_tabs)
 
     threading.Thread(target=_worker, daemon=True).start()

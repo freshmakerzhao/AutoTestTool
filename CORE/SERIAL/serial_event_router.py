@@ -66,8 +66,10 @@ class SerialEventRouter:
 
         text = processed_data.get("decode_content", "")
         parsed_result = None
+        
+        # 解析
         if text:
-            parsed_result  = self.packet_parser.parse(text)
+            parsed_result = self.packet_parser.parse(text)
         
         # 原始数据广播
         for h in self.handlers:

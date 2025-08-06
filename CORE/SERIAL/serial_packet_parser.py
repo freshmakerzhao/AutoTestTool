@@ -70,8 +70,17 @@ class SerialPacketParser:
             "VCCO_34", "MGTAVTT", "MGTAVCC"
         ]
         vcc_dict = dict(zip(vcc_names, vcc_values))
-        vcc_dict["VCCADC"] = tokens[13]
-        vcc_dict["VCCREF"] = tokens[14]
+        if tokens[13] == "1" or tokens[13] == "0":
+            vcc_dict["VCCADC"] = tokens[13]
+        else:
+            vcc_dict["VCCADC"] = "-1"
+            print(f"[SerialPacketParser Warning] {tokens} VCCADC is invalid")
+        
+        if tokens[14] == "1" or tokens[14] == "0":
+            vcc_dict["VCCREF"] = tokens[14]
+        else:
+            vcc_dict["VCCREF"] = "-1"
+            print(f"[SerialPacketParser Warning] {tokens} VCCREF is invalid")
         
         return self._build_data(CommandType.VOLGET, vcc_dict)
 
