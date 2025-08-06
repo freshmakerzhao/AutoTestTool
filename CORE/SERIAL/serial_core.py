@@ -25,7 +25,7 @@ class SerialCore:
         self.tx_count = 0
         self.lock = threading.Lock()
         self.recv_thread = None
-        self.running = False
+        self.is_connect = False
         self.event_router = SerialEventRouter()
 
     def register_handler(self, handler):
@@ -47,7 +47,7 @@ class SerialCore:
                 parity=self._get_parity(self.config.parity),
                 timeout=0.1
             )
-            self.running = True
+            self.is_connect = True
             self.recv_thread = threading.Thread(target=self._recv_loop, daemon=True)
             self.recv_thread.start()
             self.event_router.on_connection_changed(True, self.config.port)
@@ -58,7 +58,7 @@ class SerialCore:
 
     def disconnect(self):
         """断开串口连接"""
-        self.running = False
+        self.is_connect = False
         if self.SERIAL_INSTANCE:
             self.SERIAL_INSTANCE.close()
             self.SERIAL_INSTANCE = None
@@ -104,7 +104,7 @@ class SerialCore:
             return False
 
     def send_text(self, text: str) -> bool:
-        if not self.running:
+        if not self.is_connect:
             self.event_router.on_error(f"串口未连接")
             return False
         
@@ -137,7 +137,7 @@ class SerialCore:
     def _recv_loop(self):
         """后台接收线程，不断读取数据并派发给事件处理器"""
         rec_buffer = b""  # 当前拼接缓冲区
-        while self.running and self.SERIAL_INSTANCE and self.SERIAL_INSTANCE.is_open:
+        while self.is_connect and self.SERIAL_INSTANCE and self.SERIAL_INSTANCE.is_open:
             try:
                 data = self.SERIAL_INSTANCE.read(self.SERIAL_INSTANCE.in_waiting or 1)
                 if data:

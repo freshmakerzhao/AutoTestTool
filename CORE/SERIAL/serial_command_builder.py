@@ -14,7 +14,7 @@ def build_set_voltage(values: List[int], vccadc_en: bool, vccref_en: bool) -> st
         raise ValueError("电压值数量必须是 11")
     
     parts = ["MC1PVOLSET", "0000"]  # 长度暂时填充0000
-    parts += [str(v) for v in values]
+    parts += [f"{v:04d}" for v in values]
     parts.append("1" if vccadc_en else "0")
     parts.append("1" if vccref_en else "0")
 
@@ -22,7 +22,6 @@ def build_set_voltage(values: List[int], vccadc_en: bool, vccref_en: bool) -> st
     cmd_str = " ".join(parts)
     length = len(cmd_str)
     parts[1] = f"{length:04X}"
-# MC1PVOLSET 004A 3300 0800 1800 0800 3300 3300 3300 3300 1500 1200 1000 1 1\n
 
     return " ".join(parts)
 

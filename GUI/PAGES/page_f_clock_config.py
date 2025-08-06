@@ -66,8 +66,8 @@ class PageFClockConfig(ttk.Frame):
             messagebox.showwarning("提示", "请先选择一个配置文件")
             return
         
-        if not GLOBAL_SERIAL_CORE.running:
-            messagebox.showerror("错误", "端口未连接")
+        if not GLOBAL_SERIAL_CORE.is_connect:
+            messagebox.showerror("错误", "串口未连接")
             return
         
 

@@ -2,7 +2,17 @@ import logging
 from CORE.SERIAL.serial_core import GLOBAL_SERIAL_CORE
 from CORE.SERIAL.serial_handler_factory import create_handler
 from CORE.SERIAL.serial_packet_parser import AckType
+import CORE.SERIAL.serial_command_builder as serial_cmd_builder
 import time
+
+from CORE.SERIAL.serial_voltage import (
+    validate_and_align,
+    split_cli_voltage_args,
+    get_voltage,
+    set_voltage,
+)
+
+
 
 def run_serial_cli(args):
     # 配置串口参数
@@ -27,30 +37,35 @@ def run_serial_cli(args):
             return
     time.sleep(1)
 
-    # 发送字符串
-    # if args.send_text:
-    #     success = GLOBAL_SERIAL_CORE.send_text("MC1PCLKCFG 001B 0x0B24 0xC0")
-    #     success = GLOBAL_SERIAL_CORE.send_text("MC1PCLKCFG 001A 0x0B25 0x00")
-    #     success = GLOBAL_SERIAL_CORE.send_text("MC1PCLKCFG 001A 0x0540 0x01")
-    #     success = GLOBAL_SERIAL_CORE.send_text("MC1PCLKCFG 001A 0x0006 0x00")
-    #     success = GLOBAL_SERIAL_CORE.send_text("MC1PCLKCFG 001A 0x0007 0x00")
-    #     success = GLOBAL_SERIAL_CORE.send_text("MC1PCLKCFG 001A 0x0008 0x00")
-    #     success = GLOBAL_SERIAL_CORE.send_text("MC1PCLKCFG 001A 0x000B 0x68")
+    try:
+        if not GLOBAL_SERIAL_CORE.is_connect:
+            raise RuntimeError("串口未连接")
+        # 1) Si5344 时钟配置
+        if getattr(args, "clock_config_path", None):
+            _send_clock_config_file(args.clock_config_path)
+            return
 
-    #   # 发送 HEX 字符串
-    # if args.send_hex:
-    #     success = GLOBAL_SERIAL_CORE.send_hex(args.send_hex)
-    #     cli_handler.wait_for_acknowledge(timeout=args.wait or 1.0)
-    #     if success:
-    #         logging.info(f"[Serial INFO] 已发送 HEX: {args.send_hex}")
-    #     else:
-    #         logging.error(f"[Serial ERROR] 发送失败 HEX: {args.send_hex}")
+        # 2) 读取电压
+        if getattr(args, "voltage_show", False):
+            _voltage_show()
+            return
 
-    # 发送配置文件
-    if args.clock_config_path:
-        send_clock_config_file(args.clock_config_path)
+        # 3) 设置电压（11 路 + VCCADC + VCCREF）
+        if getattr(args, "voltage_set", None):
+            raw = args.voltage_set
+            if len(raw) != 13:
+                print("[Serial ERROR] --voltage_set 需要 13 个参数：11 路电压 + VCCADC + VCCREF")
+                return
+            _voltage_set(raw, 2.0)
+            return
 
-def send_clock_config_file(file_path: str):
+        print("[Serial WARN] 未指定操作。可用参数：--clock_config_path / --voltage_show / --voltage_set")
+
+    except Exception as e:
+        # 统一错误处理
+        logging.error("run_serial_cli failed: %s", e, exc_info=True)
+
+def _send_clock_config_file(file_path: str):
     event_router = GLOBAL_SERIAL_CORE.event_router
     try:
         with open(file_path, 'r') as f:
@@ -66,10 +81,11 @@ def send_clock_config_file(file_path: str):
                     if len(parts) != 2:
                         logging.warning(f"[Line {lineno}] 格式非法: {line}")
                         continue
+
                     # 寄存器地址、寄存器值
                     reg_addr, reg_data = parts
 
-                    # 检查是否需要延时
+                    # 特殊延时
                     if reg_addr.upper() == "0x0540" and reg_data.upper() == "0x01":
                         time.sleep(0.3) # delay 300ms
 
@@ -88,3 +104,17 @@ def send_clock_config_file(file_path: str):
 
     except Exception as e:
         logging.error(f"发送配置文件失败: {e}")
+
+
+def _voltage_show(timeout: float = 2.0):
+    """
+    显示电压
+    """
+    get_voltage(timeout)
+
+def _voltage_set(args13, timeout=2.0):
+    """
+    设置电压
+    """
+    values, vccadc, vccref = split_cli_voltage_args(args13)
+    set_voltage(values, vccadc, vccref, timeout=timeout)

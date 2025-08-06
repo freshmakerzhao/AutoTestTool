@@ -1,0 +1,14 @@
+# 1. 连接串口
+echo "=== 步骤1: 串口连接与检测 ==="
+set PORT COM4
+serial --port PORT
+
+# 2. 配置电压（标准流程）
+echo "=== 步骤2: 配置标准电压 ==="
+serial 
+
+# 3. 配置Si5344时钟
+echo "=== 步骤3: 配置Si5344时钟 ==="
+clk_set -f "E:\workspace\AutoTestTool\RESOURCE\SCRIPTS\Si5344-RevD-ZKXC-Registers-GT122.88M-SYS100M-Out2PD.txt" -m confirm
+sleep 2
+echo ""

@@ -24,6 +24,9 @@ class CommandType(Enum):
     INAGET = "INAGET"
     BITGET = "BITGET"
 
+class IgnoreType(Enum):
+    recv = "recv"
+
 class SerialPacketParser:
     def __init__(self, event_router=None):
         self.event_router = event_router  # 用于触发 ACK
@@ -43,9 +46,13 @@ class SerialPacketParser:
                 continue
 
             cmd_type = tokens[0]
-            
+            if cmd_type == "TPS_set_vol":
+                print(line)
+            if cmd_type in IgnoreType.__members__:
+                return
+
             if cmd_type not in CommandType.__members__:
-                print(f"[SerialPacketParser Warning] {cmd_type} is not in CommandType")
+                print(f"[SerialPacketParser Warning] {cmd_type} is not in CommandType\n")
                 return
             command = CommandType(cmd_type)
 

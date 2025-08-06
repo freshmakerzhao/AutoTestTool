@@ -10,7 +10,6 @@ class CLISerialHandler:
         self.handler_name = handler_name
 
     def on_data_received(self, processed_data):
-        print(processed_data["decode_content"]+"\n")
         pass
 
     def on_data_sent(self, data: bytes):
@@ -26,3 +25,8 @@ class CLISerialHandler:
             print(f"[INFO] 串口已连接: {port}")
         else:
             print("[INFO] 串口已断开")
+            
+    def on_data_volget(self, content: dict):
+        """展示volget数据"""
+        print(f"[CLISerialHandler Info] voltage is {content}")
+            

@@ -173,7 +173,29 @@ class AutoTestToolShell(cmd.Cmd):
     def get_serial_parser(self):
         parser = argparse.ArgumentParser(prog="serial")
         parser.add_argument("--port", required=True, help="串口号，如 COM3")
-        parser.add_argument("--clock_config_path", help="发送时钟配置文件")
+
+        # 互斥操作：时钟配置 / 电压读取 / 电压设置 三选一
+        action = parser.add_mutually_exclusive_group(required=True)
+        action.add_argument(
+            "--clock_config_path",
+            help="发送时钟配置文件"
+        )
+        action.add_argument(
+            "--voltage_show",
+            action="store_true",
+            help="读取并显示全部电压"
+        )
+        action.add_argument(
+            "--voltage_set",
+            nargs=13,
+            type=int,
+            metavar=(
+                "VCCO_0",  "VCCBRAM",  "VCCAUX", "VCCINT",
+                "VCCO_16", "VCCO_15", "VCCO_14", "VCCO_13",
+                "VCCO_34", "MGTAVTT", "MGTAVCC", "VCCADC", "VCCREF"
+            ),
+            help="按顺序设置 11 路电压（单位 mV）以及VCCADC、VCCREF(1表示enable，0表示disable)"
+        )
         return parser
     
     # VCCM
