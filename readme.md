@@ -81,12 +81,12 @@ vccm --project 项目路径 --vccm_values vccm电压值 --vswl_selected vswl电�
 
 ## 2.3 串口（新）
 
-- 连接串口
-  - serial --port COM4
+- 端口号
+  - --port COM4
   - 端口号可在设备管理器的 ”端口“ 中查看；
   - 每次进行串口相关操作时，都需要指定串口号，如果执行过程中串口已连接，不会重复连接。如果串口未连接，会默认进行重连；
 - 发送时钟配置
-  - serial --port COM4 --clock_config_path `"D:\a\b\c.txt"`
+  - `serial --port COM4 --clock_config_path "D:\a\b\c.txt"`
   - path必须被双引号包裹；
   - 路径中的斜线可以是`'/'`、`'\'`、`'\\'`；
 - 显示电压
@@ -103,8 +103,6 @@ vccm --project 项目路径 --vccm_values vccm电压值 --vswl_selected vswl电�
   - 按照显示电压中的顺序进行电压配置，全部是整数，范围如下图：
 
 ![image-20250806212325009](./assets/image-20250806212325009.png)
-
-- 
 
 - 
 

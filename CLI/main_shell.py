@@ -117,7 +117,7 @@ class AutoTestToolShell(cmd.Cmd):
         print()
 
     def do_run_script(self, filename):
-        """批量执行命令脚本（每行一条命令）"""
+        """按照脚本批量执行命令（每行一条命令）"""
         if not os.path.isfile(filename):
             print(f"文件不存在: {filename}")
             return
@@ -126,7 +126,7 @@ class AutoTestToolShell(cmd.Cmd):
             with open(filename, 'r', encoding='utf-8') as f:
                 for lineno, line in enumerate(f, 1):
                     line = line.strip()
-                    # 脚本中可以写注释，用井号开头
+                    # 脚本中可以写注释，用 '#' 号开头
                     if not line or line.startswith('#'):
                         continue
                     try:
@@ -134,9 +134,7 @@ class AutoTestToolShell(cmd.Cmd):
                         self.onecmd(line)
                     except Exception as e:
                         print(f"第{lineno}行命令出错: {e}")
-                        # 询问是否继续执行
-                        if input("是否继续执行? (y/n): ").lower() != 'y':
-                            break
+                        break
         except UnicodeDecodeError as e:
             print(f"文件编码错误: {e}")
             print("请确保脚本文件使用UTF-8编码保存")

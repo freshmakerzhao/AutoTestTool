@@ -236,7 +236,7 @@
             "type": "debugpy",
             "request": "launch",
             "args": [
-                "E:\\workspace\\AutoTestTool\\test.txt"
+                "E:\\workspace\\AutoTestTool\\RESOURCE\\SCRIPTS\\demo\\test_01.txt"
             ],
             "env": {
                 "PYTHONPATH": "${workspaceFolder}"

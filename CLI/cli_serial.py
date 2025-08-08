@@ -12,8 +12,6 @@ from CORE.SERIAL.serial_voltage import (
     set_voltage,
 )
 
-
-
 def run_serial_cli(args):
     # 配置串口参数
     GLOBAL_SERIAL_CORE.config.port = args.port
