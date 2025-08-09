@@ -1,0 +1,5 @@
+SW Version,Date and Time Started,Date and Time Ended,Scan Name,Link Settings,Reset RX After Applying Settings,Open Area,Horizontal Opening,Horizontal Percentage,Vertical Opening,Vertical Percentage,Dwell,Dwell BER,Dwell Time,Horizontal Increment,Horizontal Range,Vertical Increment,Vertical Range
+2020.1,2025-Aug-09 19:00:34,2025-Aug-09 19:00:56,Channel 0,,false,4096,25,44.44,161,67.74,BER,1e-9,0,8,-0.500 UI to 0.500 UI,8,100%
+2020.1,2025-Aug-09 19:00:56,2025-Aug-09 19:00:57,Channel 1,,false,0,0,0.00,0,0.00,BER,1e-9,0,8,-0.500 UI to 0.500 UI,8,100%
+2020.1,2025-Aug-09 19:00:57,2025-Aug-09 19:00:58,Channel 2,,false,0,0,0.00,0,0.00,BER,1e-9,0,8,-0.500 UI to 0.500 UI,8,100%
+2020.1,2025-Aug-09 19:00:58,2025-Aug-09 19:00:59,Channel 3,,false,0,0,0.00,0,0.00,BER,1e-9,0,8,-0.500 UI to 0.500 UI,8,100%

@@ -392,80 +392,117 @@ proc clear_metadata_list {} {
     puts "metadata文件列表已清空"
 }
 
-# 合并所有metadata文件为总表
 proc merge_all_metadata {output_file} {
     global global_metadata_list
-    
+
     puts "开始合并metadata文件..."
-    puts "待合并文件数量: [llength $global_metadata_list]"
-    
-    if {[llength $global_metadata_list] == 0} {
+    if {![info exists global_metadata_list] || [llength $global_metadata_list] == 0} {
         puts "错误: 没有metadata文件需要合并"
         return 0
     }
-    
-    set output_fd [open $output_file w]
-    
-    set header_written 0
-    set total_rows 0
-    
-    # 按测试轮次排序
+
+    # 确保输出目录存在
+    set outdir [file dirname [file normalize $output_file]]
+    if {![file exists $outdir]} {
+        file mkdir $outdir
+    }
+
+    set header_written   0
+    set total_rows       0
+    set processed_files  0
+
+    # 按测试轮次排序（entry: {metadata_file test_round}）
     set sorted_list [lsort -integer -index 1 $global_metadata_list]
-    
+    puts "待合并文件数量: [llength $sorted_list]"
+
+    # 打开输出文件
+    set openOutRC [catch {open $output_file w} output_fd]
+    if {$openOutRC != 0} {
+        puts "错误: 无法写入输出文件: $output_file ($output_fd)"
+        return 0
+    }
+    fconfigure $output_fd -encoding utf-8 -translation lf
+
+    # —— 主循环 —— #
     foreach entry $sorted_list {
         set metadata_file [lindex $entry 0]
-        set test_round [lindex $entry 1]
-        
+        set test_round    [lindex $entry 1]
+
         puts "处理文件: [file tail $metadata_file] (测试轮次: $test_round)"
-        
+
         if {![file exists $metadata_file]} {
             puts "警告: 文件不存在，跳过: $metadata_file"
             continue
         }
-        
-        set input_fd [open $metadata_file r]
-        set line_num 0
-        
+
+        # 打开输入文件
+        set openInRC [catch {open $metadata_file r} input_fd]
+        if {$openInRC != 0} {
+            puts "警告: 无法打开，跳过: $metadata_file ($input_fd)"
+            continue
+        }
+        fconfigure $input_fd -encoding utf-8 -translation auto
+
+        # 读取与写入
+        set line_num        0
+        set wrote_this_file 0
         while {[gets $input_fd line] >= 0} {
             incr line_num
             set clean_line [string trim $line]
-            
-            # 跳过空行
-            if {$clean_line eq ""} continue
-            
+
+            if {$clean_line eq ""} {
+                continue
+            }
+
             if {$line_num == 1} {
-                # 处理表头
+                # 表头：仅第一次写入，并加上 Test_Round 列
                 if {!$header_written} {
-                    # 第一次写入表头，添加Test_Round列
                     puts $output_fd "Test_Round,$clean_line"
                     set header_written 1
                 }
-                # 其他文件跳过表头
                 continue
             } else {
-                # 处理数据行，添加测试轮次信息
                 puts $output_fd "$test_round,$clean_line"
                 incr total_rows
+                set wrote_this_file 1
             }
         }
-        
-        close $input_fd
+
+        # 关闭输入
+        catch {close $input_fd}
+
+        if {$wrote_this_file} {
+            incr processed_files
+        }
     }
-    
-    close $output_fd
-    
+
+    # 关闭输出
+    catch {close $output_fd}
+
+    if {!$header_written} {
+        puts "错误: 未找到任何有效的表头，未生成输出。"
+        return 0
+    }
+
     puts "metadata合并完成！"
     puts "输出文件: $output_file"
-    puts "包含测试轮次: [llength $sorted_list]"
+    puts "包含测试轮次: $processed_files"
     puts "总数据行数: $total_rows"
-    puts "表格格式: Test_Round + 18项原始参数"
-    
+    puts "表格格式: Test_Round + 原始CSV列"
     return 1
+}
+
+# 生成 OUT_CSV_DIR 下的 _metadata.csv 路径
+proc get_metadata_csv_path {base_name} {
+    # 拼到 OUT_CSV_DIR 目录下
+    set base_dir $::env(OUT_CSV_DIR)
+    set filename "${base_name}_metadata.csv"
+    return [file normalize [file join $base_dir $filename]]
 }
 
 # 智能检测并添加最新的metadata文件
 proc auto_add_latest_metadata {base_name test_round} {
-    set metadata_file "${base_name}_metadata.csv"
+    set metadata_file [get_metadata_csv_path $base_name]
     
     if {[add_metadata_file $metadata_file $test_round]} {
         puts "自动添加成功: [file tail $metadata_file]"
@@ -482,26 +519,22 @@ proc generate_metadata_report {output_file} {
     
     if {[merge_all_metadata $output_file]} {
         puts ""
-        puts "🎉 Metadata合并报告生成成功！"
+        puts "Metadata合并报告生成成功！"
         puts ""
-        puts "📊 测试统计："
-        puts "  • 测试轮次: [llength $global_metadata_list]"
-        puts "  • 预期数据行: [expr {[llength $global_metadata_list] * 4}] (每轮4通道)"
-        puts "  • 输出文件: $output_file"
+        puts "测试统计："
+        puts "  测试轮次: [llength $global_metadata_list]"
+        puts "  预期数据行: [expr {[llength $global_metadata_list] * 4}] (每轮4通道)"
+        puts "  输出文件: $output_file"
         puts ""
-        puts "📁 文件格式："
-        puts "  • 第1列: Test_Round (测试轮次)"
-        puts "  • 第2-19列: 原始18项测试参数"
-        puts "  • 每轮次包含4行数据 (Link 0-3)"
+        puts "文件格式："
+        puts "  第1列: Test_Round (测试轮次)"
+        puts "  第2-19列: 原始18项测试参数"
+        puts "  每轮次包含4行数据 (Link 0-3)"
         puts ""
-        puts "💡 使用建议："
-        puts "  • 用Excel打开进行数据分析"
-        puts "  • 可创建透视表按轮次/通道分析"
-        puts "  • 关注Eye Height、Eye Width等关键指标"
         puts ""
         return 1
     } else {
-        puts "❌ Metadata合并失败"
+        puts "Metadata合并失败"
         return 0
     }
 }

@@ -81,90 +81,86 @@ vccm --project 项目路径 --vccm_values vccm电压值 --vswl_selected vswl电�
 
 ## 2.3 电压、时钟配置
 
-- 端口号
-  - --port COM4
-  - 端口号可在设备管理器的 ”端口“ 中查看；
-  - 每次进行串口相关操作时，都需要指定串口号，如果执行过程中串口已连接，不会重复连接。如果串口未连接，会默认进行重连；
-- 发送时钟配置
-  - `serial --port COM4 --clock_config_path "D:\a\b\c.txt"`
-  - path必须被双引号包裹；
-  - 路径中的斜线可以是`'/'`、`'\'`、`'\\'`；
-- 显示电压
-  - serial --port COM4 --voltage_show
-  - 格式如下：
+### 2.3.1 端口号
+
+- --port COM4
+- 端口号可在设备管理器的 ”端口“ 中查看；
+- 每次进行串口相关操作时，都需要指定串口号，如果执行过程中串口已连接，不会重复连接。如果串口未连接，会默认进行重连；
+
+### 2.3.2 发送时钟配置
+
+```shell
+serial --port COM4 --clock_config_path "D:\a\b\c.txt"
+```
+
+- path必须被双引号包裹；
+- 路径中的斜线可以是`'/'`、`'\'`、`'\\'`；
+
+### 2.3.3 显示电压
+
+```shell
+serial --port COM4 --voltage_show
+```
+
+- 格式如下：
 
 ```
 [CLISerialHandler Info] voltage is {'VCCO_0': '2620', 'VCCBRAM': '0900', 'VCCAUX': '1800', 'VCCINT': '0800', 'VCCO_16': '3300', 'VCCO_15': '3300', 'VCCO_14': '3300', 'VCCO_13': '3300', 'VCCO_34': '1500', 'MGTAVTT': '1200', 'MGTAVCC': '1000', 'VCCADC': '1', 'VCCREF': '0'}
 ```
 
-- 配置电压
-  - `serial --port COM4 --voltage_set 2620 0900 1800 0800 3300 3300 3300 3300 1500 1200 1000 1 0`
-  - 前11路严格限制元素长度，每个元素长度为4，后面两路长度为1
-  - 按照显示电压中的顺序进行电压配置，全部是整数，范围如下图：
+### 2.3.4 配置电压
+
+```shell
+serial --port COM4 --voltage_set 2620 0900 1800 0800 3300 3300 3300 3300 1500 1200 1000 1 0
+```
+
+- 前11路严格限制元素长度，每个元素长度为4，后面两路长度为1
+- 按照显示电压中的顺序进行电压配置，全部是整数，范围如下图：
 
 ![image-20250806212325009](./assets/image-20250806212325009.png)
 
 ## 2.4 Vivado相关功能
 
+所有功能都支持设置超时中断时间：
 
+- --timeout
+  - 单位：秒
 
-vivado路径：
+### 2.4.1 烧写bitstream
 
 ```
-E:\Application_Vivado\Vivado\2020.1\bin
-
-C:/Users/DELL/Desktop/test_workspace/CLI_test/example.rbt
+vivado --mode program --vivado_bin "E:\Application_Vivado\Vivado\2020.1\bin" --bit_path "C:\Users\DELL\Desktop\test_workspace\CLI_test\led_run.bit"
 ```
 
+### 2.4.2 烧写flash
 
+```shell
+vivado --mode flash --vivado_bin "E:\Application_Vivado\Vivado\2020.1\bin" --bit_path "C:\Users\DELL\Desktop\test_workspace\CLI_test\led_run.bit" --flash_part "mt25ql128-spi-x1_x2_x4"
 
-
-
-
-
-## 2.5 vivado的tcl集成
-
-修改与添加文件如下：
-命令行：CLI/cli_vivado.py
-统一入口：CLI/main_shell.py
-核心run_vivado_tcl（集成烧写bit、bin、mcs，回读，执行自定义的vivado tcl脚本）：CORE/run_vivado_tcl.py
-测试demo脚本：RESOURCE/SCRIPTS/demo_test/test_vivado_api.txt
-
-```python
-python main_shell.py test_vivado_api.txt
 ```
 
-### 2.5.1 核心命令
+### 2.4.3 回读FPGA
 
-| 命令              | 功能        | 示例                                                         |
-| ----------------- | ----------- | ------------------------------------------------------------ |
-| `vivado_program`  | 烧写到FPGA  | `vivado_program -v $VIVADO_PATH -b design.bit`               |
-| `vivado_flash`    | 烧写到Flash | `vivado_flash -v $VIVADO_PATH -b design.mcs -f mt25ql128-spi-x1_x2_x4` |
-| `vivado_readback` | 从FPGA回读  | `vivado_readback -v $VIVADO_PATH -o readback.rbd`            |
-| `vivado_custom`   | 执行TCL脚本 | `vivado_custom -v $VIVADO_PATH -t script.tcl`                |
-| `vivado_test`     | 测试功能    | `vivado_test -v $VIVADO_PATH`                                |
-| `vivado_help`     | 显示帮助    | `vivado_help`                                                |
-| `vivado_quick`    | 快速操作    | `vivado_quick test $VIVADO_PATH`                             |
+```shell
+vivado --mode readback --vivado_bin "E:\Application_Vivado\Vivado\2020.1\bin" --out_rbd_path "C:\Users\DELL\Desktop\test_workspace\CLI_test\readback.rbd"
+```
 
+### 2.4.4 仅对比回读是否成功（Only Compare）
 
+```shell
+# 特征值位流比对（special compare）
+vivado --mode compare --mask_path "C:\Users\DELL\Desktop\test_workspace\vccm\for_vivado\00_55_AA_FF.msd" --readback_path "C:\Users\DELL\Desktop\test_workspace\vccm\for_vivado\00.rbd" --gold_path "C:\Users\DELL\Desktop\test_workspace\vccm\for_vivado\gold_00.rbt" --special "00" --vivado_bin "E:\Application_Vivado\Vivado\2020.1\bin"
 
+# 功能位流比对（functional compare）
+vivado --mode compare --mask_path "C:\Users\DELL\Desktop\test_workspace\vccm\for_vivado\led_run.msd" --readback_path "C:\Users\DELL\Desktop\test_workspace\vccm\for_vivado\led_run_readback.rbd" --gold_path "C:\Users\DELL\Desktop\test_workspace\vccm\for_vivado\gold_led_run.rbt" --vivado_bin "E:\Application_Vivado\Vivado\2020.1\bin"
+```
 
+### 2.4.5 执行自定义TCL（如ibert）
 
-# 三、开发规范
+```shell
+vivado --mode raw --vivado_bin "E:\Application_Vivado\Vivado\2020.1\bin" --tcl_path "E:\workspace\AutoTestTool\RESOURCE\SCRIPTS\demo\ibert_example_all.tcl"
+```
 
-## 3.1 项目结构
-
-项目整体分成GUI、CORE、CLI、RESOURCE四个部分
-
-- GUI
-  - 项目UI部分
-  - COMPONENT
-    - 自定义组件
-  - PAGES
-    - 每个标签页
-- CORE
-  - 主要功能，为GUI和shell提供api
-  - 名称严格按照module_xx
-- CLI
-  - 各模块命令行参数解析文件；
-  - 入口统一为main_shell.py。
+- 可选参数
+  - --tcl_args
+    - 支持传参，空格断开

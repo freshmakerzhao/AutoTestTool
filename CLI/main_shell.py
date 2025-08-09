@@ -12,22 +12,8 @@ from datetime import datetime
 from CLI.cli_serial import run_serial_cli
 from CLI.cli_vccm import run_vccm_cli
 from CLI.cli_base import run_base_cli
+from CLI.cli_vivado import run_vivado_cli
 
-# 导入vivado tcl命令行接口
-"""
-vivado_program    # 烧写到FPGA  
-vivado_flash      # 烧写到Flash
-vivado_readback   # 从FPGA回读
-vivado_custom     # 执行TCL脚本
-vivado_test       # 测试功能
-vivado_help       # 显示帮助
-vivado_quick      # 快速操作
-"""
-from CLI.cli_vivado import (
-    vivado_program_cli, vivado_flash_cli, vivado_readback_cli, 
-    vivado_custom_cli, vivado_test_cli, print_vivado_help,
-    get_supported_flash_parts
-)
 
 class AutoTestToolShell(cmd.Cmd):
     intro = "AutoTestTool Shell，输入 help 查看可用命令，输入 exit 退出。"
@@ -83,6 +69,19 @@ class AutoTestToolShell(cmd.Cmd):
         try:
             args = parser.parse_args(shlex.split(line))
             run_serial_cli(args)
+        except SystemExit:
+            pass
+        except Exception as e:
+            print(f"执行 serial 命令出错: {e}")
+
+            
+    # --- VIVADO ---
+    def do_vivado(self, line):
+        line = self._substitute_variables(line)
+        parser = self.get_vivado_parser()
+        try:
+            args = parser.parse_args(shlex.split(line))
+            run_vivado_cli(args)
         except SystemExit:
             pass
         except Exception as e:
@@ -166,6 +165,54 @@ class AutoTestToolShell(cmd.Cmd):
 # ===========================================================================命令行参数===========================================================================    
 # ===============================================================================================================================================================     
 # ===============================================================================================================================================================  
+
+    # Vivado参数
+    def get_vivado_parser(self):
+        parser = argparse.ArgumentParser(prog="vivado")
+        parser.add_argument(
+            "--mode",
+            required=True,
+            choices=["program", "flash", "readback", "compare", "raw"],
+            help="执行模式：program/flash/readback/compare/raw",
+        )
+        parser.add_argument("--vivado_bin", help="Vivado 安装目录")
+
+        # program / flash
+        parser.add_argument("--bit_path", help="bit/rbt 文件路径")
+        parser.add_argument("--flash_part", default="mt25ql128-spi-x1_x2_x4", help="Flash 器件名称（如 mt25ql128-spi-x1_x2_x4）")
+
+        # readback
+        parser.add_argument("--out_rbd_path", help="回读输出 rbd 文件路径")
+
+        # compare
+        parser.add_argument("--mask_path", help="掩码文件 .msd")
+        parser.add_argument("--readback_path", help="回读 rbd 文件")
+        parser.add_argument("--gold_path", help="gold 文件 .rbt")
+        parser.add_argument(
+            "--special",
+            default="",
+            help="特征值：00/55/AA/FF（留空即功能位流比对）",
+        )
+        parser.add_argument("--result_path", default="", help="输出 result 文件路径")
+
+        # raw
+        parser.add_argument("--tcl_path", help="TCL 脚本路径（raw 模式）")
+        parser.add_argument(
+            "--tcl_args",
+            nargs="*",
+            default=[],
+            help="传给 TCL 的参数列表（按原样拼接）",
+        )
+        # out_csv_dir
+        parser.add_argument(
+            "--out_csv_dir",
+            default="",
+            help="固定 CSV 输出目录（默认tcl_path目录）"
+        )
+
+        # 其它通用
+        parser.add_argument("--timeout", type=float, default=60.0, help="超时时间（秒）")
+        return parser
 
     # 串口命令行参数
     def get_serial_parser(self):

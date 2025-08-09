@@ -13,5 +13,4 @@ serial --port COM4 --clock_config_path "E:\workspace\AutoTestTool\RESOURCE\SCRIP
 
 # 4. 执行TCL脚本
 echo "=== 步骤4: Vivado硬件测试 ==="
-vivado_custom -v "E:\Application_Vivado\Vivado\2020.1\bin" -t "E:\workspace\AutoTestTool\RESOURCE\SCRIPTS\demo\ibert_example_all.tcl"
-echo ""
+vivado --mode raw --vivado_bin "E:\Application_Vivado\Vivado\2020.1\bin" --tcl_path "E:\workspace\AutoTestTool\RESOURCE\SCRIPTS\demo\ibert_example_all.tcl" --out_csv_dir "E:\workspace\AutoTestTool\RESOURCE\test"

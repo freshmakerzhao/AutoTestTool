@@ -39,6 +39,7 @@ def run_vivado_tcl(
     tcl_script_path: str,
     tcl_args: Optional[List[str]] = None,
     log_path: Optional[str] = None,
+    out_csv_dir: str = "",
     timeout: Optional[float] = None,
     env: Optional[Dict[str, str]] = None,
     extra_args: Optional[List[str]] = None
@@ -57,7 +58,13 @@ def run_vivado_tcl(
     vivado_bat = _resolve_vivado_exe(vivado_bin_path)
     _ensure_exists(vivado_bat, "Vivado.bat")
     _ensure_exists(tcl_script_path, "tcl 脚本")
-
+    tcl_dir = os.path.dirname(tcl_script_path)
+    os.environ["MAIN_TCL_DIR"] = tcl_dir
+    if out_csv_dir:
+        os.environ["OUT_CSV_DIR"] = out_csv_dir
+    else:
+        os.environ["OUT_CSV_DIR"] = tcl_dir
+    os.system("chcp 65001 >NUL")
     cmd = [
         vivado_bat,
         "-mode", "batch",
@@ -80,9 +87,8 @@ def run_vivado_tcl(
         proc = subprocess.run(
             cmd,
             capture_output=True, 
-            text=True,
             startupinfo=startupinfo,
-            env=env,
+            env=os.environ,
         )
     except subprocess.TimeoutExpired as te:
         raise TimeoutError(f"Vivado 执行超时（{timeout}s）") from te
