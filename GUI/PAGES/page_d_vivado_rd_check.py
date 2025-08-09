@@ -479,8 +479,8 @@ class PageDVivadoRDCheck(ttk.Frame):
         ):
         is_all_pass = True
         logging.info(f"[vivado 回读校验] 开始处理")
-        program_script  = utils.resource_path("RESOURCE/SCRIPTS/program.tcl")
-        readback_script = utils.resource_path("RESOURCE/SCRIPTS/readback.tcl")
+        program_script  = utils.resource_path("RESOURCE/SCRIPTS/TCL/program.tcl")
+        readback_script = utils.resource_path("RESOURCE/SCRIPTS/TCL/readback.tcl")
         vivado_bat_path = os.path.join(vivado_bin_path, "vivado.bat")
         
         if not os.path.exists(program_script):
