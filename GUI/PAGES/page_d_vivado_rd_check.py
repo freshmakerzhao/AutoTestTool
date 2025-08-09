@@ -8,6 +8,8 @@ import subprocess
 import COMMON.utils as utils
 import json
 import csv
+from CORE.VIVADO.vivado_core import readback_to_file,program_bitstream
+from CORE.process_rdcheck import compare_functional, compare_with_special, compare_dispatch
 
 SPECIAL_VALUE = {
     "00": "00",   
@@ -84,40 +86,40 @@ class PageDVivadoRDCheck(ttk.Frame):
         ttk.Entry(row1, textvariable=self.bitstream_var).grid(row=0, column=1, sticky="ew", padx=4)
         ttk.Button(row1, text="浏览...", command=self.browse_bitstream).grid(row=0, column=2, padx=4)
 
-        # --- 掩码文件 mask_var ---
+        # --- 掩码文件 single_mode_mask_var ---
         row3 = ttk.Frame(self.single_frame)
         row3.grid(row=1, column=0, sticky="ew", pady=6)
         row3.columnconfigure(1, weight=1)
         ttk.Label(row3, text="掩码文件路径:").grid(row=0, column=0, sticky=tk.W)
-        self.mask_var = tk.StringVar()
-        ttk.Entry(row3, textvariable=self.mask_var).grid(row=0, column=1, sticky="ew", padx=4)
+        self.single_mode_mask_var = tk.StringVar()
+        ttk.Entry(row3, textvariable=self.single_mode_mask_var).grid(row=0, column=1, sticky="ew", padx=4)
         ttk.Button(row3, text="浏览...", command=self.browse_mask).grid(row=0, column=2, padx=4)
         
-        # --- Gold 文件路径选择 gold_var ---
+        # --- Gold 文件路径选择 single_mode_gold_var ---
         gold_row = ttk.Frame(self.single_frame)
         gold_row.grid(row=2, column=0, sticky="ew", pady=6)
         gold_row.columnconfigure(1, weight=1)
         ttk.Label(gold_row, text="GOLD 文件路径:").grid(row=0, column=0, sticky=tk.W)
-        self.gold_var = tk.StringVar()
-        ttk.Entry(gold_row, textvariable=self.gold_var).grid(row=0, column=1, sticky="ew", padx=4)
+        self.single_mode_gold_var = tk.StringVar()
+        ttk.Entry(gold_row, textvariable=self.single_mode_gold_var).grid(row=0, column=1, sticky="ew", padx=4)
         ttk.Button(gold_row, text="浏览...", command=self.browse_gold_file).grid(row=0, column=2, padx=4)
         
-        # --- 输出文件目录 output_var ---
+        # --- 输出文件目录 single_mode_output_var ---
         output_row = ttk.Frame(self.single_frame)
         output_row.grid(row=3, column=0, sticky="ew", pady=6)
         output_row.columnconfigure(1, weight=1)
         ttk.Label(output_row, text="输出文件目录:").grid(row=0, column=0, sticky=tk.W)
-        self.output_var = tk.StringVar()
-        ttk.Entry(output_row, textvariable=self.output_var).grid(row=0, column=1, sticky="ew", padx=4)
+        self.single_mode_output_var = tk.StringVar()
+        ttk.Entry(output_row, textvariable=self.single_mode_output_var).grid(row=0, column=1, sticky="ew", padx=4)
         ttk.Button(output_row, text="浏览...", command=self.browse_output).grid(row=0, column=2, padx=4)
         
         # --------------------- 特征值选择 ---------------------
         special_row = ttk.Frame(self.single_frame)
         special_row.grid(row=4, column=0, sticky="ew", pady=6)
         ttk.Label(special_row, text="特征值:").grid(row=0, column=0, sticky=tk.W)
-        self.special_var = tk.StringVar(value="00")
+        self.single_mode_special_var = tk.StringVar(value="00")
         self.special_options = ["00", "55", "AA", "FF", "led_run"]
-        self.special_combo = ttk.Combobox(special_row, textvariable=self.special_var, values=self.special_options, state="readonly", width=10)
+        self.special_combo = ttk.Combobox(special_row, textvariable=self.single_mode_special_var, values=self.special_options, state="readonly", width=10)
         self.special_combo.grid(row=0, column=1, sticky="w", padx=4)
 
     def _build_batch_mode(self):
@@ -139,40 +141,40 @@ class PageDVivadoRDCheck(ttk.Frame):
         ttk.Entry(row0, textvariable=self.readback_var).grid(row=0, column=1, sticky="ew", padx=4)
         ttk.Button(row0, text="浏览...", command=self.browse_readback).grid(row=0, column=2, padx=4)
         
-        # --- 掩码文件 mask_var ---
+        # --- 掩码文件 compare_mode_mask_var ---
         row1 = ttk.Frame(self.compare_frame)
         row1.grid(row=1, column=0, sticky="ew", pady=6)
         row1.columnconfigure(1, weight=1)
         ttk.Label(row1, text="掩码文件路径:").grid(row=0, column=0, sticky=tk.W)
-        self.mask_var = tk.StringVar()
-        ttk.Entry(row1, textvariable=self.mask_var).grid(row=0, column=1, sticky="ew", padx=4)
+        self.compare_mode_mask_var = tk.StringVar()
+        ttk.Entry(row1, textvariable=self.compare_mode_mask_var).grid(row=0, column=1, sticky="ew", padx=4)
         ttk.Button(row1, text="浏览...", command=self.browse_mask).grid(row=0, column=2, padx=4)
         
-        # --- Gold 文件路径选择 gold_var ---
+        # --- Gold 文件路径选择 compare_mode_gold_var ---
         row2 = ttk.Frame(self.compare_frame)
         row2.grid(row=2, column=0, sticky="ew", pady=6)
         row2.columnconfigure(1, weight=1)
         ttk.Label(row2, text="GOLD 文件路径:").grid(row=0, column=0, sticky=tk.W)
-        self.gold_var = tk.StringVar()
-        ttk.Entry(row2, textvariable=self.gold_var).grid(row=0, column=1, sticky="ew", padx=4)
+        self.compare_mode_gold_var = tk.StringVar()
+        ttk.Entry(row2, textvariable=self.compare_mode_gold_var).grid(row=0, column=1, sticky="ew", padx=4)
         ttk.Button(row2, text="浏览...", command=self.browse_gold_file).grid(row=0, column=2, padx=4)
         
-        # --- 输出文件目录 output_var ---
+        # --- 输出文件目录 compare_mode_output_var ---
         row3 = ttk.Frame(self.compare_frame)
         row3.grid(row=3, column=0, sticky="ew", pady=6)
         row3.columnconfigure(1, weight=1)
         ttk.Label(row3, text="输出文件目录:").grid(row=0, column=0, sticky=tk.W)
-        self.output_var = tk.StringVar()
-        ttk.Entry(row3, textvariable=self.output_var).grid(row=0, column=1, sticky="ew", padx=4)
+        self.compare_mode_output_var = tk.StringVar()
+        ttk.Entry(row3, textvariable=self.compare_mode_output_var).grid(row=0, column=1, sticky="ew", padx=4)
         ttk.Button(row3, text="浏览...", command=self.browse_output).grid(row=0, column=2, padx=4)
         
         # --------------------- 特征值选择 ---------------------
         special_row = ttk.Frame(self.compare_frame)
         special_row.grid(row=4, column=0, sticky="ew", pady=6)
         ttk.Label(special_row, text="特征值:").grid(row=0, column=0, sticky=tk.W)
-        self.special_var = tk.StringVar(value="00")
+        self.compare_mode_special_var = tk.StringVar(value="00")
         self.special_options = ["00", "55", "AA", "FF", "led_run"]
-        self.special_combo = ttk.Combobox(special_row, textvariable=self.special_var, values=self.special_options, state="readonly", width=10)
+        self.special_combo = ttk.Combobox(special_row, textvariable=self.compare_mode_special_var, values=self.special_options, state="readonly", width=10)
         self.special_combo.grid(row=0, column=1, sticky="w", padx=4)
 
     def update_mode(self):
@@ -215,7 +217,11 @@ class PageDVivadoRDCheck(ttk.Frame):
             title="选择 gold 文件"
         )
         if path:
-            self.gold_var.set(path)
+            cur_mode = self.mode_var.get()
+            if cur_mode == "single":
+                self.single_mode_gold_var.set(path)
+            elif cur_mode == "compare":
+                self.compare_mode_gold_var.set(path)
             
     def browse_batch_config(self):
         path = filedialog.askopenfilename(
@@ -231,13 +237,20 @@ class PageDVivadoRDCheck(ttk.Frame):
             title="选择 msd 掩码文件"
         )
         if path:
-            self.mask_var.set(path)
+            cur_mode = self.mode_var.get()
+            if cur_mode == "single":
+                self.single_mode_mask_var.set(path)
+            elif cur_mode == "compare":
+                self.compare_mode_mask_var.set(path)
 
     def browse_output(self):
         path = filedialog.askdirectory(title="选择一个输出目录")
-        self.output_var.set(path)
         if path:
-            self.output_var.set(path)
+            cur_mode = self.mode_var.get()
+            if cur_mode == "single":
+                self.single_mode_output_var.set(path)
+            elif cur_mode == "compare":
+                self.compare_mode_output_var.set(path)
 
     def _parse_json_config(self, config_path: str):
         if os.path.exists(config_path):
@@ -316,12 +329,12 @@ class PageDVivadoRDCheck(ttk.Frame):
                 self._after_error("请设置vivado bin路径！")
                 return
         
-        special_value = self.special_var.get().strip()
         if cur_mode == "single":
             bit_file_path = self.bitstream_var.get().strip()
-            mask_file_path = self.mask_var.get().strip()
-            gold_file_path = self.gold_var.get().strip()
-            output_file_path = self.output_var.get().strip()
+            mask_file_path = self.single_mode_mask_var.get().strip()
+            gold_file_path = self.single_mode_gold_var.get().strip()
+            output_file_path = self.single_mode_output_var.get().strip()
+            special_value = self.single_mode_special_var.get().strip()
 
             result_file_path = os.path.join(output_file_path, f"{special_value}_result.rbt")
             readback_file_path = os.path.join(output_file_path, f"{special_value}.rbd")
@@ -379,7 +392,7 @@ class PageDVivadoRDCheck(ttk.Frame):
         elif cur_mode == "batch":
             config_path = self.batch_config_var.get().strip()
             if not os.path.isfile(config_path):
-                self._after_error("请提供有效的config json 文件路径！")
+                self._after_error("请提供有效的 config json 文件路径！")
                 return
             try:
                 config_list = self._parse_json_config(config_path)
@@ -403,9 +416,10 @@ class PageDVivadoRDCheck(ttk.Frame):
             )
         elif cur_mode == "compare":
             readback_file_path = self.readback_var.get().strip()
-            mask_file_path = self.mask_var.get().strip()
-            gold_file_path = self.gold_var.get().strip()
-            output_file_path = self.output_var.get().strip()
+            mask_file_path = self.compare_mode_mask_var.get().strip()
+            gold_file_path = self.compare_mode_gold_var.get().strip()
+            output_file_path = self.compare_mode_output_var.get().strip()
+            special_value = self.compare_mode_special_var.get().strip()
             
             result_file_path = os.path.join(output_file_path, f"{special_value}_result.rbt")
             
@@ -456,18 +470,28 @@ class PageDVivadoRDCheck(ttk.Frame):
             
     def _run_compare(self, mask_file_path, readback_file_path, gold_file_path, special_value, result_file_path):
         if special_value in ["00","AA","55","FF"]:
-            if not self._compare_files(mask_file_path, readback_file_path, gold_file_path, special_value, result_file_path):
-                logging.error(f"[vivado 回读校验] {special_value} 比对失败: {result_file_path}")
-            else:
-                logging.info(f"[vivado 回读校验] 比对通过 PASS")
+            ok, detail = compare_with_special(
+                mask_file_path,
+                readback_file_path,
+                gold_file_path,
+                special_value,
+                result_path=result_file_path or None
+            )
         else:
-            if not self._compare_func_files(mask_file_path, readback_file_path, gold_file_path):
-                logging.error(f"[vivado 回读校验] {special_value} 比对失败: {result_file_path}")
-            else:
-                logging.info(f"[vivado 回读校验] 比对通过 PASS")
+            ok, detail = compare_functional(
+                mask_file_path,
+                readback_file_path,
+                gold_file_path
+            )
+        
+        if not ok:
+            logging.error(f"[vivado 回读校验] 比对失败: {detail}")
+            return False
+
+        logging.info(f"[vivado 回读校验] {readback_file_path} 比对通过 PASS")
+        return True
                 
     def _run_vivado_process(self, 
-                            *, 
                             vivado_bin_path, 
                             bitstream_file_paths, 
                             readback_file_paths, 
@@ -479,16 +503,7 @@ class PageDVivadoRDCheck(ttk.Frame):
         ):
         is_all_pass = True
         logging.info(f"[vivado 回读校验] 开始处理")
-        program_script  = utils.resource_path("RESOURCE/SCRIPTS/TCL/program.tcl")
-        readback_script = utils.resource_path("RESOURCE/SCRIPTS/TCL/readback.tcl")
-        vivado_bat_path = os.path.join(vivado_bin_path, "vivado.bat")
-        
-        if not os.path.exists(program_script):
-            raise RuntimeError(f"program.tcl 文件未找到: {program_script}")
-        if not os.path.exists(readback_script):
-            raise RuntimeError(f"readback.tcl 文件未找到: {readback_script}")
-        if not os.path.exists(vivado_bat_path):
-            raise RuntimeError(f"Vivado.bat 文件未找到: {vivado_bat_path}")
+
         if len(bitstream_file_paths) != len(readback_file_paths) \
             or len(bitstream_file_paths) != len(mask_file_paths) \
             or len(bitstream_file_paths) != len(gold_paths) \
@@ -511,22 +526,35 @@ class PageDVivadoRDCheck(ttk.Frame):
                          f"special_value = {special_value}")
             logging.info("=======================================================")
             
-            cur_special_value_status = True
+            cur_ok = True
             cur_status = {
                 "special_value": special_value,
                 "status": "PASS",
                 "readback_file": readback_file_path,
             }
-            if not self._program_bitstream_file(vivado_bat_path, program_script, bitstream_file_path):
-                logging.error(f"[vivado 回读校验] 烧写 bitstream 文件失败: {bitstream_file_path}")
-                cur_special_value_status = False
+
+            # 1) 烧写
+            try:
+                program_bitstream(
+                    vivado_bin_path=vivado_bin_path,
+                    bitstream_file=bitstream_file_path,
+                    log_path=None,
+                    timeout=300,
+                )
+                logging.info("[vivado 回读校验] 烧写完成")
+            except Exception as e:
+                logging.error("[vivado 回读校验] 烧写 %s 文件失败: %s",{bitstream_file_path},e)
+                cur_ok = False
+
+            if not cur_ok:
                 is_all_pass = False
                 cur_status["status"] = "FAIL"
                 cur_status["readback_file"] = "/"
-                logging.error(f"[vivado 回读校验] 跳过当前case")
+                logging.error("[vivado 回读校验] 跳过当前 case（烧写失败）")
                 self._append_status_csv(cur_status, status_csv_path)
                 continue
-
+            
+            # 2) 清理旧文件
             try:
                 # 删除已存在的 readback 文件
                 if os.path.exists(readback_file_path):
@@ -541,40 +569,57 @@ class PageDVivadoRDCheck(ttk.Frame):
             except Exception as e:
                 logging.warning(f"无法删除 {result_path}: {e}")
                 
-            if not self._readback_file(vivado_bat_path, readback_script, readback_file_path):
-                logging.error(f"[vivado 回读校验] 回读 rbd 文件失败: {readback_file_path}")
-                cur_special_value_status = False
+            # 3) 回读
+            try:
+                readback_to_file(
+                    vivado_bin_path=vivado_bin_path,
+                    out_rbd_path=readback_file_path,
+                    timeout=300,
+                )
+                logging.info("[vivado 回读校验] 回读完成: %s", readback_file_path)
+            except Exception as e:
+                logging.error("[vivado 回读校验] 回读 %s 文件失败: %s",{readback_file_path},e)
+                cur_ok = False
+
+            if not cur_ok:
                 is_all_pass = False
                 cur_status["status"] = "FAIL"
                 cur_status["readback_file"] = "/"
-                logging.error(f"[vivado 回读校验] 跳过当前case")
+                logging.error("[vivado 回读校验] 跳过当前 case（回读失败）")
                 self._append_status_csv(cur_status, status_csv_path)
                 continue
                 
-            if special_value in ["00","AA","55","FF"]:
-                if not self._compare_files(mask_file_path, readback_file_path, gold_path, special_value, result_path):
-                    logging.error(f"[vivado 回读校验] {special_value} 比对失败: {result_path}")
-                    cur_special_value_status = False
+            # 4) 比对
+            try:
+                ok, detail = compare_dispatch(
+                    mask_file=mask_file_path,
+                    readback_file=readback_file_path,
+                    gold_file=gold_path,
+                    special_value=special_value,
+                    result_path=result_path if special_value in ("00", "55", "AA", "FF") else None,
+                )
+                if ok:
+                    logging.info("[vivado 回读校验] %s 比对通过", special_value)
                 else:
-                    logging.info(f"[vivado 回读校验] 比对通过 PASS")
-            else:
-                if not self._compare_func_files(mask_file_path, readback_file_path, gold_path):
-                    logging.error(f"[vivado 回读校验] {special_value} 比对失败: {result_path}")
-                    cur_special_value_status = False
-                else:
-                    logging.info(f"[vivado 回读校验] 比对通过 PASS")
+                    logging.error("[vivado 回读校验] %s 比对失败：%s", special_value, result_path)
+                    cur_ok = False
+            except Exception as e:
+                logging.error("[vivado 回读校验] %s 比对异常：%s", special_value, e)
+                cur_ok = False
 
-            if not cur_special_value_status:
+            if not cur_ok:
                 is_all_pass = False
                 cur_status["status"] = "FAIL"
                 
+            # 5) 写当前 case 的结果
             self._append_status_csv(cur_status, status_csv_path)
-                    
+
+        # 汇总
         if not is_all_pass:
             logging.info(f"[vivado 回读校验] ========= 存在 FAIL 查看 {status_csv_path} =========")
             return False
         else:
-            logging.info(f"[vivado 回读校验] ========= ALL PASS =========")
+            logging.info("[vivado 回读校验] ========= ALL PASS =========")
             return True
         
     def _append_status_csv(self, status_dict: dict, output_path: str):
@@ -585,127 +630,6 @@ class PageDVivadoRDCheck(ttk.Frame):
             if not file_exists:
                 writer.writeheader()
             writer.writerow(status_dict)
-            
-    def _program_bitstream_file(self, vivado_bat_path, program_script, bitstream_file):
-        """烧写 bitstream 文件到 FPGA"""
-        cmd = [
-            vivado_bat_path, "-mode", "batch",
-            "-log", "NUL", "-journal", "NUL",
-            "-source", program_script,
-            "-tclargs", bitstream_file
-        ]
-        # 设置 startupinfo 来隐藏窗口
-        result = subprocess.run(
-            cmd, 
-            capture_output=False, 
-            text=True
-        )
-        logging.info(f"[vivado 回读校验] 烧写 {bitstream_file} 完成")
-        if result.returncode != 0:
-            return False
-        else:
-            return True
-    
-    def _readback_file(self, vivado_bat_path, readback_script, readback_file):
-        """回读 FPGA 中的 bitstream 文件到指定路径"""
-        cmd = [
-            vivado_bat_path, "-mode", "batch",
-            "-log", "NUL", "-journal", "NUL",
-            "-source", readback_script,
-            "-tclargs", readback_file
-        ]
-        result = subprocess.run(
-            cmd, 
-            capture_output=False, 
-            text=True
-        )
-        logging.info(f"[vivado 回读校验] 回读 {readback_file} 完成")
-        if result.returncode != 0:
-            return False
-        else:
-            return True
-    
-    def _compare_func_files(self, mask_file_path, readback_file_path, gold_path):
-        # 打开掩码文件和读出文件
-        with open(mask_file_path, 'r') as mask_file, open(readback_file_path, 'r') as readout_file, open(gold_path, 'r') as gold_file:
-            # 逐行读取文件内容
-            mask_lines = mask_file.readlines()
-            readout_lines = readout_file.readlines()
-            gold_lines = gold_file.readlines()
-        
-        # 逐字符比较
-        for idx, (mask_line, readout_line, gold_line) in enumerate(zip(mask_lines, readout_lines, gold_lines)):
-            mask = mask_line.strip()
-            readout = readout_line.strip()
-            gold = gold_line.strip()
-            # 检查长度是否一致
-            if not (len(mask) == len(readout) == len(gold)):
-                return False
-            for pos, (m, r, g) in enumerate(zip(mask, readout, gold)):
-                if m == '1':
-                    # Mask 为 '1'，跳过比较
-                    continue
-                if r != g:
-                    return False
-        return True
-    
-    def _compare_files(self, mask_file_path, readback_file_path, gold_path, special_value, result_path):
-        sp_value = SPECIAL_VALUE.get(special_value, "11")
-        # 打开掩码文件和读出文件
-        with open(mask_file_path, 'r') as mask_file, open(readback_file_path, 'r') as readout_file:
-            # 逐行读取文件内容
-            mask_lines = mask_file.readlines()
-            readout_lines = readout_file.readlines()
-            count = 0
-
-        # 创建一个新文件来保存修改后的读出文件内容
-        result_content = []
-        for mask_line, readout_line in zip(mask_lines, readout_lines):
-            # 假设每行都是由空格分隔的二进制值
-            mask_values = mask_line.strip()
-            readout_values = readout_line.strip()
-            count += 1
-
-            # 检查一行中的元素数量是否相同
-            if len(mask_values) != len(readout_values) or len(mask_values) != 32:
-                raise ValueError("Each line in the mask file and readout file must have 32 bits.")
-
-            modified_readout_values = []
-            for i in range(0, len(mask_values)-1, 2):  # 每2位为一组
-                # 检查掩码中的两个值是否都为1
-                if mask_values[i:i+2] == '11':
-                    modified_readout_values.extend([sp_value])
-                else:
-                    # 不需要替换
-                    modified_readout_values.extend([readout_values[i], readout_values[i+1]])
-                # print(modified_readout_values)
-            result_content.append("".join(modified_readout_values))
-        
-        if not result_path or result_path == "":
-            pass
-        else:
-            with open(result_path, 'w') as output_file:
-                for line in result_content:
-                    output_file.write(line+'\n')
-        
-        with open(gold_path, 'r') as gold_file:
-            # 逐行读取文件内容
-            gold_content = gold_file.readlines()
-        gold_len = len(gold_content)
-        result_content_len = len(result_content)
-        if gold_content[-1] == "":
-            gold_content = gold_content[:-1]
-            gold_len -= 1
-        if result_content[-1] == "":
-            modified_readout_values = modified_readout_values[:-1]
-            result_content_len -= 1
-        if result_content_len != gold_len:
-            return False
-        # Compare
-        for i in range(gold_len):
-            if gold_content[i].strip() != result_content[i].strip():
-                return False
-        return True
     
     def _after_success(self, result=None):
         messagebox.showinfo("完成", "回读校验已完成！")
@@ -722,7 +646,13 @@ class PageDVivadoRDCheck(ttk.Frame):
 
     def reset(self):
         self.bitstream_var.set("")
-        self.output_var.set("")
+        self.single_mode_output_var.set("")
+        self.single_mode_gold_var.set("")
+        self.single_mode_mask_var.set("")
+        self.compare_mode_output_var.set("")
+        self.compare_mode_gold_var.set("")
+        self.compare_mode_mask_var.set("")
+        self.readback_var.set("")
         self.clear_log()
 
     def clear_log(self):

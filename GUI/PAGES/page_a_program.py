@@ -6,7 +6,7 @@ from GUI.COMPONENT.thread_utils import run_in_thread
 import logging
 import subprocess
 import COMMON.utils as utils
-from CORE.VIVADO.process_vivado import program_bitstream, program_flash
+from CORE.VIVADO.vivado_core import program_bitstream, program_flash
 
 class PageAProgram(ttk.Frame):
     """A 组：烧写码流"""

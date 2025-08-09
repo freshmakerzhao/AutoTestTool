@@ -54,12 +54,12 @@ def run_vivado_tcl(
     - extra_args: 额外 Vivado 参数
     """
     # 获取vivado.bat路径
-    vivado_exe = _resolve_vivado_exe(vivado_bin_path)
-    _ensure_exists(vivado_exe, "Vivado 可执行文件")
+    vivado_bat = _resolve_vivado_exe(vivado_bin_path)
+    _ensure_exists(vivado_bat, "Vivado.bat")
     _ensure_exists(tcl_script_path, "tcl 脚本")
 
     cmd = [
-        vivado_exe,
+        vivado_bat,
         "-mode", "batch",
         "-log", "NUL", "-journal", "NUL",
         "-source", tcl_script_path,
@@ -75,11 +75,6 @@ def run_vivado_tcl(
     startupinfo = None
     startupinfo = subprocess.STARTUPINFO()
     startupinfo.dwFlags |= subprocess.STARTF_USESHOWWINDOW
-
-    logging.info("=======================================================")
-    logging.info("[Vivado] 执行命令:\n%s", " ".join(cmd))
-    logging.info("=======================================================")
-
     try:
         # 捕获输出，便于写入日志
         proc = subprocess.run(
@@ -114,7 +109,13 @@ def run_vivado_tcl(
         stderr_snippet=(proc.stderr or "")[-1000:]
     )
 
-# ---------- 业务封装：program / program_flash ----------
+
+# ===============================================================================================================================================================
+# ===============================================================================================================================================================
+# ===========================================================================业务================================================================================    
+# ===============================================================================================================================================================     
+# ===============================================================================================================================================================         
+
 def program_bitstream(
     vivado_bin_path: str,
     bitstream_file: str,
@@ -180,3 +181,37 @@ def program_flash(
     if not result.ok:
         raise RuntimeError(f"烧写 Flash 失败（ret={result.returncode}）")
     return result
+
+def readback_to_file(
+        vivado_bin_path: str,
+        out_rbd_path: str,
+        log_path: Optional[str] = None, 
+        timeout: Optional[float] = None
+) -> VivadoJobResult:
+    """从 FPGA 回读 bitstream 到 rbd 文件"""
+    _tcl_script_path = _resource_path("RESOURCE/SCRIPTS/TCL/readback.tcl")
+
+    logging.info("[Readback] 开始处理")
+    logging.info("vivado_bin_path = %s", vivado_bin_path)
+    logging.info("out_rbd_path       = %s", out_rbd_path)
+    logging.info("tcl_script_path   = %s", _tcl_script_path)
+
+    out_dir = os.path.dirname(out_rbd_path) or "."
+    os.makedirs(out_dir, exist_ok=True)
+    # 先删旧文件
+    try:
+        if os.path.exists(out_rbd_path):
+            os.remove(out_rbd_path)
+    except Exception as e:
+        logging.warning("无法删除现有回读文件 %s: %s", out_rbd_path, e)
+    
+    res = run_vivado_tcl(vivado_bin_path, _tcl_script_path, [out_rbd_path], log_path, timeout)
+    if not res.ok:
+        raise RuntimeError(f"回读 rbd 失败（ret={res.returncode}）")
+    logging.info("[Vivado] Readback 完成：%s", out_rbd_path)
+    return res
+# ===============================================================================================================================================================
+# ===============================================================================================================================================================
+# ===========================================================================业务================================================================================    
+# ===============================================================================================================================================================     
+# ===============================================================================================================================================================         
