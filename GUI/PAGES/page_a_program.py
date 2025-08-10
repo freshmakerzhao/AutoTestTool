@@ -6,8 +6,7 @@ from GUI.COMPONENT.thread_utils import run_in_thread
 import logging
 import subprocess
 import COMMON.utils as utils
-import json
-import csv
+from CORE.VIVADO.vivado_core import program_bitstream, program_flash
 
 class PageAProgram(ttk.Frame):
     """A 组：烧写码流"""
@@ -179,84 +178,31 @@ class PageAProgram(ttk.Frame):
                 **kwargs
             )
 
-    def _program_bitstream_file(self, *, vivado_bin_path,  bitstream_file):
+    def _program_bitstream_file(self, vivado_bin_path,  bitstream_file):
         """烧写 bitstream 文件到 FPGA"""
-        logging.info("[Program] 开始处理")
-        program_script  = utils.resource_path("RESOURCE/SCRIPTS/program.tcl")
-        vivado_bat_path = os.path.join(vivado_bin_path, "vivado.bat")
+        try:
+            program_bitstream(
+                vivado_bin_path=vivado_bin_path,
+                bitstream_file=bitstream_file,
+                log_path=None,
+                timeout=300,
+            )
+        except RuntimeError as e:
+            raise RuntimeError(str(e))
 
-        if not os.path.exists(program_script):
-            raise RuntimeError(f"program.tcl 文件未找到: {program_script}")
-        if not os.path.exists(vivado_bat_path):
-            raise RuntimeError(f"Vivado.bat 文件未找到: {vivado_bat_path}")
 
-        logging.info("=======================================================")
-        logging.info(f"[Program] 执行参数: \n"
-                        f"vivado_bin_path = {vivado_bin_path}, \n"
-                        f"bit_file_path = {bitstream_file}")
-        logging.info("=======================================================")
-        
-
-        cmd = [
-            vivado_bat_path, "-mode", "batch",
-            "-log", "NUL", "-journal", "NUL",
-            "-source", program_script,
-            "-tclargs", bitstream_file
-        ]
-        # 设置 startupinfo 来隐藏窗口
-        result = subprocess.run(
-            cmd, 
-            capture_output=False, 
-            text=True
-        )
-
-        if result.returncode != 0:
-            logging.error(f"[Program] 烧写 bitstream 文件失败: {bitstream_file}")
-        else:
-            logging.info(f"[Program] 烧写 {bitstream_file} 完成")
-
-        logging.info(f"[Program] ========= ALL PASS =========")
-
-    def _program_flash_file(self, *, vivado_bin_path,  bitstream_file, flash_part):
+    def _program_flash_file(self, vivado_bin_path,  bitstream_file, flash_part):
         """烧写 bitstream 文件到 flash"""
-        logging.info("[Program] 开始处理")
-        program_script  = utils.resource_path("RESOURCE/SCRIPTS/program_flash.tcl")
-        vivado_bat_path = os.path.join(vivado_bin_path, "vivado.bat")
-
-        if not os.path.exists(program_script):
-            raise RuntimeError(f"program.tcl 文件未找到: {program_script}")
-        if not os.path.exists(vivado_bat_path):
-            raise RuntimeError(f"Vivado.bat 文件未找到: {vivado_bat_path}")
-
-        logging.info("=======================================================")
-        logging.info(f"[Program] 执行参数: \n"
-                        f"vivado_bin_path = {vivado_bin_path}, \n"
-                        f"bit_file_path = {bitstream_file}\n"
-                        f"flash = {flash_part}"
-        )
-        logging.info("=======================================================")
-        
-
-        cmd = [
-            vivado_bat_path, "-mode", "batch",
-            "-log", "NUL", "-journal", "NUL",
-            "-source", program_script,
-            "-tclargs", bitstream_file, flash_part
-        ]
-        # 设置 startupinfo 来隐藏窗口
-        result = subprocess.run(
-            cmd, 
-            capture_output=False, 
-            text=True
-        )
-
-        if result.returncode != 0:
-            logging.error(f"[Program] 烧写 bitstream 文件失败: {bitstream_file}")
-        else:
-            logging.info(f"[Program] 烧写 {bitstream_file} 完成")
-
-        logging.info(f"[Program] ========= ALL PASS =========")
-
+        try:
+            program_flash(
+                vivado_bin_path=vivado_bin_path,
+                bitstream_file=bitstream_file,
+                flash_part=flash_part,
+                log_path=None,
+                timeout=600
+            )
+        except RuntimeError as e:
+            raise RuntimeError(str(e))
 
     def clear_log(self):
         self.log_text.config(state="normal")

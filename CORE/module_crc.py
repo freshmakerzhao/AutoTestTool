@@ -146,12 +146,12 @@ def calculate_crc(bitstream_obj):
                         cur_word = item.get_data_from_index(index) # rbt
                         
                         crc_data_in = ConfigurationPacket.make_len_37_crc_data_in(cur_word, cmd_word, "str")
-                        bitstream_obj.crc_01 = bitstream_obj.icap_crc(crc_data_in, bitstream_obj.crc_01)
+                        bitstream_obj.crc_01 = icap_crc(crc_data_in, bitstream_obj.crc_01)
         # 00010010000111000110100110000001                
         for word in bitstream_obj.rbt_data_content:
             # 计算crc
             crc_data_in = ConfigurationPacket.make_len_37_crc_data_in(word, ConfigurationPacket.PacketTemplate.CONFIG_FDRI.value.binstr, "str")
-            bitstream_obj.crc_01 = bitstream_obj.icap_crc(crc_data_in, bitstream_obj.crc_01)
+            bitstream_obj.crc_01 = icap_crc(crc_data_in, bitstream_obj.crc_01)
         print("第一段crc数据：%s" ,bitstream_obj.crc_01)
         # ============== 第一段 =====================
         
@@ -206,7 +206,7 @@ def calculate_crc(bitstream_obj):
                     
                     crc_data_in = ConfigurationPacket.make_len_37_crc_data_in(cur_word, cmd_word, "str")
                     # print("第二段数据：%s" ,crc_data_in)
-                    bitstream_obj.crc_02 = bitstream_obj.icap_crc(crc_data_in, bitstream_obj.crc_02)
+                    bitstream_obj.crc_02 = icap_crc(crc_data_in, bitstream_obj.crc_02)
             if crc_cmd_count == 2:
                 # 遇到两次crc，计算完成
                 break
@@ -237,12 +237,12 @@ def calculate_crc(bitstream_obj):
                         cur_word = item.get_data_from_index(index) # 字节
                         
                         crc_data_in = ConfigurationPacket.make_len_37_crc_data_in(cur_word, cmd_word, "byte")
-                        bitstream_obj.crc_01 = bitstream_obj.icap_crc(crc_data_in, bitstream_obj.crc_01)
+                        bitstream_obj.crc_01 = icap_crc(crc_data_in, bitstream_obj.crc_01)
         # 00010010000111000110100110000001                
         for word in bitstream_obj.bit_data_content:
             # 计算crc
             crc_data_in = ConfigurationPacket.make_len_37_crc_data_in(word, ConfigurationPacket.PacketTemplate.CONFIG_FDRI.value.byte, "byte")
-            bitstream_obj.crc_01 = bitstream_obj.icap_crc(crc_data_in, bitstream_obj.crc_01)
+            bitstream_obj.crc_01 = icap_crc(crc_data_in, bitstream_obj.crc_01)
                         
         print(bitstream_obj.crc_01) # 01111100100101011110011001111001 7C95E679
                     
@@ -300,7 +300,7 @@ def calculate_crc(bitstream_obj):
                     crc_data_in = ConfigurationPacket.make_len_37_crc_data_in(cur_word, cmd_word, "byte")
                     int_value = int(''.join(map(str, crc_data_in)), 2)
                     hex_str = f"{int_value:x}"
-                    bitstream_obj.crc_02 = bitstream_obj.icap_crc(crc_data_in, bitstream_obj.crc_02)
+                    bitstream_obj.crc_02 = icap_crc(crc_data_in, bitstream_obj.crc_02)
             if crc_cmd_count == 2:
                 # 遇到两次crc，计算完成
                 break

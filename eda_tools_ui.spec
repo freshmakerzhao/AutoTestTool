@@ -6,7 +6,7 @@ a = Analysis(
     binaries=[],
     datas=[
         ('RESOURCE/IMAGE/*.png', 'RESOURCE/IMAGE'),
-        ('RESOURCE/SCRIPTS/*.tcl', 'RESOURCE/SCRIPTS'),
+        ('RESOURCE/SCRIPTS/TCL/*.tcl', 'RESOURCE/SCRIPTS/TCL'),
     ],
     hiddenimports=['serial'],
     hookspath=[],

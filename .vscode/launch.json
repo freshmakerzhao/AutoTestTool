@@ -173,5 +173,77 @@
             "console": "integratedTerminal",
             "justMyCode": false
         },
+        {
+            "name": "CLI测试-timer",
+            "type": "debugpy",
+            "request": "launch",
+            "args": [
+                "E:\\workspace\\AutoTestTool\\RESOURCE\\SCRIPTS\\demo\\test_timer.txt"
+            ],
+            "env": {
+                "PYTHONPATH": "${workspaceFolder}",
+                "DEBUG": "1"
+            },
+            "program": "E:\\workspace\\AutoTestTool\\CLI\\main_shell.py",
+            "console": "integratedTerminal",
+            "justMyCode": false
+        },
+        {
+            "name": "交互模式",
+            "type": "debugpy",
+            "request": "launch",
+            "args": [
+            ],
+            "env": {
+                "PYTHONPATH": "${workspaceFolder}"
+            },
+            "program": "E:\\workspace\\AutoTestTool\\CLI\\main_shell.py",
+            "console": "integratedTerminal",
+            "justMyCode": false
+        },
+        {
+            "name": "单命令模式",
+            "type": "debugpy",
+            "request": "launch",
+            "args": [
+                "-c",
+                "vccm --file C:/Users/DELL/Desktop/test_workspace/shell/bram_36e1_2_wf_0_a.rbt --vccm_values 105"
+            ],
+            "env": {
+                "PYTHONPATH": "${workspaceFolder}"
+            },
+            "program": "E:\\workspace\\AutoTestTool\\CLI\\main_shell.py",
+            "console": "integratedTerminal",
+            "justMyCode": false
+        },
+        {
+            "name": "单命令模式 serial",
+            "type": "debugpy",
+            "request": "launch",
+            "args": [
+                "-c",
+                "serial --port COM4 --clock_config_path E:/workspace/AutoTestTool/RESOURCE/SCRIPTS/Si5344-RevD-ZKXC-Registers-GT122.88M-SYS100M-Out2PD.txt"
+            ],
+            "env": {
+                "PYTHONPATH": "${workspaceFolder}"
+            },
+            "program": "E:\\workspace\\AutoTestTool\\CLI\\main_shell.py",
+            "console": "integratedTerminal",
+            "justMyCode": false
+        },
+        {
+            "name": "批处理模式",
+            "type": "debugpy",
+            "request": "launch",
+            "args": [
+                "E:\\workspace\\AutoTestTool\\RESOURCE\\SCRIPTS\\demo\\test_02.txt"
+            ],
+            "env": {
+                "PYTHONPATH": "${workspaceFolder}"
+            },
+            "program": "E:\\workspace\\AutoTestTool\\CLI\\main_shell.py",
+            "console": "integratedTerminal",
+            "justMyCode": false
+        },  
     ]
 }

@@ -117,7 +117,7 @@ def run_program_bitstream(
         bool: 执行成功返回True，失败返回False
     """
     try:
-        program_script = utils.resource_path("RESOURCE/SCRIPTS/program.tcl")
+        program_script = utils.resource_path("RESOURCE/SCRIPTS/TCL/program.tcl")
         result = run_script_tcl(
             vivado_bin_path=vivado_bin_path,
             tcl_script_path=program_script,
@@ -152,7 +152,7 @@ def run_program_flash(
         bool: 执行成功返回True，失败返回False
     """
     try:
-        program_flash_script = utils.resource_path("RESOURCE/SCRIPTS/program_flash.tcl")
+        program_flash_script = utils.resource_path("RESOURCE/SCRIPTS/TCL/program_flash.tcl")
         result = run_script_tcl(
             vivado_bin_path=vivado_bin_path,
             tcl_script_path=program_flash_script,
@@ -185,7 +185,7 @@ def run_readback(
         bool: 执行成功返回True，失败返回False
     """
     try:
-        readback_script = utils.resource_path("RESOURCE/SCRIPTS/readback.tcl")
+        readback_script = utils.resource_path("RESOURCE/SCRIPTS/TCL/readback.tcl")
         result = run_script_tcl(
             vivado_bin_path=vivado_bin_path,
             tcl_script_path=readback_script,

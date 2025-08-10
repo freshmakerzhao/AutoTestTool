@@ -93,7 +93,14 @@ vccm --project 项目路径 --vccm_values vccm电压值 --vswl_selected vswl电�
 这里项目的意思是，对这个项目路径下每个文件夹单独处理，将结果生成到每个文件夹下。
 ```
 
-## 2.3 (异步)串口监视器
+## 2.3 串口
+
+- --port
+  - 指定端口
+- --connect_only
+  - 仅连接
+- --send_text
+  - 发送文本
 
 #### **基础串口功能**
 
