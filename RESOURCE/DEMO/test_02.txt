@@ -1,0 +1,16 @@
+# 1. 连接串口
+echo "=== 步骤1: 串口连接与检测 ==="
+set PORT COM4
+serial --port $PORT --voltage_show
+
+# 2. 配置电压
+echo "=== 步骤2: 配置标准电压 ==="
+serial --port $PORT --voltage_set 2620 0900 1800 0800 3300 3300 3300 3300 1500 1200 1000 1 0
+
+# 3. 配置Si5344时钟
+echo "=== 步骤3: 配置Si5344时钟 ==="
+serial --port COM4 --clock_config_path "E:\workspace\AutoTestTool\RESOURCE\SCRIPTS\Si5344.txt"
+
+# 4. 执行TCL脚本
+echo "=== 步骤4: Vivado硬件测试 ==="
+vivado --mode raw --vivado_bin "E:\Application_Vivado\Vivado\2020.1\bin" --tcl_path "E:\workspace\AutoTestTool\RESOURCE\SCRIPTS\demo\ibert_example_all.tcl" --out_csv_dir "E:\workspace\AutoTestTool\RESOURCE\test"

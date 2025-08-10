@@ -64,6 +64,11 @@ class AutoTestToolShell(cmd.Cmd):
 
     # --- SERIAL ---
     def do_serial(self, line):
+        """
+        串口相关功能：
+        示例：serial --port COM4 --voltage_show
+        支持变量替换，如 --port $PORT
+        """
         line = self._substitute_variables(line)
         parser = self.get_serial_parser()
         try:
@@ -77,6 +82,11 @@ class AutoTestToolShell(cmd.Cmd):
             
     # --- VIVADO ---
     def do_vivado(self, line):
+        """
+        Vivado 相关功能：
+        示例：vivado --mode program --bit_path xxx.bit
+        支持变量替换，如 --bit_path $FILE
+        """
         line = self._substitute_variables(line)
         parser = self.get_vivado_parser()
         try:
@@ -175,7 +185,7 @@ class AutoTestToolShell(cmd.Cmd):
             choices=["program", "flash", "readback", "compare", "raw"],
             help="执行模式：program/flash/readback/compare/raw",
         )
-        parser.add_argument("--vivado_bin", help="Vivado 安装目录")
+        parser.add_argument("--vivado_bin", required=True, help="Vivado 安装目录")
 
         # program / flash
         parser.add_argument("--bit_path", help="bit/rbt 文件路径")

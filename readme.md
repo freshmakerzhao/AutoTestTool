@@ -2,20 +2,35 @@
 
 ## 1.1 交互模式
 
-```json
-python main_shell.py
+```shell
+双击exe
 ```
 
 ## 1.2 单命令模式
 
-```json
-python main_shell.py -c "vccm --file C:/Users/DELL/Desktop/test_workspace/shell/bram_36e1_2_wf_0_a.rbt --vccm_values 105"
+```shell
+启动控制台，输入：
+eda_tools_ui.exe -c "你的命令"
+
+如配置时钟：
+eda_tool_ui.exe -c "serial --port COM4 --clock_config_path 'E:\workspace\AutoTestTool\RESOURCE\SCRIPTS\Si5344.txt'"
 ```
 
-## 1.3 脚本模式
+## 1.3 UI模式
 
-```json
-python main_shell.py myscript.txt
+```shell
+启动控制台，输入：
+eda_tools_ui.exe -ui
+```
+
+## 1.4 批处理模式
+
+```shell
+启动控制台，输入：
+eda_tools_ui.exe script.txt
+
+如：
+eda_tools_ui.exe E:\workspace\AutoTestTool\RESOURCE\SCRIPTS\demo\test_02.txt
 ```
 
 # 二、常用命令
@@ -128,7 +143,7 @@ serial --port COM4 --voltage_set 2620 0900 1800 0800 3300 3300 3300 3300 1500 12
 
 ### 2.4.1 烧写bitstream
 
-```
+```shell
 vivado --mode program --vivado_bin "E:\Application_Vivado\Vivado\2020.1\bin" --bit_path "C:\Users\DELL\Desktop\test_workspace\CLI_test\led_run.bit"
 ```
 
@@ -158,9 +173,45 @@ vivado --mode compare --mask_path "C:\Users\DELL\Desktop\test_workspace\vccm\for
 ### 2.4.5 执行自定义TCL（如ibert）
 
 ```shell
-vivado --mode raw --vivado_bin "E:\Application_Vivado\Vivado\2020.1\bin" --tcl_path "E:\workspace\AutoTestTool\RESOURCE\SCRIPTS\demo\ibert_example_all.tcl"
+vivado --mode raw --vivado_bin "E:\Application_Vivado\Vivado\2020.1\bin" --tcl_path "E:\workspace\AutoTestTool\RESOURCE\SCRIPTS\demo\ibert_example_all.tcl" --out_csv_dir "E:\workspace\AutoTestTool\RESOURCE\test"
 ```
 
+- 参数说明
+  - --out_csv_dir
+    - csv结果存放目录
 - 可选参数
   - --tcl_args
     - 支持传参，空格断开
+
+### 2.4.6 ibert tcl说明
+
+项目中存在一个简单全流程测试示例：
+
+- test_02
+- ibert_example_all.tcl
+- ibert_api.tcl
+
+其中test_02负责执行串口相关配置，并让vivado执行ibert_example_all.tcl；
+
+ibert_example_all.tcl执行过程中调用ibert_api.tcl的api进行测试。
+
+
+
+使用方法：
+
+- 修改test_02.txt脚本，编辑自己想要进行的操作和自定义的路径
+  - 按照本教程的第二章中的语法进行编写。
+- 修改ibert_example_all.tcl脚本
+  - 只需要按照需求增加或删除测试组
+
+其中，脚本开头处的`./ibert_api.tcl`的路径是基于`ibert_example_all.tcl`的相对路径（也可以直接写绝对路径），这里需要注意。
+
+下图表示一个完整测试，测试结果将生成到`--out_csv_dir`指定路径的`all_channels_result1.csv`中。
+
+![image-20250810233431795](./assets/image-20250810233431795.png)
+
+所有测试完成后，在底部的这个位置会将上面四个（这里假设测试4组，按照实际测试组数来）csv合并，生成`all_tests_combined_metadata.csv`，依旧在`--out_csv_dir`指定路径的下。
+
+![image-20250810233832358](./assets/image-20250810233832358.png)
+
+这里记得按照实际的测试组数和测试文件名称进行修改。
